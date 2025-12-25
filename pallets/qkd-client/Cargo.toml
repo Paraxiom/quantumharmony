@@ -1,0 +1,24 @@
+[package]
+name = "qkd-client"
+version = "0.1.0"
+edition = "2021"
+authors = ["Paraxiom <your-email@example.com>"]
+description = "QKD client for Quantum Harmony blockchain"
+
+[dependencies]
+# Substrate dependencies - using local paths for compatibility
+sp-core = { path = "/opt/polkadot-sdk/substrate/primitives/core", default-features = false }
+sp-std = { path = "/opt/polkadot-sdk/substrate/primitives/std", default-features = false }
+sp-runtime = { path = "/opt/polkadot-sdk/substrate/primitives/runtime", default-features = false }
+
+# For random number generation in std environments (for testing)
+rand = { version = "0.8", optional = true }
+
+[features]
+default = ["std"]
+std = [
+    "sp-core/std",
+    "sp-std/std",
+    "sp-runtime/std",
+    "rand",
+]

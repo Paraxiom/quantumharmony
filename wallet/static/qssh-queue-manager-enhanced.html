@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCARS QSSH Queue Manager - Enhanced</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Antonio', sans-serif;
+            background: #000;
+            color: #ff9900;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .lcars-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: 120px 1fr;
+            height: 100vh;
+            gap: 0;
+            background: #000;
+        }
+
+        /* LCARS ID Card (Top Left - from Image #1) */
+        .lcars-id-card {
+            grid-column: 1;
+            grid-row: 1;
+            background: #cc99cc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 3px solid #000;
+        }
+
+        .lcars-id-number {
+            font-size: 42px;
+            font-weight: 700;
+            color: #000;
+            letter-spacing: 1px;
+        }
+
+        .lcars-id-secondary {
+            font-size: 32px;
+            font-weight: 700;
+            color: #000;
+            background: #9999cc;
+            padding: 15px 40px;
+            margin-top: 5px;
+            width: 100%;
+            text-align: center;
+            border-top: 3px solid #000;
+        }
+
+        /* Header Data Display (Top Right - from Image #1) */
+        .lcars-header-data {
+            grid-column: 2;
+            grid-row: 1;
+            background: #000;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-row {
+            display: flex;
+            gap: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .data-cell {
+            color: #9999cc;
+        }
+
+        .data-cell.orange {
+            color: #ff9900;
+        }
+
+        .data-cell.yellow {
+            color: #ffcc00;
+        }
+
+        .data-cell.white {
+            color: #fff;
+        }
+
+        /* Sidebar Cards (Left Side - from Image #2) */
+        .lcars-sidebar {
+            grid-column: 1;
+            grid-row: 2;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .sidebar-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            font-weight: 700;
+            color: #000;
+            letter-spacing: 2px;
+            position: relative;
+            padding: 20px;
+        }
+
+        .sidebar-card.pink {
+            background: #cc9999;
+            flex: 1.2;
+        }
+
+        .sidebar-card.red {
+            background: #cc8888;
+            flex: 1;
+        }
+
+        .sidebar-card.orange {
+            background: #ff9966;
+            flex: 0.8;
+        }
+
+        .sidebar-card.peach {
+            background: #ffbb99;
+            flex: 2;
+        }
+
+        /* Semi-transparent overlay buttons */
+        .overlay-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            font-family: 'Antonio', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        .overlay-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Main Content Area */
+        .lcars-main {
+            grid-column: 2;
+            grid-row: 2;
+            background: #000;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Data Matrix Display */
+        .data-matrix {
+            background: #0a0a0a;
+            border: 2px solid #ff9900;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .matrix-header {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9900;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ff9900;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .matrix-cell {
+            color: #9999cc;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .matrix-cell.highlight {
+            color: #ff9900;
+            font-weight: 700;
+        }
+
+        /* Validator Status Grid */
+        .validator-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .validator-card {
+            background: #0d0d0d;
+            border: 3px solid #cc6699;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .validator-card.active {
+            border-color: #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .validator-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #9999ff;
+            margin-bottom: 10px;
+        }
+
+        .validator-port {
+            font-size: 20px;
+            color: #ffcc99;
+            margin-bottom: 15px;
+        }
+
+        .validator-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00ff00;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px #00ff00; }
+            50% { opacity: 0.3; }
+        }
+
+        .status-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #00ff00;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .metric-label {
+            color: #9999ff;
+            font-size: 14px;
+        }
+
+        .metric-value {
+            color: #ffcc99;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #1a1a1a;
+            border: 1px solid #ff9900;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9900, #ffcc66);
+            transition: width 0.3s;
+        }
+
+        /* QSSH Connection Status */
+        .qssh-status {
+            background: #0a0a0a;
+            border: 2px solid #9999ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .qssh-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #9999ff;
+            margin-bottom: 15px;
+        }
+
+        .qssh-connection {
+            display: grid;
+            grid-template-columns: 200px 150px 150px 1fr;
+            gap: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+            align-items: center;
+        }
+
+        .conn-path {
+            color: #ffcc99;
+            font-size: 14px;
+        }
+
+        .conn-metric {
+            color: #00ff00;
+            font-size: 13px;
+        }
+
+        .conn-encryption {
+            color: #cc6699;
+            font-size: 12px;
+            text-align: right;
+        }
+
+        /* Scrollbar Styling */
+        .lcars-main::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .lcars-main::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .lcars-main::-webkit-scrollbar-thumb {
+            background: #ff9900;
+            border-radius: 6px;
+        }
+
+        .lcars-main::-webkit-scrollbar-thumb:hover {
+            background: #ffcc66;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .validator-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .lcars-container {
+                grid-template-columns: 200px 1fr;
+            }
+
+            .sidebar-card {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lcars-container">
+        <!-- LCARS ID Card (Top Left) -->
+        <div class="lcars-id-card">
+            <div class="lcars-id-number">LCARS 40274</div>
+            <div class="lcars-id-secondary">02-654598</div>
+        </div>
+
+        <!-- Header Data Display -->
+        <div class="lcars-header-data">
+            <div class="data-row">
+                <span class="data-cell">2385</span>
+                <span class="data-cell">8578232 9</span>
+                <span class="data-cell">5789</span>
+                <span class="data-cell">3862</span>
+                <span class="data-cell">5893</span>
+                <span class="data-cell">9885</span>
+                <span class="data-cell">3489</span>
+                <span class="data-cell">3465</span>
+            </div>
+            <div class="data-row">
+                <span class="data-cell orange">2064</span>
+                <span class="data-cell orange">2064962 7</span>
+                <span class="data-cell orange">9776</span>
+                <span class="data-cell white">626</span>
+                <span class="data-cell white">1276</span>
+                <span class="data-cell white">7812</span>
+                <span class="data-cell">126</span>
+            </div>
+            <div class="data-row">
+                <span class="data-cell">34</span>
+                <span class="data-cell">279</span>
+                <span class="data-cell">89</span>
+                <span class="data-cell">6589</span>
+                <span class="data-cell">6547</span>
+                <span class="data-cell">6587</span>
+            </div>
+            <div class="data-row">
+                <span class="data-cell">4768</span>
+                <span class="data-cell">8967248 7</span>
+                <span class="data-cell">9798</span>
+                <span class="data-cell">8969</span>
+                <span class="data-cell">476</span>
+                <span class="data-cell">9047</span>
+            </div>
+            <div class="data-row">
+                <span class="data-cell orange">757</span>
+                <span class="data-cell orange">898990 8</span>
+                <span class="data-cell orange">200</span>
+                <span class="data-cell orange">285</span>
+                <span class="data-cell orange">923</span>
+                <span class="data-cell">9</span>
+            </div>
+        </div>
+
+        <!-- Sidebar Cards -->
+        <div class="lcars-sidebar">
+            <div class="sidebar-card pink">
+                03-975683
+                <button class="overlay-btn">ACCESS</button>
+            </div>
+            <div class="sidebar-card red">
+                04-765466
+                <button class="overlay-btn">MONITOR</button>
+            </div>
+            <div class="sidebar-card orange">
+                05-224353
+                <button class="overlay-btn">CONTROLS</button>
+            </div>
+            <div class="sidebar-card peach">
+                06-576565
+                <button class="overlay-btn">SYSTEMS</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="lcars-main">
+            <!-- Data Matrix Display -->
+            <div class="data-matrix">
+                <div class="matrix-header">QSSH QUEUE DATA MATRIX</div>
+                <div class="matrix-grid">
+                    <div class="matrix-cell">685</div>
+                    <div class="matrix-cell">3478 8</div>
+                    <div class="matrix-cell">867</div>
+                    <div class="matrix-cell">346</div>
+                    <div class="matrix-cell">34</div>
+                    <div class="matrix-cell">48</div>
+                    <div class="matrix-cell">49</div>
+                    <div class="matrix-cell">8</div>
+
+                    <div class="matrix-cell">757</div>
+                    <div class="matrix-cell highlight">898990 8</div>
+                    <div class="matrix-cell highlight">200</div>
+                    <div class="matrix-cell highlight">285</div>
+                    <div class="matrix-cell highlight">923</div>
+                    <div class="matrix-cell">9</div>
+                    <div class="matrix-cell">387</div>
+                    <div class="matrix-cell">236</div>
+
+                    <div class="matrix-cell">484</div>
+                    <div class="matrix-cell">947589 7</div>
+                    <div class="matrix-cell">569</div>
+                    <div class="matrix-cell">68</div>
+                    <div class="matrix-cell">678</div>
+                    <div class="matrix-cell">893</div>
+                    <div class="matrix-cell">58</div>
+                    <div class="matrix-cell">584</div>
+                </div>
+            </div>
+
+            <!-- Validator Status Grid -->
+            <div class="validator-grid">
+                <!-- Alice -->
+                <div class="validator-card active">
+                    <div class="validator-name">ALICE</div>
+                    <div class="validator-port">PORT 9944</div>
+                    <div class="validator-status">
+                        <div class="status-indicator"></div>
+                        <div class="status-text">ACTIVE</div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">QUEUE DEPTH</span>
+                        <span class="metric-value" id="alice-queue">127</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">MSG/SEC</span>
+                        <span class="metric-value" id="alice-msgrate">45</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">LATENCY AVG</span>
+                        <span class="metric-value" id="alice-latency">12ms</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">UPTIME</span>
+                        <span class="metric-value">99.98%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="alice-progress" style="width: 85%"></div>
+                    </div>
+                </div>
+
+                <!-- Bob -->
+                <div class="validator-card active">
+                    <div class="validator-name">BOB</div>
+                    <div class="validator-port">PORT 9945</div>
+                    <div class="validator-status">
+                        <div class="status-indicator"></div>
+                        <div class="status-text">ACTIVE</div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">QUEUE DEPTH</span>
+                        <span class="metric-value" id="bob-queue">89</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">MSG/SEC</span>
+                        <span class="metric-value" id="bob-msgrate">32</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">LATENCY AVG</span>
+                        <span class="metric-value" id="bob-latency">8ms</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">UPTIME</span>
+                        <span class="metric-value">99.99%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="bob-progress" style="width: 92%"></div>
+                    </div>
+                </div>
+
+                <!-- Charlie -->
+                <div class="validator-card active">
+                    <div class="validator-name">CHARLIE</div>
+                    <div class="validator-port">PORT 9946</div>
+                    <div class="validator-status">
+                        <div class="status-indicator"></div>
+                        <div class="status-text">ACTIVE</div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">QUEUE DEPTH</span>
+                        <span class="metric-value" id="charlie-queue">203</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">MSG/SEC</span>
+                        <span class="metric-value" id="charlie-msgrate">67</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">LATENCY AVG</span>
+                        <span class="metric-value" id="charlie-latency">15ms</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">UPTIME</span>
+                        <span class="metric-value">99.95%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="charlie-progress" style="width: 78%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QSSH Connection Status -->
+            <div class="qssh-status">
+                <div class="qssh-header">QSSH TRANSPORT LAYER - ENCRYPTION: FALCON-1024</div>
+
+                <div class="qssh-connection">
+                    <div class="conn-path">ALICE → BOB</div>
+                    <div class="conn-metric">LATENCY: 8ms</div>
+                    <div class="conn-metric">PKT LOSS: 0.00%</div>
+                    <div class="conn-encryption">SPHINCS+ AUTH</div>
+                </div>
+
+                <div class="qssh-connection">
+                    <div class="conn-path">ALICE → CHARLIE</div>
+                    <div class="conn-metric">LATENCY: 12ms</div>
+                    <div class="conn-metric">PKT LOSS: 0.01%</div>
+                    <div class="conn-encryption">SPHINCS+ AUTH</div>
+                </div>
+
+                <div class="qssh-connection">
+                    <div class="conn-path">BOB → CHARLIE</div>
+                    <div class="conn-metric">LATENCY: 6ms</div>
+                    <div class="conn-metric">PKT LOSS: 0.00%</div>
+                    <div class="conn-encryption">SPHINCS+ AUTH</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connection for real-time updates
+        let ws = null;
+
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:9950/qssh-queue-metrics');
+
+            ws.onopen = function() {
+                console.log('✓ Connected to QSSH Queue Manager');
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateMetrics(data);
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket closed, reconnecting...');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        function updateMetrics(data) {
+            // Update Alice
+            if (data.alice) {
+                document.getElementById('alice-queue').textContent = data.alice.queue_depth;
+                document.getElementById('alice-msgrate').textContent = data.alice.msg_rate;
+                document.getElementById('alice-latency').textContent = data.alice.latency + 'ms';
+                document.getElementById('alice-progress').style.width = data.alice.health + '%';
+            }
+
+            // Update Bob
+            if (data.bob) {
+                document.getElementById('bob-queue').textContent = data.bob.queue_depth;
+                document.getElementById('bob-msgrate').textContent = data.bob.msg_rate;
+                document.getElementById('bob-latency').textContent = data.bob.latency + 'ms';
+                document.getElementById('bob-progress').style.width = data.bob.health + '%';
+            }
+
+            // Update Charlie
+            if (data.charlie) {
+                document.getElementById('charlie-queue').textContent = data.charlie.queue_depth;
+                document.getElementById('charlie-msgrate').textContent = data.charlie.msg_rate;
+                document.getElementById('charlie-latency').textContent = data.charlie.latency + 'ms';
+                document.getElementById('charlie-progress').style.width = data.charlie.health + '%';
+            }
+        }
+
+        // Simulate updates (for demo without WebSocket server)
+        function simulateUpdates() {
+            setInterval(() => {
+                const aliceQueue = Math.floor(Math.random() * 50) + 100;
+                const bobQueue = Math.floor(Math.random() * 40) + 70;
+                const charlieQueue = Math.floor(Math.random() * 60) + 180;
+
+                document.getElementById('alice-queue').textContent = aliceQueue;
+                document.getElementById('bob-queue').textContent = bobQueue;
+                document.getElementById('charlie-queue').textContent = charlieQueue;
+
+                document.getElementById('alice-msgrate').textContent = Math.floor(Math.random() * 20) + 35;
+                document.getElementById('bob-msgrate').textContent = Math.floor(Math.random() * 15) + 25;
+                document.getElementById('charlie-msgrate').textContent = Math.floor(Math.random() * 25) + 55;
+            }, 2000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                connectWebSocket();
+            } catch (e) {
+                console.log('WebSocket not available, using simulation mode');
+                simulateUpdates();
+            }
+        });
+    </script>
+</body>
+</html>

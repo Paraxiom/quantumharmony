@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumHarmony | Cyber Wallet Interface</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Nokia Blue Palette */
+            --nokia-blue: #124191;
+            --nokia-bright: #5DADE2;
+            --nokia-dark: #0A2351;
+
+            /* Cyberpunk Neon */
+            --neon-cyan: #00F0FF;
+            --neon-pink: #FF006E;
+            --neon-green: #39FF14;
+            --neon-purple: #BD00FF;
+            --neon-yellow: #FFFF00;
+
+            /* Base */
+            --bg-main: #0a0a0f;
+            --bg-panel: rgba(18, 65, 145, 0.15);
+            --text-primary: #00F0FF;
+            --text-bright: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Cyberpunk Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(0deg, transparent 24%, rgba(0, 240, 255, 0.05) 25%, rgba(0, 240, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 240, 255, 0.05) 75%, rgba(0, 240, 255, 0.05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(0, 240, 255, 0.05) 25%, rgba(0, 240, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 240, 255, 0.05) 75%, rgba(0, 240, 255, 0.05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Phosphorescent Glow Effect */
+        .glow {
+            text-shadow:
+                0 0 5px currentColor,
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px currentColor;
+        }
+
+        .glow-box {
+            box-shadow:
+                0 0 10px rgba(0, 240, 255, 0.5),
+                0 0 20px rgba(0, 240, 255, 0.3),
+                inset 0 0 20px rgba(0, 240, 255, 0.1);
+        }
+
+        /* Top Header */
+        .cyber-header {
+            position: relative;
+            padding: 30px 40px;
+            background: linear-gradient(135deg, rgba(18, 65, 145, 0.3), rgba(93, 173, 226, 0.2));
+            border-bottom: 3px solid var(--neon-cyan);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            letter-spacing: 2px;
+        }
+
+        .header-status {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-pill {
+            background: rgba(0, 240, 255, 0.2);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-weight: 700;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+        }
+
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 20px var(--neon-green);
+            }
+            50% {
+                opacity: 0.5;
+                box-shadow: 0 0 5px var(--neon-green);
+            }
+        }
+
+        /* Main Layout */
+        .cyber-container {
+            display: flex;
+            min-height: calc(100vh - 160px);
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Sidebar */
+        .cyber-sidebar {
+            width: 280px;
+            padding: 30px 20px;
+            background: linear-gradient(180deg, rgba(18, 65, 145, 0.2), rgba(10, 35, 81, 0.3));
+            border-right: 2px solid rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-button {
+            width: 100%;
+            padding: 18px 25px;
+            margin-bottom: 15px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            border-left: 5px solid var(--nokia-bright);
+            color: var(--text-bright);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-button:hover {
+            background: rgba(0, 240, 255, 0.25);
+            border-left-width: 8px;
+            transform: translateX(3px);
+            box-shadow:
+                0 0 20px rgba(0, 240, 255, 0.4),
+                inset 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        .nav-button.active {
+            background: rgba(0, 240, 255, 0.3);
+            border-color: var(--neon-cyan);
+            border-left-color: var(--neon-green);
+            color: var(--neon-cyan);
+        }
+
+        /* Main Content */
+        .cyber-main {
+            flex: 1;
+            padding: 40px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Cyber Panel */
+        .cyber-panel {
+            background: linear-gradient(135deg, rgba(18, 65, 145, 0.25), rgba(93, 173, 226, 0.15));
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            border-radius: 10px;
+            padding: 35px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(15px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Phosphorescent corner accent */
+        .cyber-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.4), transparent);
+            border-radius: 0 0 0 100%;
+            pointer-events: none;
+        }
+
+        .cyber-panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(189, 0, 255, 0.3), transparent);
+            border-radius: 0 100% 0 0;
+            pointer-events: none;
+        }
+
+        .panel-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+        }
+
+        .panel-subtitle {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--nokia-bright);
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        /* Account Grid */
+        .account-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin: 25px 0;
+        }
+
+        .account-card {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(189, 0, 255, 0.1));
+            border: 2px solid rgba(0, 240, 255, 0.5);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .account-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-cyan);
+            box-shadow:
+                0 10px 40px rgba(0, 240, 255, 0.4),
+                inset 0 0 30px rgba(0, 240, 255, 0.1);
+        }
+
+        .account-name {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--text-bright);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .account-address {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            color: rgba(0, 240, 255, 0.7);
+            word-break: break-all;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+        }
+
+        .account-balance {
+            font-size: 42px;
+            font-weight: 900;
+            color: var(--neon-green);
+            margin: 15px 0;
+            text-shadow: 0 0 20px rgba(57, 255, 20, 0.6);
+        }
+
+        .account-type {
+            display: inline-block;
+            background: linear-gradient(90deg, rgba(0, 240, 255, 0.3), rgba(189, 0, 255, 0.3));
+            border: 2px solid var(--neon-purple);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Cyber Buttons */
+        .cyber-button {
+            background: linear-gradient(135deg, var(--nokia-blue), var(--nokia-bright));
+            border: 2px solid var(--neon-cyan);
+            color: var(--text-bright);
+            padding: 18px 35px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 10px 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .cyber-button:hover::before {
+            left: 100%;
+        }
+
+        .cyber-button:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 0 30px rgba(0, 240, 255, 0.7),
+                inset 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        /* Input Fields */
+        .data-field {
+            margin: 20px 0;
+        }
+
+        .field-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            color: var(--text-bright);
+            padding: 15px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        /* Info Display */
+        .info-box {
+            background: rgba(0, 240, 255, 0.08);
+            border-left: 5px solid var(--neon-cyan);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(0, 240, 255, 0.7);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--text-bright);
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* Bottom Status Bar */
+        .cyber-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            background: linear-gradient(135deg, rgba(18, 65, 145, 0.4), rgba(93, 173, 226, 0.3));
+            border-top: 2px solid var(--neon-cyan);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .footer-value {
+            color: var(--neon-green);
+            font-weight: 900;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="cyber-header">
+        <div class="header-title glow">QUANTUMHARMONY</div>
+        <div class="header-subtitle">QUANTUM-SAFE BLOCKCHAIN WALLET</div>
+        <div class="header-status">
+            <div class="status-indicator"></div>
+            <div class="status-pill glow-box">NETWORK ONLINE</div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="cyber-container">
+        <!-- Sidebar Navigation -->
+        <div class="cyber-sidebar">
+            <button class="nav-button active" onclick="showSection('accounts')">► ACCOUNTS</button>
+            <button class="nav-button" onclick="showSection('transfer')">► TRANSFER</button>
+            <button class="nav-button" onclick="showSection('quantum')">► QUANTUM</button>
+            <button class="nav-button" onclick="showSection('network')">► NETWORK</button>
+            <button class="nav-button" onclick="showSection('settings')">► SETTINGS</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="cyber-main">
+            <!-- Accounts Section -->
+            <div id="section-accounts" class="section active">
+                <div class="cyber-panel glow-box">
+                    <div class="panel-title">WALLET ACCOUNTS</div>
+                    <div class="panel-subtitle">Post-Quantum Secure Cryptocurrency Accounts</div>
+
+                    <div class="account-grid" id="accountsGrid"></div>
+
+                    <button class="cyber-button" onclick="importAccount('alice')">IMPORT ALICE</button>
+                    <button class="cyber-button" onclick="importAccount('bob')">IMPORT BOB</button>
+                    <button class="cyber-button" onclick="showCreateAccount()">CREATE NEW</button>
+                </div>
+            </div>
+
+            <!-- Transfer Section -->
+            <div id="section-transfer" class="section">
+                <div class="cyber-panel glow-box">
+                    <div class="panel-title">TRANSFER FUNDS</div>
+                    <div class="panel-subtitle">Send Quantum-Signed Transactions</div>
+
+                    <div class="data-field">
+                        <div class="field-label">RECIPIENT ADDRESS</div>
+                        <input type="text" id="recipientAddress" placeholder="Enter recipient address...">
+                    </div>
+
+                    <div class="data-field">
+                        <div class="field-label">AMOUNT (QH)</div>
+                        <input type="number" id="amount" placeholder="0.00">
+                    </div>
+
+                    <div class="data-field">
+                        <div class="field-label">SIGNATURE TYPE</div>
+                        <label style="color: var(--text-bright); font-size: 16px; font-weight: 700; margin-right: 20px;">
+                            <input type="radio" name="sigType" value="quantum" checked> SPHINCS+ (QUANTUM-SAFE)
+                        </label>
+                        <label style="color: var(--text-bright); font-size: 16px; font-weight: 700;">
+                            <input type="radio" name="sigType" value="classical"> SR25519 (CLASSICAL)
+                        </label>
+                    </div>
+
+                    <button class="cyber-button" onclick="sendTransaction()">INITIATE TRANSFER</button>
+                </div>
+            </div>
+
+            <!-- Quantum Section -->
+            <div id="section-quantum" class="section">
+                <div class="cyber-panel glow-box">
+                    <div class="panel-title">QUANTUM FEATURES</div>
+                    <div class="panel-subtitle">Post-Quantum Cryptography Status</div>
+
+                    <div class="info-box">
+                        <div class="info-label">SPHINCS+ SIGNING</div>
+                        <div class="info-value" style="color: var(--neon-green);">OPERATIONAL</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">SIGNATURE SIZE</div>
+                        <div class="info-value">49,152 BYTES</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">SECURITY LEVEL</div>
+                        <div class="info-value">NIST LEVEL 5 (256-BIT)</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">QKD ENTROPY SOURCE</div>
+                        <div class="info-value" style="color: var(--neon-green);">AVAILABLE</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Section -->
+            <div id="section-network" class="section">
+                <div class="cyber-panel glow-box">
+                    <div class="panel-title">NETWORK STATUS</div>
+                    <div class="panel-subtitle">Blockchain Node Information</div>
+
+                    <div class="info-box">
+                        <div class="info-label">NODE ENDPOINT</div>
+                        <div class="info-value">ws://127.0.0.1:9944</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">CHAIN</div>
+                        <div class="info-value">DEVELOPMENT</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">CONSENSUS</div>
+                        <div class="info-value">AURA + GRANDPA</div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-label">SYNC STATUS</div>
+                        <div class="info-value" style="color: var(--neon-green);">SYNCED</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Status Bar -->
+    <div class="cyber-footer">
+        <div class="footer-item">
+            <span>BLOCK:</span>
+            <span class="footer-value glow" id="blockNumber">0</span>
+        </div>
+        <div class="footer-item">
+            <span>PEERS:</span>
+            <span class="footer-value glow" id="peerCount">0</span>
+        </div>
+        <div class="footer-item">
+            <span>QUANTUM TUNNEL:</span>
+            <span class="footer-value glow">ACTIVE</span>
+        </div>
+    </div>
+
+    <script>
+        // Section switching
+        function showSection(name) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+
+            document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Load accounts
+        async function loadAccounts() {
+            try {
+                const response = await fetch('/api/accounts');
+                const data = await response.json();
+
+                const grid = document.getElementById('accountsGrid');
+                grid.innerHTML = data.accounts.map(account => `
+                    <div class="account-card">
+                        <div class="account-name">${account.name}</div>
+                        <div class="account-address">${account.address}</div>
+                        <div class="account-balance">${(parseInt(account.balance) / 1e12).toFixed(2)} QH</div>
+                        <div class="account-type">${account.account_type}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load accounts:', e);
+            }
+        }
+
+        // Import account
+        function importAccount(name) {
+            alert(`IMPORTING ${name.toUpperCase()} ACCOUNT FROM GENESIS...`);
+            setTimeout(loadAccounts, 500);
+        }
+
+        // Send transaction
+        async function sendTransaction() {
+            const recipient = document.getElementById('recipientAddress').value;
+            const amount = document.getElementById('amount').value;
+            const sigType = document.querySelector('input[name="sigType"]:checked').value;
+
+            if (!recipient || !amount) {
+                alert('ERROR: PLEASE FILL IN ALL FIELDS');
+                return;
+            }
+
+            alert(`INITIATING TRANSFER OF ${amount} QH TO ${recipient} USING ${sigType.toUpperCase()} SIGNATURE...`);
+        }
+
+        // Initialize
+        loadAccounts();
+
+        // Update block number (simulated)
+        let blockNum = 0;
+        setInterval(() => {
+            blockNum += Math.floor(Math.random() * 2);
+            document.getElementById('blockNumber').textContent = blockNum;
+        }, 6000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Build artifacts
+target/
+*.wasm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local config
+.env
+*.local
+
+# Node modules (for wallet/browser-extension)
+node_modules/
+
+# Test artifacts
+*.profraw

@@ -1,0 +1,409 @@
+// SPDX-License-Identifier: Apache-2.0
+// Phase 2: Entropy Distribution Protocol for Nokia
+//
+// Distributes reconstructed entropy to all validators using:
+// - Falcon1024 public key encryption (post-quantum secure)
+// - AES-256-GCM for actual data encryption
+// - Falcon1024 signature for authenticity
+//
+// Message Flow:
+// 1. Leader reconstructs combined entropy from K-of-M device shares
+// 2. Leader creates EntropyPackage with all device shares + combined entropy
+// 3. For each validator:
+//    - Generate random AES-256-GCM key
+//    - Encrypt entropy package with AES key
+//    - Encrypt AES key with validator's Falcon1024 public key
+//    - Sign encrypted package with leader's Falcon1024 private key
+// 4. Distribute EntropyMessage to all validators
+
+use scale_codec::{Decode, Encode};
+use log::{debug, info};
+use sp_core::blake2_256;
+
+use crate::threshold_qrng::DeviceShare;
+
+// Post-quantum cryptography
+use pqcrypto_falcon::falcon1024;
+use pqcrypto_traits::sign::{PublicKey as SignPublicKey, SecretKey as SignSecretKey, SignedMessage};
+use pqcrypto_kyber::kyber1024;
+use pqcrypto_traits::kem::{PublicKey as KemPublicKey, SecretKey as KemSecretKey, Ciphertext, SharedSecret};
+
+// For AES-GCM encryption
+use aes_gcm::{
+    aead::{Aead, KeyInit, OsRng as AeadOsRng},
+    Aes256Gcm, Nonce,
+};
+use rand::RngCore;
+
+/// Maximum entropy package size (10 KB)
+const MAX_ENTROPY_SIZE: usize = 10 * 1024;
+
+/// Entropy package containing all data needed for consensus
+#[derive(Clone, Encode, Decode, Debug)]
+pub struct EntropyPackage {
+    /// Block number this entropy is for
+    pub block_number: u32,
+
+    /// Timestamp when leader reconstructed this entropy
+    pub timestamp: u64,
+
+    /// Combined entropy reconstructed from device shares
+    pub combined_entropy: Vec<u8>,
+
+    /// All device shares collected (K-of-M)
+    pub device_shares: Vec<DeviceShare>,
+
+    /// Threshold parameters
+    pub threshold_k: u8,
+    pub total_devices_m: u8,
+
+    /// Leader's node ID (for audit trail)
+    pub leader_node_id: Vec<u8>,
+}
+
+/// Encrypted entropy message sent via gossip
+#[derive(Clone, Encode, Decode, Debug)]
+pub struct EntropyMessage {
+    /// Block number this entropy is for
+    pub block_number: u32,
+
+    /// Encrypted entropy package (AES-256-GCM)
+    pub encrypted_package: Vec<u8>,
+
+    /// AES key encrypted with recipient's Falcon1024 public key
+    pub encrypted_aes_key: Vec<u8>,
+
+    /// AES-GCM nonce (96 bits)
+    pub nonce: [u8; 12],
+
+    /// Falcon1024 signature of encrypted_package by leader
+    pub leader_signature: Vec<u8>,
+
+    /// Leader's Falcon1024 public key (for signature verification)
+    pub leader_pubkey: Vec<u8>,
+
+    /// Recipient's Falcon1024 public key hash (to identify intended recipient)
+    pub recipient_pubkey_hash: [u8; 32],
+}
+
+impl EntropyMessage {
+    /// Check if message size is within limits
+    pub fn is_valid_size(&self) -> bool {
+        let size = self.encoded_size();
+        size <= MAX_ENTROPY_SIZE
+    }
+
+    /// Get encoded size
+    pub fn encoded_size(&self) -> usize {
+        self.encode().len()
+    }
+}
+
+/// Nokia Mode: Pure PQC encryption using Falcon1024 + AES-256-GCM
+pub mod nokia_mode {
+    use super::*;
+    use aes_gcm::{
+        aead::{Aead, KeyInit, OsRng},
+        Aes256Gcm, Nonce,
+    };
+    use rand::RngCore;
+
+    /// Encrypt entropy package for a specific validator (Nokia mode)
+    ///
+    /// Steps:
+    /// 1. Generate random 32-byte AES key
+    /// 2. Encrypt entropy package with AES-256-GCM
+    /// 3. Encrypt AES key with recipient's Falcon1024 public key
+    /// 4. Sign encrypted package with leader's Falcon1024 private key
+    pub fn encrypt_entropy_for_validator(
+        package: &EntropyPackage,
+        recipient_falcon_pubkey: &[u8],
+        leader_falcon_privkey: &[u8],
+        leader_falcon_pubkey: &[u8],
+    ) -> Result<EntropyMessage, String> {
+        // 1. Generate random AES-256 key
+        // QPP Integration: This could use qpp_integration::wrap_aes256_key() for compile-time
+        // size checking with ConstrainedKey<32>, preventing buffer overflows at compile time.
+        let mut aes_key = [0u8; 32];
+        OsRng.fill_bytes(&mut aes_key);
+
+        // 2. Generate random nonce for AES-GCM
+        let mut nonce_bytes = [0u8; 12];
+        OsRng.fill_bytes(&mut nonce_bytes);
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        // 3. Encrypt entropy package with AES-256-GCM
+        let cipher = Aes256Gcm::new_from_slice(&aes_key)
+            .map_err(|e| format!("Failed to create AES cipher: {:?}", e))?;
+
+        let package_bytes = package.encode();
+        let encrypted_package = cipher.encrypt(nonce, package_bytes.as_ref())
+            .map_err(|e| format!("Failed to encrypt package: {:?}", e))?;
+
+        // 4. Encrypt AES key with recipient's Falcon1024 public key
+        // TODO: Use actual Falcon1024 encryption when available
+        // For now, use placeholder
+        let encrypted_aes_key = encrypt_with_falcon1024(&aes_key, recipient_falcon_pubkey)?;
+
+        // 5. Sign encrypted package with leader's Falcon1024 private key
+        let leader_signature = sign_with_falcon1024(&encrypted_package, leader_falcon_privkey)?;
+
+        // 6. Create entropy message
+        let recipient_pubkey_hash = blake2_256(recipient_falcon_pubkey);
+
+        let msg = EntropyMessage {
+            block_number: package.block_number,
+            encrypted_package,
+            encrypted_aes_key,
+            nonce: nonce_bytes,
+            leader_signature,
+            leader_pubkey: leader_falcon_pubkey.to_vec(),
+            recipient_pubkey_hash,
+        };
+
+        info!("🔐 Encrypted entropy package for validator (size: {} bytes)", msg.encoded_size());
+
+        Ok(msg)
+    }
+
+    /// Decrypt entropy package (Nokia mode)
+    pub fn decrypt_entropy_package(
+        msg: &EntropyMessage,
+        recipient_falcon_privkey: &[u8],
+        recipient_falcon_pubkey: &[u8],
+    ) -> Result<EntropyPackage, String> {
+        // 1. Verify we are the intended recipient
+        let our_pubkey_hash = blake2_256(recipient_falcon_pubkey);
+        if our_pubkey_hash != msg.recipient_pubkey_hash {
+            return Err("Not intended recipient".into());
+        }
+
+        debug!("✅ Verified we are intended recipient");
+
+        // 2. Verify leader's signature
+        verify_falcon1024_signature(
+            &msg.encrypted_package,
+            &msg.leader_signature,
+            &msg.leader_pubkey,
+        )?;
+
+        debug!("✅ Verified leader signature");
+
+        // 3. Decrypt AES key with our Falcon1024 private key
+        let aes_key = decrypt_with_falcon1024(&msg.encrypted_aes_key, recipient_falcon_privkey)?;
+
+        // 4. Decrypt entropy package with AES key
+        let cipher = Aes256Gcm::new_from_slice(&aes_key)
+            .map_err(|e| format!("Failed to create AES cipher: {:?}", e))?;
+
+        let nonce = Nonce::from_slice(&msg.nonce);
+        let package_bytes = cipher.decrypt(nonce, msg.encrypted_package.as_ref())
+            .map_err(|e| format!("Failed to decrypt package: {:?}", e))?;
+
+        // 5. Decode entropy package
+        let package = EntropyPackage::decode(&mut &package_bytes[..])
+            .map_err(|e| format!("Failed to decode package: {:?}", e))?;
+
+        info!("🔓 Decrypted entropy package for block #{}", package.block_number);
+
+        Ok(package)
+    }
+
+    // Real Falcon1024 + ML-KEM authenticated encryption functions
+
+    /// Encrypt data using ML-KEM-1024 (for encryption) + AES-256-GCM
+    /// Note: Falcon is signature-only, so we use ML-KEM-1024 (Kyber) for key encapsulation
+    fn encrypt_with_falcon1024(data: &[u8], kem_pubkey: &[u8]) -> Result<Vec<u8>, String> {
+        debug!("🔒 ML-KEM-1024 + AES-256-GCM encryption - {} bytes", data.len());
+
+        // Parse ML-KEM public key
+        let public_key = kyber1024::PublicKey::from_bytes(kem_pubkey)
+            .map_err(|_| "Invalid ML-KEM public key".to_string())?;
+
+        // Encapsulate: generate shared secret + ciphertext
+        let (shared_secret, ciphertext) = kyber1024::encapsulate(&public_key);
+
+        // Use shared secret as AES-256-GCM key (first 32 bytes)
+        let shared_bytes = shared_secret.as_bytes();
+        let aes_key = &shared_bytes[..32];
+
+        // Generate random nonce
+        let mut nonce_bytes = [0u8; 12];
+        rand::thread_rng().fill_bytes(&mut nonce_bytes);
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        // Encrypt data with AES-256-GCM
+        let cipher = Aes256Gcm::new_from_slice(aes_key)
+            .map_err(|e| format!("AES key error: {}", e))?;
+        let ciphertext_data = cipher
+            .encrypt(nonce, data)
+            .map_err(|e| format!("Encryption failed: {}", e))?;
+
+        // Format: [KEM ciphertext length (4 bytes)][KEM ciphertext][nonce (12 bytes)][AES ciphertext]
+        let kem_ct_bytes = ciphertext.as_bytes();
+        let mut result = Vec::with_capacity(4 + kem_ct_bytes.len() + 12 + ciphertext_data.len());
+        result.extend_from_slice(&(kem_ct_bytes.len() as u32).to_le_bytes());
+        result.extend_from_slice(kem_ct_bytes);
+        result.extend_from_slice(&nonce_bytes);
+        result.extend_from_slice(&ciphertext_data);
+
+        debug!("✅ Encrypted {} bytes → {} bytes", data.len(), result.len());
+        Ok(result)
+    }
+
+    /// Decrypt data using ML-KEM-1024 secret key
+    fn decrypt_with_falcon1024(encrypted: &[u8], kem_privkey: &[u8]) -> Result<Vec<u8>, String> {
+        debug!("🔓 ML-KEM-1024 + AES-256-GCM decryption - {} bytes", encrypted.len());
+
+        if encrypted.len() < 4 + 12 {
+            return Err("Encrypted data too short".into());
+        }
+
+        // Parse format: [KEM ct length][KEM ciphertext][nonce][AES ciphertext]
+        let kem_ct_len = u32::from_le_bytes([encrypted[0], encrypted[1], encrypted[2], encrypted[3]]) as usize;
+        if encrypted.len() < 4 + kem_ct_len + 12 {
+            return Err("Invalid encrypted data format".into());
+        }
+
+        let kem_ct_bytes = &encrypted[4..4 + kem_ct_len];
+        let nonce_bytes = &encrypted[4 + kem_ct_len..4 + kem_ct_len + 12];
+        let ciphertext_data = &encrypted[4 + kem_ct_len + 12..];
+
+        // Parse ML-KEM secret key and ciphertext
+        let secret_key = kyber1024::SecretKey::from_bytes(kem_privkey)
+            .map_err(|_| "Invalid ML-KEM secret key".to_string())?;
+        let ciphertext = kyber1024::Ciphertext::from_bytes(kem_ct_bytes)
+            .map_err(|_| "Invalid ML-KEM ciphertext".to_string())?;
+
+        // Decapsulate to get shared secret
+        let shared_secret = kyber1024::decapsulate(&ciphertext, &secret_key);
+        let shared_bytes = shared_secret.as_bytes();
+        let aes_key = &shared_bytes[..32];
+
+        // Decrypt with AES-256-GCM
+        let cipher = Aes256Gcm::new_from_slice(aes_key)
+            .map_err(|e| format!("AES key error: {}", e))?;
+        let nonce = Nonce::from_slice(nonce_bytes);
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext_data)
+            .map_err(|e| format!("Decryption failed: {}", e))?;
+
+        debug!("✅ Decrypted {} bytes → {} bytes", encrypted.len(), plaintext.len());
+        Ok(plaintext)
+    }
+
+    /// Sign data with Falcon1024
+    fn sign_with_falcon1024(data: &[u8], privkey: &[u8]) -> Result<Vec<u8>, String> {
+        debug!("✍️  Falcon1024 signature - {} bytes", data.len());
+
+        let secret_key = falcon1024::SecretKey::from_bytes(privkey)
+            .map_err(|_| "Invalid Falcon1024 secret key".to_string())?;
+
+        let signed_msg = falcon1024::sign(data, &secret_key);
+        let signature = signed_msg.as_bytes().to_vec();
+
+        debug!("✅ Falcon1024 signature generated - {} bytes", signature.len());
+        Ok(signature)
+    }
+
+    /// Verify Falcon1024 signature
+    fn verify_falcon1024_signature(
+        data: &[u8],
+        signature: &[u8],
+        pubkey: &[u8],
+    ) -> Result<(), String> {
+        debug!("🔍 Falcon1024 signature verification");
+
+        let public_key = falcon1024::PublicKey::from_bytes(pubkey)
+            .map_err(|_| "Invalid Falcon1024 public key".to_string())?;
+
+        let signed_msg = falcon1024::SignedMessage::from_bytes(signature)
+            .map_err(|_| "Invalid Falcon1024 signature format".to_string())?;
+
+        let verified_msg = falcon1024::open(&signed_msg, &public_key)
+            .map_err(|_| "Falcon1024 signature verification failed".to_string())?;
+
+        // Verify the message content matches
+        if verified_msg != data {
+            return Err("Message content mismatch".into());
+        }
+
+        debug!("✅ Falcon1024 signature valid");
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::threshold_qrng::DeviceId;
+
+    #[test]
+    fn test_entropy_package_encoding() {
+        let package = EntropyPackage {
+            block_number: 100,
+            timestamp: 1234567890,
+            combined_entropy: vec![0x01, 0x02, 0x03],
+            device_shares: vec![
+                DeviceShare {
+                    device_id: DeviceId::from_str("test-device"),
+                    share: vec![0xAA, 0xBB],
+                    qber: 50,
+                    stark_proof: vec![0xCC; 32],
+                    timestamp: 1234567890,
+                }
+            ],
+            threshold_k: 2,
+            total_devices_m: 3,
+            leader_node_id: vec![0x01, 0x02],
+        };
+
+        let encoded = package.encode();
+        let decoded = EntropyPackage::decode(&mut &encoded[..]).unwrap();
+
+        assert_eq!(decoded.block_number, 100);
+        assert_eq!(decoded.combined_entropy, vec![0x01, 0x02, 0x03]);
+        assert_eq!(decoded.device_shares.len(), 1);
+    }
+
+    #[test]
+    fn test_nokia_mode_encryption() {
+        let package = EntropyPackage {
+            block_number: 100,
+            timestamp: 1234567890,
+            combined_entropy: vec![0x01, 0x02, 0x03],
+            device_shares: vec![],
+            threshold_k: 2,
+            total_devices_m: 3,
+            leader_node_id: vec![0x01],
+        };
+
+        // Generate real ML-KEM-1024 keypair for encryption
+        let (recipient_kem_pubkey, recipient_kem_privkey) = kyber1024::keypair();
+
+        // Generate real Falcon1024 keypair for signing
+        let (leader_falcon_pubkey, leader_falcon_privkey) = falcon1024::keypair();
+
+        let msg = nokia_mode::encrypt_entropy_for_validator(
+            &package,
+            recipient_kem_pubkey.as_bytes(),
+            leader_falcon_privkey.as_bytes(),
+            leader_falcon_pubkey.as_bytes(),
+        ).unwrap();
+
+        assert_eq!(msg.block_number, 100);
+        assert!(!msg.encrypted_package.is_empty());
+        assert!(!msg.encrypted_aes_key.is_empty());
+        assert!(msg.is_valid_size());
+
+        // Test decryption
+        let decrypted = nokia_mode::decrypt_entropy_package(
+            &msg,
+            recipient_kem_privkey.as_bytes(),
+            recipient_kem_pubkey.as_bytes(),
+        ).unwrap();
+
+        assert_eq!(decrypted.block_number, 100);
+        assert_eq!(decrypted.combined_entropy, vec![0x01, 0x02, 0x03]);
+    }
+}

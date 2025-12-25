@@ -1,0 +1,418 @@
+# QuantumHarmony Node Operator - Complete Network with Quantum Services
+#
+# This Docker Compose setup runs a complete 3-validator network with:
+# - 3 QuantumHarmony validator nodes (Alice, Bob, Charlie)
+# - Quantum RNG Kirk Hub (entropy aggregator)
+# - QKD Client (simulated mode for testing)
+# - Simulated QKD Server (mock quantum key distribution)
+# - Monitoring stack (Prometheus + Grafana)
+#
+# Usage:
+#   docker-compose -f docker-compose.quantum.yml up -d
+#
+# For production, replace simulated-qkd with real QKD hardware endpoints
+
+networks:
+  quantumnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  alice-data:
+  bob-data:
+  charlie-data:
+  qrng-data:
+  prometheus-data:
+  grafana-data:
+
+services:
+  # ===========================================================================
+  # QUANTUM KEY DISTRIBUTION (QKD) LAYER
+  # ===========================================================================
+
+  # Simulated QKD Server (for testing without hardware)
+  # In production, this would be replaced with Toshiba/IDQ/Basejump QKD devices
+  simulated-qkd:
+    image: python:3.11-slim
+    container_name: qh-simulated-qkd
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.10
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "
+      pip install --quiet flask &&
+      python -c '
+      from flask import Flask, jsonify, request;
+      import os;
+      import time;
+      app = Flask(__name__);
+
+      @app.route(\"/api/v1/keys/request\", methods=[\"POST\"]);
+      def request_key():
+          data = request.json or {};
+          size = data.get(\"size\", 256);
+          key = os.urandom(size).hex();
+          return jsonify({
+              \"key_id\": str(int(time.time())),
+              \"key\": key,
+              \"size\": size,
+              \"timestamp\": int(time.time())
+          });
+
+      @app.route(\"/api/v1/status\");
+      def status():
+          return jsonify({\"status\": \"ok\", \"device\": \"simulated\", \"keys_available\": 1000});
+
+      @app.route(\"/health\");
+      def health():
+          return jsonify({\"status\": \"ok\"});
+
+      print(\"🔐 Simulated QKD Server running on port 8000\");
+      app.run(host=\"0.0.0.0\", port=8000)
+      '
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Mock Crypto4A HSM (for testing)
+  # In production, replace with real Crypto4A HSM endpoint
+  crypto4a-mock:
+    image: python:3.11-slim
+    container_name: qh-crypto4a-mock
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.16
+    ports:
+      - "8106:8106"
+    command: >
+      sh -c "
+      pip install --quiet flask &&
+      python -c '
+      from flask import Flask, jsonify, request;
+      import os;
+      app = Flask(__name__);
+
+      @app.route(\"/v1/random\", methods=[\"POST\"]);
+      def random_bytes():
+          data = request.json or {};
+          size = data.get(\"size\", 32);
+          return jsonify({\"random\": os.urandom(size).hex()});
+
+      @app.route(\"/health\");
+      def health():
+          return jsonify({\"status\": \"ok\", \"hsm\": \"Crypto4A-Mock\"});
+
+      print(\"🔒 Mock Crypto4A HSM running on port 8106\");
+      app.run(host=\"0.0.0.0\", port=8106)
+      '
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8106/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ===========================================================================
+  # QUANTUMHARMONY BLOCKCHAIN NODES
+  # ===========================================================================
+
+  # Alice - Validator Node 1 (Bootnode)
+  alice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qh-alice
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.100
+    ports:
+      - "9944:9944"   # RPC (ws/http)
+      - "30333:30333" # P2P
+      - "9615:9615"   # Prometheus metrics
+    environment:
+      - RUST_LOG=info,sc_network=debug
+    volumes:
+      - alice-data:/data
+    command: [
+      "--base-path", "/data",
+      "--chain", "local",
+      "--alice",
+      "--validator",
+      "--offchain-worker=always",
+      "--rpc-port=9944",
+      "--port=30333",
+      "--name=Alice",
+      "--rpc-cors=all",
+      "--rpc-methods=Unsafe",
+      "--rpc-external",
+      "--unsafe-rpc-external",
+      "--prometheus-external",
+      "--prometheus-port=9615"
+    ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "Content-Type: application/json", "-d", "{\"id\":1, \"jsonrpc\":\"2.0\", \"method\": \"system_health\"}", "http://localhost:9944"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # Bob - Validator Node 2
+  bob:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qh-bob
+    depends_on:
+      alice:
+        condition: service_healthy
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.101
+    ports:
+      - "9945:9944"   # RPC
+      - "30334:30333" # P2P
+      - "9616:9615"   # Metrics
+    environment:
+      - RUST_LOG=info,sc_network=debug
+    volumes:
+      - bob-data:/data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for Alice to be ready..."
+        sleep 10
+
+        # Try to get Alice's peer ID via system_localPeerId RPC
+        ALICE_PEER_ID=$$(curl -s -H 'Content-Type: application/json' \
+          -d '{"id":1, "jsonrpc":"2.0", "method": "system_localPeerId"}' \
+          http://alice:9944 2>/dev/null | grep -oE '12D3Koo[A-Za-z0-9]{45}' || echo '')
+
+        if [ -z "$$ALICE_PEER_ID" ]; then
+          echo "⚠️  Could not get Alice's peer ID, using DNS discovery"
+          exec /usr/local/bin/quantumharmony-node \
+            --base-path /data \
+            --chain local \
+            --bob \
+            --validator \
+            --offchain-worker=always \
+            --rpc-port 9944 \
+            --port 30333 \
+            --name Bob \
+            --rpc-cors all \
+            --rpc-methods Unsafe \
+            --rpc-external \
+            --unsafe-rpc-external \
+            --prometheus-external \
+            --prometheus-port 9615 \
+            --bootnodes /dns/alice/tcp/30333
+        else
+          echo "✅ Alice Peer ID: $$ALICE_PEER_ID"
+          exec /usr/local/bin/quantumharmony-node \
+            --base-path /data \
+            --chain local \
+            --bob \
+            --validator \
+            --offchain-worker=always \
+            --rpc-port 9944 \
+            --port 30333 \
+            --name Bob \
+            --rpc-cors all \
+            --rpc-methods Unsafe \
+            --rpc-external \
+            --unsafe-rpc-external \
+            --prometheus-external \
+            --prometheus-port 9615 \
+            --bootnodes /ip4/172.25.0.100/tcp/30333/p2p/$$ALICE_PEER_ID
+        fi
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "Content-Type: application/json", "-d", "{\"id\":1, \"jsonrpc\":\"2.0\", \"method\": \"system_health\"}", "http://localhost:9944"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # Charlie - Validator Node 3
+  charlie:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qh-charlie
+    depends_on:
+      alice:
+        condition: service_healthy
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.102
+    ports:
+      - "9946:9944"   # RPC
+      - "30335:30333" # P2P
+      - "9617:9615"   # Metrics
+    environment:
+      - RUST_LOG=info,sc_network=debug
+    volumes:
+      - charlie-data:/data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for Alice to be ready..."
+        sleep 10
+
+        # Try to get Alice's peer ID via system_localPeerId RPC
+        ALICE_PEER_ID=$$(curl -s -H 'Content-Type: application/json' \
+          -d '{"id":1, "jsonrpc":"2.0", "method": "system_localPeerId"}' \
+          http://alice:9944 2>/dev/null | grep -oE '12D3Koo[A-Za-z0-9]{45}' || echo '')
+
+        if [ -z "$$ALICE_PEER_ID" ]; then
+          echo "⚠️  Could not get Alice's peer ID, using DNS discovery"
+          exec /usr/local/bin/quantumharmony-node \
+            --base-path /data \
+            --chain local \
+            --charlie \
+            --validator \
+            --offchain-worker=always \
+            --rpc-port 9944 \
+            --port 30333 \
+            --name Charlie \
+            --rpc-cors all \
+            --rpc-methods Unsafe \
+            --rpc-external \
+            --unsafe-rpc-external \
+            --prometheus-external \
+            --prometheus-port 9615 \
+            --bootnodes /dns/alice/tcp/30333
+        else
+          echo "✅ Alice Peer ID: $$ALICE_PEER_ID"
+          exec /usr/local/bin/quantumharmony-node \
+            --base-path /data \
+            --chain local \
+            --charlie \
+            --validator \
+            --offchain-worker=always \
+            --rpc-port 9944 \
+            --port 30333 \
+            --name Charlie \
+            --rpc-cors all \
+            --rpc-methods Unsafe \
+            --rpc-external \
+            --unsafe-rpc-external \
+            --prometheus-external \
+            --prometheus-port 9615 \
+            --bootnodes /ip4/172.25.0.100/tcp/30333/p2p/$$ALICE_PEER_ID
+        fi
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "Content-Type: application/json", "-d", "{\"id\":1, \"jsonrpc\":\"2.0\", \"method\": \"system_health\"}", "http://localhost:9944"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ===========================================================================
+  # QUANTUM RNG LAYER
+  # ===========================================================================
+
+  # Quantum RNG Kirk Hub - Entropy Aggregation Service
+  # NOTE: This service needs to be built from ../quantum-rng-kirk-hub
+  # Uncomment after building the quantum-rng-kirk-hub Docker image
+  #
+  # quantum-rng-hub:
+  #   build:
+  #     context: ../quantum-rng-kirk-hub
+  #     dockerfile: Dockerfile
+  #   container_name: qh-rng-kirk-hub
+  #   depends_on:
+  #     alice:
+  #       condition: service_healthy
+  #     crypto4a-mock:
+  #       condition: service_healthy
+  #   networks:
+  #     quantumnet:
+  #       ipv4_address: 172.25.0.15
+  #   ports:
+  #     - "8001:8001"  # Kirk Hub API
+  #     - "9091:9090"  # Metrics
+  #   environment:
+  #     - RUST_LOG=info
+  #     - QUANTUM_HARMONY_RPC=http://alice:9944
+  #     - PUSH_INTERVAL_SECS=30
+  #     - ENTROPY_BYTES_PER_PUSH=32
+  #     - CRYPTO4A_ENDPOINT=http://crypto4a-mock:8106/v1/random
+  #   volumes:
+  #     - qrng-data:/data
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+  #     interval: 20s
+  #     timeout: 5s
+  #     retries: 3
+  #   restart: unless-stopped
+
+  # ===========================================================================
+  # MONITORING & OBSERVABILITY
+  # ===========================================================================
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: qh-prometheus
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.200
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped
+
+  # Grafana - Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: qh-grafana
+    depends_on:
+      - prometheus
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.201
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+
+  # Polkadot.js Apps UI
+  frontend:
+    image: jacogr/polkadot-js-apps:latest
+    container_name: qh-frontend
+    environment:
+      - WS_URL=ws://alice:9944
+    ports:
+      - "3001:80"
+    networks:
+      quantumnet:
+        ipv4_address: 172.25.0.202
+    depends_on:
+      alice:
+        condition: service_healthy
+    restart: unless-stopped
