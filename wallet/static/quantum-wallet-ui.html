@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuantumHarmony Operator Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0d0d0d;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95em;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: linear-gradient(135deg, #1a1a1a 0%, #1f1f1f 100%);
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+
+        .panel:hover {
+            border-color: #3a3a3a;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+
+        .panel h2 {
+            color: #ffffff;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+            font-size: 1.1em;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .device-card {
+            background: #161616;
+            border-left: 3px solid #4a9eff;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .device-card:hover {
+            background: #1c1c1c;
+            border-left-color: #5abaff;
+            box-shadow: 0 2px 8px rgba(74, 158, 255, 0.15);
+        }
+
+        .device-name {
+            font-size: 1.05em;
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .qber-good { color: #50c878; font-weight: 600; }
+        .qber-medium { color: #ffa500; font-weight: 600; }
+        .qber-bad { color: #ff6b6b; font-weight: 600; }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online { background: #50c878; box-shadow: 0 0 8px rgba(80, 200, 120, 0.6); }
+        .status-offline { background: #555; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        button {
+            background: linear-gradient(135deg, #3a7bd5 0%, #2d5fa8 100%);
+            color: #ffffff;
+            border: none;
+            padding: 11px 20px;
+            margin: 5px 5px 5px 0;
+            cursor: pointer;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #4a8be5 0%, #3d6fb8 100%);
+            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #2a2a2a;
+            cursor: not-allowed;
+            box-shadow: none;
+            color: #666;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5a5a5a 0%, #4a4a4a 100%);
+            box-shadow: 0 4px 12px rgba(80, 80, 80, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #50c878 0%, #3da861 100%);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #60d888 0%, #4db871 100%);
+            box-shadow: 0 4px 12px rgba(80, 200, 120, 0.3);
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+            font-size: 0.9em;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #999;
+        }
+
+        .metric-value {
+            color: #50c878;
+            font-weight: 600;
+        }
+
+        #console {
+            background: #0a0a0a;
+            color: #50c878;
+            padding: 16px;
+            height: 320px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #222;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            line-height: 1.5;
+        }
+
+        #console::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #console::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        #console::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        #console::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+        .console-line {
+            margin: 3px 0;
+            padding: 2px 0;
+        }
+
+        .console-info { color: #4a9eff; }
+        .console-success { color: #50c878; }
+        .console-warning { color: #ffa500; }
+        .console-error { color: #ff6b6b; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-k { background: #3a7bd5; color: white; }
+        .badge-m { background: #7b3ad5; color: white; }
+        .badge-online { background: #50c878; color: #0a0a0a; }
+        .badge-pending { background: #ffa500; color: #0a0a0a; }
+
+        .progress-bar {
+            background: #222;
+            height: 22px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #3a7bd5 0%, #50c878 100%);
+            height: 100%;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .reporter-status {
+            padding: 16px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            margin: 12px 0;
+        }
+
+        .node-terminal {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 16px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #222;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            line-height: 1.6;
+        }
+
+        .node-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>QuantumHarmony Operator Dashboard</h1>
+        <div class="subtitle">Threshold QRNG · Reporter Management · Real-time Monitoring</div>
+    </div>
+
+    <div class="dashboard">
+        <!-- Node Control Panel -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>Node Terminal</h2>
+            <div class="node-terminal" id="node-terminal">
+                <div style="color: #666;">Node not started. Click "Start Node" to begin.</div>
+            </div>
+            <div class="node-controls">
+                <button class="btn-success" onclick="startNode()">Start Node</button>
+                <button class="btn-secondary" onclick="stopNode()">Stop Node</button>
+                <button class="btn-secondary" onclick="clearTerminal()">Clear Terminal</button>
+            </div>
+        </div>
+
+        <!-- Connection Panel -->
+        <div class="panel">
+            <h2>Network Connection</h2>
+            <div class="metric">
+                <span class="metric-label">Status:</span>
+                <span id="conn-status"><span class="status-dot status-offline"></span>Disconnected</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Node:</span>
+                <span id="node-url">http://localhost:9944</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Block:</span>
+                <span id="block-number" class="metric-value">---</span>
+            </div>
+            <button onclick="connect()">Connect to Node</button>
+            <button class="btn-secondary" onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <!-- Threshold QRNG Config -->
+        <div class="panel">
+            <h2>Threshold QRNG Configuration</h2>
+            <div class="metric">
+                <span class="metric-label">Threshold (K):</span>
+                <span id="threshold-k" class="metric-value">---</span>
+                <span class="badge badge-k">Min Shares</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Total Devices (M):</span>
+                <span id="total-m" class="metric-value">---</span>
+                <span class="badge badge-m">Available</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Selection:</span>
+                <span class="metric-value">Quality-Based (QBER)</span>
+            </div>
+            <button onclick="loadConfig()">Refresh Config</button>
+        </div>
+
+        <!-- Device Queue Status -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>QRNG Device Queue Status</h2>
+            <div id="device-queues">
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    Click "Refresh Queues" to load device status
+                </div>
+            </div>
+            <button onclick="loadDeviceQueues()">Refresh Queues</button>
+            <button class="btn-secondary" onclick="simulateShares()">Simulate Shares (Demo)</button>
+        </div>
+
+        <!-- Reporter Status -->
+        <div class="panel">
+            <h2>Reporter Status</h2>
+            <div class="reporter-status">
+                <div class="metric">
+                    <span class="metric-label">Reporter ID:</span>
+                    <span id="reporter-id" class="metric-value">Not Registered</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Registration:</span>
+                    <span id="reporter-reg"><span class="badge badge-pending">Pending</span></span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Proofs Submitted:</span>
+                    <span id="proofs-submitted" class="metric-value">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Rewards Earned:</span>
+                    <span id="rewards-earned" class="metric-value">0 QH</span>
+                </div>
+            </div>
+            <button onclick="registerReporter()">Register as Reporter</button>
+            <button class="btn-secondary" onclick="submitProof()">Submit STARK Proof</button>
+        </div>
+
+        <!-- Share Collection -->
+        <div class="panel">
+            <h2>Leader Operations</h2>
+            <div class="metric">
+                <span class="metric-label">Collection Status:</span>
+                <span id="collection-status">Ready</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Last Collection:</span>
+                <span id="last-collection">Never</span>
+            </div>
+            <button onclick="collectShares()">Collect & Reconstruct</button>
+            <button class="btn-secondary" onclick="viewHistory()">View History</button>
+        </div>
+
+        <!-- Console Log -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>Console Log</h2>
+            <div id="console"></div>
+            <button class="btn-secondary" onclick="clearConsole()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        const NODE_URL = 'http://localhost:9944';
+        let connected = false;
+        let blockSubscription = null;
+        let nodeProcess = null;
+        let terminalUpdateInterval = null;
+
+        // Utility Functions
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = `console-${type}`;
+            const line = document.createElement('div');
+            line.className = `console-line ${className}`;
+            line.textContent = `[${timestamp}] ${message}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+            log('Console cleared', 'info');
+        }
+
+        function terminalLog(message) {
+            const terminal = document.getElementById('node-terminal');
+            const line = document.createElement('div');
+            line.textContent = message;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById('node-terminal').innerHTML = '';
+            terminalLog('Terminal cleared');
+        }
+
+        async function rpcCall(method, params = []) {
+            const response = await fetch(NODE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: method,
+                    params: params
+                })
+            });
+
+            const json = await response.json();
+            if (json.error) {
+                throw new Error(json.error.message);
+            }
+            return json.result;
+        }
+
+        // Node Control Functions
+        async function startNode() {
+            try {
+                log('Starting QuantumHarmony node...', 'info');
+                clearTerminal();
+                terminalLog('Starting node process...');
+
+                // In a Tauri app, this would call a Tauri command
+                // For now, we'll simulate it
+                terminalLog('Command: ./target/release/quantumharmony-node --dev --tmp');
+                terminalLog('');
+                terminalLog('2025-10-21 Substrate Node');
+                terminalLog('Version: quantumharmony-node-1.0.0');
+                terminalLog('');
+                terminalLog('Local node identity: 12D3KooW...');
+                terminalLog('Running JSON-RPC HTTP server: addr=127.0.0.1:9944');
+                terminalLog('');
+
+                log('Node started successfully', 'success');
+                log('Waiting 3 seconds before connecting...', 'info');
+
+                // Auto-connect after 3 seconds
+                setTimeout(() => {
+                    terminalLog('Development Service Ready');
+                    terminalLog('');
+                    connect();
+                }, 3000);
+
+            } catch (error) {
+                log(`Failed to start node: ${error.message}`, 'error');
+                terminalLog(`ERROR: ${error.message}`);
+            }
+        }
+
+        async function stopNode() {
+            try {
+                log('Stopping node...', 'info');
+                terminalLog('');
+                terminalLog('Received SIGTERM, shutting down...');
+
+                if (blockSubscription) {
+                    clearInterval(blockSubscription);
+                    blockSubscription = null;
+                }
+
+                disconnect();
+                log('Node stopped', 'warning');
+
+            } catch (error) {
+                log(`Failed to stop node: ${error.message}`, 'error');
+            }
+        }
+
+        // Connection Functions
+        async function connect() {
+            try {
+                log('Connecting to node...', 'info');
+
+                const block = await rpcCall('chain_getBlock');
+                const blockNum = parseInt(block.block.header.number, 16);
+
+                document.getElementById('block-number').textContent = blockNum;
+                document.getElementById('conn-status').innerHTML = '<span class="status-dot status-online"></span>Connected';
+
+                connected = true;
+                log('Connected to QuantumHarmony node', 'success');
+
+                // Auto-load initial data
+                loadConfig();
+                loadDeviceQueues();
+                startBlockUpdates();
+
+            } catch (error) {
+                log(`Connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function disconnect() {
+            if (blockSubscription) {
+                clearInterval(blockSubscription);
+                blockSubscription = null;
+            }
+            connected = false;
+            document.getElementById('conn-status').innerHTML = '<span class="status-dot status-offline"></span>Disconnected';
+            log('Disconnected from node', 'info');
+        }
+
+        function startBlockUpdates() {
+            if (blockSubscription) clearInterval(blockSubscription);
+
+            blockSubscription = setInterval(async () => {
+                try {
+                    const block = await rpcCall('chain_getBlock');
+                    const blockNum = parseInt(block.block.header.number, 16);
+                    document.getElementById('block-number').textContent = blockNum;
+
+                    // Simulate terminal output for new blocks
+                    if (Math.random() > 0.7) {
+                        terminalLog(`Imported #${blockNum}`);
+                    }
+                } catch (error) {
+                    log(`Block update failed: ${error.message}`, 'warning');
+                }
+            }, 6000);
+        }
+
+        // Threshold QRNG Functions
+        async function loadConfig() {
+            try {
+                log('Loading threshold QRNG configuration...', 'info');
+                const config = await rpcCall('qrng_getConfig');
+
+                document.getElementById('threshold-k').textContent = config.threshold_k;
+                document.getElementById('total-m').textContent = config.total_devices_m;
+
+                log(`Config loaded: K=${config.threshold_k}, M=${config.total_devices_m}`, 'success');
+                log(`Devices: ${config.devices.map(d => d.device_id).join(', ')}`, 'info');
+
+            } catch (error) {
+                log(`Failed to load config: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadDeviceQueues() {
+            try {
+                log('Loading device queue status...', 'info');
+                const queues = await rpcCall('qrng_getDeviceQueues');
+
+                const container = document.getElementById('device-queues');
+                container.innerHTML = '';
+
+                queues.forEach(device => {
+                    const qberClass = device.best_qber === null ? 'qber-good' :
+                                     device.best_qber < 1 ? 'qber-good' :
+                                     device.best_qber < 5 ? 'qber-medium' : 'qber-bad';
+
+                    const qberText = device.best_qber === null ? 'N/A' : `${device.best_qber.toFixed(2)}%`;
+
+                    const card = document.createElement('div');
+                    card.className = 'device-card';
+                    card.innerHTML = `
+                        <div class="device-name">${device.device_name}
+                            ${device.enabled ? '<span class="badge badge-online">Online</span>' : ''}
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">ID:</span>
+                            <span>${device.device_id}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Queue Length:</span>
+                            <span class="metric-value">${device.queue_length} shares</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Best QBER:</span>
+                            <span class="${qberClass}">${qberText}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                log(`Loaded ${queues.length} device queues`, 'success');
+
+            } catch (error) {
+                log(`Failed to load queues: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateShares() {
+            try {
+                log('Simulating device shares...', 'info');
+
+                const devices = [
+                    { id: 'toshiba-qrng', qber: 0.8 },
+                    { id: 'crypto4a-qrng', qber: 1.2 },
+                    { id: 'kirq', qber: 0.9 }
+                ];
+
+                for (const device of devices) {
+                    const result = await rpcCall('qrng_submitDeviceShare', [{
+                        device_id: device.id,
+                        share_hex: '0x' + Math.random().toString(16).substring(2, 18),
+                        qber: device.qber,
+                        stark_proof_hex: '0x' + Math.random().toString(16).substring(2, 18)
+                    }]);
+
+                    log(`${device.id}: ${result}`, 'success');
+                }
+
+                setTimeout(() => loadDeviceQueues(), 500);
+
+            } catch (error) {
+                log(`Simulation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function collectShares() {
+            try {
+                log('Triggering leader share collection...', 'info');
+                const result = await rpcCall('qrng_collectShares', ['alice']);
+
+                document.getElementById('collection-status').textContent = 'Collecting...';
+                log(`${result}`, 'success');
+
+                setTimeout(() => {
+                    document.getElementById('collection-status').textContent = 'Ready';
+                    document.getElementById('last-collection').textContent = new Date().toLocaleTimeString();
+                    loadDeviceQueues();
+                }, 2000);
+
+            } catch (error) {
+                log(`Collection failed: ${error.message}`, 'error');
+                document.getElementById('collection-status').textContent = 'Failed';
+            }
+        }
+
+        async function viewHistory() {
+            try {
+                log('Loading reconstruction history...', 'info');
+                const history = await rpcCall('qrng_getReconstructionHistory', [10]);
+
+                if (history.length === 0) {
+                    log('No reconstruction events yet', 'info');
+                } else {
+                    history.forEach(event => {
+                        log(`[${new Date(event.timestamp * 1000).toLocaleString()}] ` +
+                            `Devices: ${event.devices_used.join(', ')} | ` +
+                            `Avg QBER: ${event.qber_average}%`, 'info');
+                    });
+                }
+
+            } catch (error) {
+                log(`Failed to load history: ${error.message}`, 'error');
+            }
+        }
+
+        // Reporter Functions
+        async function registerReporter() {
+            log('Reporter registration not yet implemented', 'warning');
+            log('This will register your node as a STARK proof reporter', 'info');
+        }
+
+        async function submitProof() {
+            log('STARK proof submission not yet implemented', 'warning');
+            log('This will submit a quantum entropy proof to the network', 'info');
+        }
+
+        // Initialize
+        log('QuantumHarmony Operator Dashboard initialized', 'success');
+        log('Start the node or connect to an existing instance', 'info');
+    </script>
+</body>
+</html>

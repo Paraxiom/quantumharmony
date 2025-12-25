@@ -1,0 +1,28 @@
+{
+  "name": "quantumharmony-polkadot-js-tests",
+  "version": "1.0.0",
+  "description": "Polkadot.js test suite for QuantumHarmony node",
+  "main": "polkadot-js-test-suite.js",
+  "scripts": {
+    "test": "node polkadot-js-test-suite.js",
+    "test:watch": "nodemon polkadot-js-test-suite.js"
+  },
+  "keywords": [
+    "polkadot",
+    "substrate",
+    "quantumharmony",
+    "blockchain",
+    "post-quantum"
+  ],
+  "author": "Paraxiom",
+  "license": "MIT",
+  "dependencies": {
+    "@polkadot/api": "^10.11.2",
+    "@polkadot/keyring": "^12.6.2",
+    "@polkadot/util": "^12.6.2",
+    "@polkadot/util-crypto": "^12.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

@@ -1,0 +1,155 @@
+[package]
+name = "quantumharmony-node"
+version = "0.1.0"
+license = "Unlicense"
+build = "build.rs"
+description = "A fresh FRAME-based Substrate node."
+publish = false
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+async-trait = { workspace = true }
+clap = { workspace = true }
+futures = { workspace = true }
+hex-literal = { workspace = true }
+hex = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server", "macros"] }
+jsonrpsee-types = { workspace = true }	
+jsonrpsee-core = { workspace = true }
+log = { workspace = true }
+scale-codec = { workspace = true }
+serde_json = { workspace = true, features = ["arbitrary_precision"] }
+jsonrpc-core = "18.0.0" # check for the latest or required version
+jsonrpc-derive = "18.0.0"
+serde = { version = "1.0", features = ["derive"] }
+sp-io = { workspace = true }
+jsonrpc-core-client = "18.0.0" 
+dashmap = "4.0"
+
+
+# Substrate
+prometheus-endpoint = { workspace = true }
+sc-basic-authorship = { workspace = true }
+sc-chain-spec = { workspace = true }
+sc-cli = { workspace = true }
+sc-client-api = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-aura = { workspace = true }
+sc-consensus-grandpa = { workspace = true }
+sc-consensus-manual-seal = { workspace = true }
+sc-executor = { workspace = true }
+sc-network = { workspace = true }
+sc-network-sync = { workspace = true }
+sc-offchain = { workspace = true }
+sc-rpc = { workspace = true }
+sc-rpc-api = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sp-api = { workspace = true, features = ["default"] }
+sp-block-builder = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-consensus-aura = { workspace = true, features = ["default"] }
+sp-consensus-grandpa = { workspace = true, features = ["default"] }
+sp-core = { workspace = true, features = ["default"] }
+sp-inherents = { workspace = true, features = ["default"] }
+sp-offchain = { workspace = true, features = ["default"] }
+sp-runtime = { workspace = true, features = ["default"] }
+sp-session = { workspace = true, features = ["default"] }
+sp-timestamp = { workspace = true, features = ["default"] }
+sp-transaction-pool = { workspace = true, features = ["default"] }
+# These dependencies are used for RPC
+frame-system-rpc-runtime-api = { workspace = true }
+pallet-transaction-payment-rpc = { workspace = true }
+pallet-transaction-payment-rpc-runtime-api = { workspace = true }
+substrate-frame-rpc-system = { workspace = true }
+# These dependencies are used for runtime benchmarking
+frame-benchmarking = { workspace = true, optional = true }
+frame-benchmarking-cli = { workspace = true, optional = true }
+frame-system = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-im-online = { workspace = true }
+
+# Frontier
+fc-api = { workspace = true }
+fc-cli = { workspace = true }
+fc-consensus = { workspace = true }
+fc-db = { workspace = true }
+fc-mapping-sync = { workspace = true }
+fc-rpc = { workspace = true }
+fc-rpc-core = { workspace = true }
+fc-storage = { workspace = true }
+fp-account = { workspace = true }
+fp-dynamic-fee = { workspace = true, features = ["default"] }
+fp-evm = { workspace = true, features = ["default"] }
+fp-rpc = { workspace = true, features = ["default"] }
+quantumharmony-runtime = { workspace = true, features = ["std"] }
+
+
+
+jsonrpsee-ws-server = { workspace = true }
+
+tokio = { workspace = true }
+priority-queue = { workspace = true }
+
+tracing = { workspace = true }
+tracing-futures = { workspace = true }
+anyhow = { workspace = true }
+futures-util = { workspace = true }
+assert_matches = { workspace = true }  
+
+hyper = { workspace = true }
+tower-http = { workspace = true }
+tower = { workspace = true }
+lazy_static = { workspace = true }
+env_logger = { workspace = true }
+
+
+[dependencies.tracing-subscriber]
+version = "0.3.18"
+features = ["env-filter"]
+jsonrpsee-http-server = { workspace = true }
+jsonrpsee-ws-server = { workspace = true }    
+lazy_static = { workspace = true }
+
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
+
+[features]
+default = [
+	"rocksdb",
+	"sql",
+	"txpool",
+	"rpc-binary-search-estimate",
+]
+rocksdb = [
+	"sc-cli/rocksdb",
+	"sc-service/rocksdb",
+	"fc-cli/rocksdb",
+	"fc-db/rocksdb",
+	"fc-mapping-sync/rocksdb",
+	"fc-rpc/rocksdb",
+	"quantumharmony-runtime/with-rocksdb-weights",
+]
+paritydb = [
+	"quantumharmony-runtime/with-paritydb-weights",
+]
+sql = [
+	"fc-db/sql",
+	"fc-mapping-sync/sql",
+]
+txpool = ["fc-rpc/txpool"]
+rpc-binary-search-estimate = ["fc-rpc/rpc-binary-search-estimate"]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"quantumharmony-runtime/runtime-benchmarks",
+]

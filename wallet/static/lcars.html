@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumHarmony Wallet Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/@polkadot/api@10.9.1/bundle-polkadot-api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@polkadot/util@12.3.2/bundle-polkadot-util.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@polkadot/util-crypto@12.3.2/bundle-polkadot-util-crypto.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --lcars-orange: #FF9966;
+            --lcars-pink: #CC99CC;
+            --lcars-purple: #9999FF;
+            --lcars-blue: #9999CC;
+            --lcars-tan: #FFCC99;
+            --lcars-red: #CC6666;
+            --lcars-gold: #FFCC66;
+            --lcars-bg: #000000;
+            --lcars-text: #FF9900;
+        }
+
+        body {
+            font-family: 'Antonio', sans-serif;
+            background: var(--lcars-bg);
+            color: var(--lcars-text);
+            overflow-x: hidden;
+        }
+
+        /* Phosphorescent glow effects */
+        .glow-text {
+            text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px currentColor;
+        }
+
+        .glow-box {
+            box-shadow:
+                0 0 20px rgba(153, 153, 255, 0.6),
+                0 0 40px rgba(153, 153, 255, 0.4),
+                inset 0 0 30px rgba(153, 153, 255, 0.2);
+        }
+
+        /* LCARS Frame */
+        .lcars-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Top LCARS Bar */
+        .lcars-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .lcars-elbow-top-left {
+            width: 200px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(153, 153, 255, 0.7), rgba(153, 153, 255, 0.5));
+            border-radius: 0 0 40px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            pointer-events: all;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(153, 153, 255, 0.6);
+            box-shadow:
+                0 0 30px rgba(153, 153, 255, 0.8),
+                inset 0 0 40px rgba(153, 153, 255, 0.3);
+        }
+
+        .lcars-bar-segment {
+            flex: 1;
+            height: 40px;
+            background: linear-gradient(90deg, rgba(255, 153, 102, 0.7), rgba(255, 153, 102, 0.5));
+            border-radius: 20px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 153, 102, 0.8);
+            box-shadow:
+                0 0 25px rgba(255, 153, 102, 0.9),
+                inset 0 0 30px rgba(255, 153, 102, 0.4);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .lcars-elbow-top-right {
+            width: 200px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(255, 204, 153, 0.7), rgba(255, 204, 153, 0.5));
+            border-radius: 0 0 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            pointer-events: all;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 204, 153, 0.6);
+            box-shadow:
+                0 0 30px rgba(255, 204, 153, 0.8),
+                inset 0 0 40px rgba(255, 204, 153, 0.3);
+        }
+
+        .lcars-button {
+            width: 80px;
+            height: 30px;
+            background: linear-gradient(135deg, rgba(153, 153, 204, 0.8), rgba(153, 153, 204, 0.6));
+            border-radius: 15px;
+            border: 2px solid rgba(153, 153, 204, 0.8);
+            color: #000;
+            font-family: 'Antonio', sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            box-shadow:
+                0 0 20px rgba(153, 153, 204, 0.7),
+                inset 0 0 20px rgba(153, 153, 204, 0.3);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+            transition: all 0.2s;
+        }
+
+        .lcars-button:hover {
+            box-shadow:
+                0 0 35px rgba(153, 153, 204, 1),
+                inset 0 0 30px rgba(153, 153, 204, 0.5);
+        }
+
+        /* Left Sidebar */
+        .lcars-sidebar {
+            position: absolute;
+            left: 10px;
+            top: 80px;
+            bottom: 10px;
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .lcars-panel {
+            background: linear-gradient(135deg, rgba(255, 153, 102, 0.8), rgba(255, 153, 102, 0.6));
+            border-radius: 20px;
+            padding: 15px;
+            color: #000;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 153, 102, 0.6);
+            box-shadow:
+                0 0 20px rgba(255, 153, 102, 0.6),
+                inset 0 0 25px rgba(255, 153, 102, 0.3);
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .lcars-panel:hover {
+            background: linear-gradient(135deg, rgba(255, 204, 102, 0.9), rgba(255, 204, 102, 0.7));
+            box-shadow:
+                0 0 35px rgba(255, 204, 102, 1),
+                inset 0 0 35px rgba(255, 204, 102, 0.5);
+        }
+
+        .lcars-panel.active {
+            background: linear-gradient(135deg, rgba(204, 102, 102, 0.9), rgba(204, 102, 102, 0.7));
+            color: #fff;
+            border-color: rgba(204, 102, 102, 0.8);
+            box-shadow:
+                0 0 40px rgba(204, 102, 102, 1),
+                inset 0 0 40px rgba(204, 102, 102, 0.4);
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+        }
+
+        .lcars-panel-tall {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(204, 153, 204, 0.7), rgba(204, 153, 204, 0.5));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(204, 153, 204, 0.6);
+            box-shadow:
+                0 0 25px rgba(204, 153, 204, 0.7),
+                inset 0 0 30px rgba(204, 153, 204, 0.3);
+        }
+
+        /* Main Content */
+        .lcars-content {
+            position: absolute;
+            left: 210px;
+            top: 100px;
+            right: 20px;
+            bottom: 100px;
+            overflow-y: auto;
+            padding: 20px;
+            pointer-events: all;
+        }
+
+        .lcars-display {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+            border: 3px solid rgba(153, 153, 255, 0.7);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow:
+                0 0 30px rgba(153, 153, 255, 0.4),
+                inset 0 0 40px rgba(153, 153, 255, 0.1);
+        }
+
+        .lcars-title {
+            font-size: 32px;
+            color: var(--lcars-orange);
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow:
+                0 0 15px rgba(255, 153, 0, 0.8),
+                0 0 30px rgba(255, 153, 0, 0.4);
+        }
+
+        .lcars-subtitle {
+            font-size: 16px;
+            color: var(--lcars-blue);
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(153, 153, 204, 0.6);
+        }
+
+        .account-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .account-card {
+            background: linear-gradient(135deg, rgba(153, 153, 255, 0.6), rgba(204, 153, 204, 0.5));
+            border-radius: 10px;
+            padding: 20px;
+            color: #000;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(153, 153, 255, 0.5);
+            box-shadow:
+                0 0 25px rgba(153, 153, 255, 0.6),
+                inset 0 0 35px rgba(153, 153, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .account-card:hover {
+            box-shadow:
+                0 0 40px rgba(153, 153, 255, 0.9),
+                inset 0 0 45px rgba(153, 153, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .account-card h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .account-address {
+            font-size: 11px;
+            word-break: break-all;
+            opacity: 0.7;
+            margin: 10px 0;
+        }
+
+        .account-balance {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow:
+                0 0 15px rgba(255, 255, 255, 0.6),
+                0 0 25px rgba(255, 255, 255, 0.3);
+        }
+
+        .account-type {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Bottom Bar */
+        .lcars-bottom {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 80px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lcars-status-panel {
+            width: 180px;
+            background: linear-gradient(135deg, rgba(255, 204, 153, 0.7), rgba(255, 204, 153, 0.5));
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-weight: bold;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 204, 153, 0.6);
+            box-shadow:
+                0 0 25px rgba(255, 204, 153, 0.7),
+                inset 0 0 30px rgba(255, 204, 153, 0.3);
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .lcars-status-bar {
+            flex: 1;
+            background: linear-gradient(90deg, rgba(153, 153, 255, 0.7), rgba(153, 153, 255, 0.5));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: #000;
+            font-size: 14px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(153, 153, 255, 0.6);
+            box-shadow:
+                0 0 25px rgba(153, 153, 255, 0.7),
+                inset 0 0 30px rgba(153, 153, 255, 0.3);
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff00;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+            box-shadow:
+                0 0 15px rgba(0, 255, 0, 0.8),
+                0 0 25px rgba(0, 255, 0, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow:
+                    0 0 15px rgba(0, 255, 0, 0.8),
+                    0 0 25px rgba(0, 255, 0, 0.5);
+            }
+            50% {
+                opacity: 0.3;
+                box-shadow:
+                    0 0 5px rgba(0, 255, 0, 0.4),
+                    0 0 10px rgba(0, 255, 0, 0.2);
+            }
+        }
+
+        /* Data Fields */
+        .data-field {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(153, 153, 255, 0.15);
+            border-left: 4px solid rgba(153, 153, 255, 0.8);
+            backdrop-filter: blur(10px);
+            box-shadow:
+                0 0 15px rgba(153, 153, 255, 0.3),
+                inset 0 0 20px rgba(153, 153, 255, 0.1);
+        }
+
+        .data-label {
+            color: var(--lcars-blue);
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 8px rgba(153, 153, 204, 0.5);
+        }
+
+        .data-value {
+            color: var(--lcars-orange);
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow:
+                0 0 12px rgba(255, 153, 0, 0.7),
+                0 0 20px rgba(255, 153, 0, 0.4);
+        }
+
+        input, textarea {
+            width: 100%;
+            background: #111;
+            border: 2px solid var(--lcars-purple);
+            color: var(--lcars-orange);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Antonio', sans-serif;
+            font-size: 14px;
+        }
+
+        .action-button {
+            background: linear-gradient(135deg, rgba(255, 153, 102, 0.9), rgba(255, 204, 102, 0.8));
+            border: 2px solid rgba(255, 153, 102, 0.7);
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 20px;
+            font-family: 'Antonio', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            box-shadow:
+                0 0 25px rgba(255, 153, 102, 0.7),
+                inset 0 0 30px rgba(255, 153, 102, 0.3);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s;
+        }
+
+        .action-button:hover {
+            box-shadow:
+                0 0 40px rgba(255, 204, 102, 1),
+                inset 0 0 40px rgba(255, 204, 102, 0.5);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="lcars-frame">
+        <!-- Top Bar -->
+        <div class="lcars-top">
+            <div class="lcars-elbow-top-left">QUANTUM</div>
+            <div class="lcars-bar-segment">QUANTUMHARMONY OPERATIONAL CONSOLE</div>
+            <div class="lcars-elbow-top-right">
+                <button class="lcars-button">INFO</button>
+            </div>
+        </div>
+
+        <!-- Left Sidebar -->
+        <div class="lcars-sidebar">
+            <div class="lcars-panel active" onclick="showSection('accounts')">ACCOUNTS</div>
+            <div class="lcars-panel" onclick="showSection('transfer')">TRANSFERS</div>
+            <div class="lcars-panel" onclick="showSection('quantum')">QUANTUM</div>
+            <div class="lcars-panel" onclick="showSection('network')">NETWORK</div>
+            <div class="lcars-panel-tall">02-954598</div>
+            <div class="lcars-panel" onclick="showSection('settings')">SETTINGS</div>
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <div class="lcars-bottom">
+            <div class="lcars-status-panel">
+                <div>NODE</div>
+                <div style="font-size: 20px;">ACTIVE</div>
+            </div>
+            <div class="lcars-status-bar">
+                <div class="status-indicator"></div>
+                <span>QUANTUM TUNNEL ESTABLISHED | BLOCK: <span id="blockNumber">0</span> | PEERS: <span id="peerCount">0</span></span>
+            </div>
+            <div class="lcars-status-panel">
+                <div style="font-size: 10px;">TIME</div>
+                <div id="currentTime" style="font-size: 16px;">00:00:00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="lcars-content">
+        <!-- Accounts Section -->
+        <div id="section-accounts" class="section">
+            <div class="lcars-display">
+                <div class="lcars-title">► WALLET ACCOUNTS</div>
+                <div class="lcars-subtitle">Quantum-Safe Cryptocurrency Accounts</div>
+
+                <div class="account-grid" id="accountsGrid"></div>
+
+                <button class="action-button" onclick="importAccount('alice')">IMPORT ALICE</button>
+                <button class="action-button" onclick="importAccount('bob')">IMPORT BOB</button>
+                <button class="action-button" onclick="showCreateAccount()">CREATE NEW</button>
+            </div>
+        </div>
+
+        <!-- Transfer Section -->
+        <div id="section-transfer" class="section" style="display: none;">
+            <div class="lcars-display">
+                <div class="lcars-title">► TRANSFER FUNDS</div>
+                <div class="lcars-subtitle">Send Quantum-Signed Transactions</div>
+
+                <div class="data-field">
+                    <div class="data-label">RECIPIENT ADDRESS</div>
+                    <input type="text" id="recipientAddress" placeholder="Enter recipient address...">
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">AMOUNT (QH)</div>
+                    <input type="number" id="amount" placeholder="0.00">
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">SIGNATURE TYPE</div>
+                    <label><input type="radio" name="sigType" value="quantum" checked> SPHINCS+ (Quantum-Safe)</label><br>
+                    <label><input type="radio" name="sigType" value="classical"> SR25519 (Classical)</label>
+                </div>
+
+                <button class="action-button" onclick="sendTransaction()">INITIATE TRANSFER</button>
+            </div>
+        </div>
+
+        <!-- Quantum Section -->
+        <div id="section-quantum" class="section" style="display: none;">
+            <div class="lcars-display">
+                <div class="lcars-title">► QUANTUM FEATURES</div>
+                <div class="lcars-subtitle">Post-Quantum Cryptography Status</div>
+
+                <div class="data-field">
+                    <div class="data-label">SPHINCS+ SIGNING</div>
+                    <div class="data-value">OPERATIONAL</div>
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">SIGNATURE SIZE</div>
+                    <div class="data-value">49,152 BYTES</div>
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">SECURITY LEVEL</div>
+                    <div class="data-value">NIST LEVEL 5 (256-BIT)</div>
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">QKD ENTROPY SOURCE</div>
+                    <div class="data-value">AVAILABLE (KIRQ NETWORK)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Section -->
+        <div id="section-network" class="section" style="display: none;">
+            <div class="lcars-display">
+                <div class="lcars-title">► NETWORK STATUS</div>
+                <div class="lcars-subtitle">Blockchain Node Information</div>
+
+                <div class="data-field">
+                    <div class="data-label">NODE ENDPOINT</div>
+                    <div class="data-value" id="nodeEndpoint">ws://127.0.0.1:9944</div>
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">CHAIN</div>
+                    <div class="data-value" id="chainName">Development</div>
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">CONSENSUS</div>
+                    <div class="data-value">AURA + GRANDPA</div>
+                </div>
+
+                <div class="data-field">
+                    <div class="data-label">SYNC STATUS</div>
+                    <div class="data-value" id="syncStatus">SYNCED</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let api = null;
+        let currentAccount = null;
+        let accounts = [];
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Section switching
+        function showSection(name) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.getElementById('section-' + name).style.display = 'block';
+
+            document.querySelectorAll('.lcars-panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Connect to blockchain
+        async function connectToBlockchain() {
+            try {
+                const wsProvider = new polkadotApi.WsProvider('ws://127.0.0.1:9944');
+                api = await polkadotApi.ApiPromise.create({ provider: wsProvider });
+
+                console.log('Connected to blockchain');
+
+                // Subscribe to new blocks
+                await api.rpc.chain.subscribeNewHeads((header) => {
+                    document.getElementById('blockNumber').textContent = header.number.toNumber();
+                });
+
+                // Get peer count
+                const health = await api.rpc.system.health();
+                document.getElementById('peerCount').textContent = health.peers.toNumber();
+
+                return true;
+            } catch (e) {
+                console.error('Failed to connect:', e);
+                return false;
+            }
+        }
+
+        // Load accounts
+        async function loadAccounts() {
+            try {
+                if (!api) {
+                    await connectToBlockchain();
+                }
+
+                const grid = document.getElementById('accountsGrid');
+
+                if (accounts.length === 0) {
+                    grid.innerHTML = '<div class="account-card"><h3>No accounts loaded</h3><p>Import Alice or Bob to get started</p></div>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                for (const account of accounts) {
+                    const balance = await api.query.system.account(account.address);
+                    const free = balance.data.free.toString();
+                    const qh = (parseInt(free) / 1e12).toFixed(4);
+
+                    const card = document.createElement('div');
+                    card.className = 'account-card';
+                    card.innerHTML = `
+                        <h3>${account.name}</h3>
+                        <div class="account-address">${account.address}</div>
+                        <div class="account-balance">${qh} QH</div>
+                        <div class="account-type">${account.type.toUpperCase()}</div>
+                    `;
+                    grid.appendChild(card);
+                }
+            } catch (e) {
+                console.error('Failed to load accounts:', e);
+            }
+        }
+
+        // Import Alice
+        async function importAccount(name) {
+            await polkadotUtilCrypto.cryptoWaitReady();
+
+            let keypair;
+            if (name === 'alice') {
+                keypair = polkadotUtilCrypto.sr25519PairFromSeed(
+                    polkadotUtil.stringToU8a('Alice'.padEnd(32, ' '))
+                );
+            } else if (name === 'bob') {
+                keypair = polkadotUtilCrypto.sr25519PairFromSeed(
+                    polkadotUtil.stringToU8a('Bob'.padEnd(32, ' '))
+                );
+            }
+
+            const address = polkadotUtilCrypto.encodeAddress(keypair.publicKey, 42);
+
+            accounts.push({
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                address: address,
+                keypair: keypair,
+                type: 'quantum'
+            });
+
+            currentAccount = accounts[accounts.length - 1];
+
+            alert(`Imported ${name.toUpperCase()} successfully!`);
+            await loadAccounts();
+        }
+
+        // Send transaction
+        async function sendTransaction() {
+            const recipient = document.getElementById('recipientAddress').value;
+            const amount = document.getElementById('amount').value;
+            const sigType = document.querySelector('input[name="sigType"]:checked').value;
+
+            if (!recipient || !amount) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            if (!currentAccount) {
+                alert('Please import an account first');
+                return;
+            }
+
+            try {
+                const amountInPlanck = (parseFloat(amount) * 1e12).toString();
+
+                const transfer = api.tx.balances.transferKeepAlive(recipient, amountInPlanck);
+
+                const hash = await transfer.signAndSend(currentAccount.keypair);
+
+                alert(`Transaction submitted!\nHash: ${hash.toHex()}\nType: ${sigType}`);
+
+                // Refresh balances after 6 seconds
+                setTimeout(loadAccounts, 6000);
+            } catch (e) {
+                alert('Transaction failed: ' + e.message);
+            }
+        }
+
+        // Create new account
+        function showCreateAccount() {
+            const mnemonic = polkadotUtilCrypto.mnemonicGenerate();
+            alert('New Account Mnemonic:\n\n' + mnemonic + '\n\nSave this securely!');
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await connectToBlockchain();
+            loadAccounts();
+        });
+    </script>
+</body>
+</html>

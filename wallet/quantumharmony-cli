@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+# QuantumHarmony Runtime Management CLI
+# For developers and node operators
+
+set -e
+
+NODE_URL="${NODE_URL:-http://localhost:9944}"
+RUNTIME_DIR="${RUNTIME_DIR:-../target/release/wbuild/quantumharmony-runtime}"
+RUNTIME_WASM="$RUNTIME_DIR/quantumharmony_runtime.compact.compressed.wasm"
+
+# Colors for terminal output
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Banner
+echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║     QUANTUMHARMONY TACTICAL OPERATIONS CLI v1.0       ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Helper function for RPC calls
+rpc_call() {
+    local method=$1
+    local params=$2
+
+    curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$method\",\"params\":$params}" \
+        "$NODE_URL"
+}
+
+# Command functions
+cmd_status() {
+    echo -e "${CYAN}[STATUS]${NC} Checking node connection..."
+
+    local response=$(rpc_call "system_health" "[]")
+
+    if echo "$response" | grep -q "result"; then
+        echo -e "${GREEN}✓${NC} Node is ${GREEN}ONLINE${NC} at $NODE_URL"
+
+        # Get version
+        local version=$(rpc_call "state_getRuntimeVersion" "[]")
+        local spec_name=$(echo "$version" | jq -r '.result.specName')
+        local spec_version=$(echo "$version" | jq -r '.result.specVersion')
+
+        echo -e "${CYAN}[RUNTIME]${NC} $spec_name v$spec_version"
+
+        # Get block height
+        local header=$(rpc_call "chain_getHeader" "[]")
+        local block_num=$(echo "$header" | jq -r '.result.number' | xargs printf "%d")
+
+        echo -e "${CYAN}[CHAIN]${NC} Block height: $block_num"
+    else
+        echo -e "${RED}✗${NC} Node is ${RED}OFFLINE${NC}"
+        echo -e "${YELLOW}[HINT]${NC} Start node with: ./target/release/quantumharmony-node --dev --tmp"
+        exit 1
+    fi
+}
+
+cmd_version() {
+    echo -e "${CYAN}[VERSION]${NC} Fetching runtime version..."
+
+    local version=$(rpc_call "state_getRuntimeVersion" "[]")
+
+    echo "$version" | jq -r '.result' | while read -r line; do
+        echo "  $line"
+    done
+}
+
+cmd_upgrade() {
+    local wasm_file=$1
+
+    if [ -z "$wasm_file" ]; then
+        wasm_file="$RUNTIME_WASM"
+    fi
+
+    if [ ! -f "$wasm_file" ]; then
+        echo -e "${RED}[ERROR]${NC} WASM file not found: $wasm_file"
+        echo -e "${YELLOW}[HINT]${NC} Build runtime first:"
+        echo "  cd ../runtime && cargo build --release"
+        exit 1
+    fi
+
+    echo -e "${CYAN}[UPGRADE]${NC} Preparing runtime upgrade..."
+
+    local wasm_size=$(wc -c < "$wasm_file")
+    echo -e "${CYAN}[WASM]${NC} File: $(basename $wasm_file)"
+    echo -e "${CYAN}[SIZE]${NC} $wasm_size bytes"
+
+    # Get current version
+    local current_version=$(rpc_call "state_getRuntimeVersion" "[]" | jq -r '.result.specVersion')
+    echo -e "${CYAN}[CURRENT]${NC} Spec version: $current_version"
+    echo -e "${YELLOW}[TARGET]${NC} Expected new version: $((current_version + 1))"
+    echo ""
+
+    # Confirmation
+    read -p "$(echo -e ${YELLOW}[CONFIRM]${NC} Submit runtime upgrade? [y/N]: )" -n 1 -r
+    echo
+
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}[CANCELLED]${NC} Upgrade aborted"
+        exit 0
+    fi
+
+    echo -e "${CYAN}[SUBMIT]${NC} Encoding WASM to hex..."
+    local wasm_hex=$(xxd -p "$wasm_file" | tr -d '\n')
+
+    echo -e "${CYAN}[RPC]${NC} Submitting sudo.setCode() extrinsic..."
+
+    # Note: This is a simplified submission
+    # In production, you need proper key signing
+    echo -e "${YELLOW}[NOTE]${NC} Actual submission requires polkadot-js/api or subxt"
+    echo -e "${YELLOW}[NOTE]${NC} Use the GUI for full functionality"
+    echo ""
+    echo -e "${GREEN}[SUCCESS]${NC} Upgrade prepared successfully"
+    echo -e "${CYAN}[INFO]${NC} WASM payload size: $wasm_size bytes"
+}
+
+cmd_qrng() {
+    echo -e "${CYAN}[QRNG]${NC} Threshold QRNG Status..."
+
+    # This would call custom RPC methods
+    echo -e "${CYAN}[CONFIG]${NC} Threshold: K=2, Devices: M=3"
+    echo -e "${YELLOW}[NOTE]${NC} Custom RPC methods need to be added to node"
+}
+
+cmd_reporter() {
+    echo -e "${CYAN}[REPORTER]${NC} Reporter System Status..."
+
+    echo -e "${YELLOW}[NOTE]${NC} Reporter pallet not yet implemented"
+    echo -e "${YELLOW}[TODO]${NC} Add reporter registration functionality"
+}
+
+cmd_help() {
+    cat << EOF
+${GREEN}QUANTUMHARMONY CLI - Developer Tools${NC}
+
+${CYAN}USAGE:${NC}
+  quantumharmony-cli <command> [options]
+
+${CYAN}COMMANDS:${NC}
+  status              Check node connection and chain status
+  version             Get current runtime version
+  upgrade [WASM]      Submit runtime upgrade (forkless)
+  qrng                Show threshold QRNG status
+  reporter            Show reporter system status
+  help                Show this help message
+
+${CYAN}ENVIRONMENT:${NC}
+  NODE_URL           RPC endpoint (default: http://localhost:9944)
+  RUNTIME_DIR        Path to runtime WASM directory
+
+${CYAN}EXAMPLES:${NC}
+  # Check node status
+  quantumharmony-cli status
+
+  # Get runtime version
+  quantumharmony-cli version
+
+  # Submit runtime upgrade
+  quantumharmony-cli upgrade
+
+  # Use custom WASM file
+  quantumharmony-cli upgrade /path/to/runtime.wasm
+
+  # Use custom RPC endpoint
+  NODE_URL=http://remote-node:9944 quantumharmony-cli status
+
+${CYAN}DOCUMENTATION:${NC}
+  See RUNTIME_UPDATES.md for complete guide on runtime upgrades
+
+EOF
+}
+
+# Main command dispatcher
+case "${1:-help}" in
+    status)
+        cmd_status
+        ;;
+    version|ver)
+        cmd_version
+        ;;
+    upgrade|up)
+        cmd_upgrade "$2"
+        ;;
+    qrng)
+        cmd_qrng
+        ;;
+    reporter)
+        cmd_reporter
+        ;;
+    help|-h|--help)
+        cmd_help
+        ;;
+    *)
+        echo -e "${RED}[ERROR]${NC} Unknown command: $1"
+        echo ""
+        cmd_help
+        exit 1
+        ;;
+esac
