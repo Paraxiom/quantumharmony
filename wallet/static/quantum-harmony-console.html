@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumHarmony Console</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1628 100%);
+            color: #e0e6ff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Ethereal glow effects */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+
+        .quantum-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(138, 43, 226, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(0, 191, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(75, 0, 130, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        /* Main console container */
+        .console-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-areas:
+                "header header header"
+                "west center east"
+                "west south east";
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: 80px 1fr 280px;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Header - Status Bar */
+        .header {
+            grid-area: header;
+            background: rgba(15, 22, 40, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 15px;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(138, 43, 226, 0.2);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #8a2be2, #00bfff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .status-dot.inactive {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444;
+        }
+
+        /* Cardinal buttons */
+        .cardinal-btn {
+            background: rgba(15, 22, 40, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cardinal-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(138, 43, 226, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .cardinal-btn:hover::before {
+            left: 100%;
+        }
+
+        .cardinal-btn:hover {
+            border-color: rgba(138, 43, 226, 0.8);
+            box-shadow: 0 8px 32px rgba(138, 43, 226, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .cardinal-btn.active {
+            border-color: #00bfff;
+            box-shadow: 0 8px 32px rgba(0, 191, 255, 0.4);
+        }
+
+        .btn-icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .btn-label {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-sublabel {
+            font-size: 11px;
+            color: rgba(224, 230, 255, 0.6);
+        }
+
+        /* North - Transactions */
+        .north {
+            grid-area: west;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* East - Knowledge */
+        .east {
+            grid-area: east;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* South - Node Control */
+        .south {
+            grid-area: south;
+            display: flex;
+            gap: 15px;
+        }
+
+        .south .cardinal-btn {
+            flex: 1;
+        }
+
+        /* Center - Main Display */
+        .center {
+            grid-area: center;
+            background: rgba(15, 22, 40, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 50px rgba(138, 43, 226, 0.1);
+        }
+
+        /* Content panels */
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #8a2be2, #00bfff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Transaction Form */
+        .tx-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(224, 230, 255, 0.8);
+        }
+
+        .form-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #e0e6ff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #8a2be2;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.3);
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #8a2be2, #00bfff);
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-btn:hover {
+            box-shadow: 0 8px 25px rgba(138, 43, 226, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Info cards */
+        .info-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .info-card h3 {
+            color: #00bfff;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .info-card p {
+            color: rgba(224, 230, 255, 0.7);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .info-card ul {
+            margin-left: 20px;
+            margin-top: 10px;
+            color: rgba(224, 230, 255, 0.7);
+        }
+
+        .info-card li {
+            margin-bottom: 5px;
+            line-height: 1.5;
+        }
+
+        /* Scrollbar styling */
+        .center::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .center::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .center::-webkit-scrollbar-thumb {
+            background: rgba(138, 43, 226, 0.5);
+            border-radius: 10px;
+        }
+
+        .center::-webkit-scrollbar-thumb:hover {
+            background: rgba(138, 43, 226, 0.8);
+        }
+
+        /* Node control specific */
+        .node-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .node-status-label {
+            font-weight: 600;
+        }
+
+        .node-status-value {
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="quantum-bg"></div>
+
+    <div class="console-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">⚛️ QuantumHarmony</div>
+            <div class="status-indicators">
+                <div class="status-item">
+                    <div class="status-dot active" id="node-status"></div>
+                    <span id="node-text">Node Online</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot active" id="chain-status"></div>
+                    <span id="chain-text">Block #<span id="block-num">45</span></span>
+                </div>
+                <div class="status-item">
+                    <span id="balance-display">0 QH</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- West - Transactions -->
+        <div class="north">
+            <div class="cardinal-btn" onclick="showPanel('send')">
+                <div class="btn-icon">💸</div>
+                <div class="btn-label">Send</div>
+                <div class="btn-sublabel">Transfer QH</div>
+            </div>
+            <div class="cardinal-btn" onclick="showPanel('receive')">
+                <div class="btn-icon">📥</div>
+                <div class="btn-label">Receive</div>
+                <div class="btn-sublabel">Get Address</div>
+            </div>
+            <div class="cardinal-btn" onclick="showPanel('history')">
+                <div class="btn-icon">📜</div>
+                <div class="btn-label">History</div>
+                <div class="btn-sublabel">Transactions</div>
+            </div>
+        </div>
+
+        <!-- East - Knowledge Base -->
+        <div class="east">
+            <div class="cardinal-btn" onclick="showPanel('quantum')">
+                <div class="btn-icon">⚛️</div>
+                <div class="btn-label">Quantum</div>
+                <div class="btn-sublabel">PQC Explained</div>
+            </div>
+            <div class="cardinal-btn" onclick="showPanel('toroidal')">
+                <div class="btn-icon">🌐</div>
+                <div class="btn-label">Toroidal</div>
+                <div class="btn-sublabel">30K TPS</div>
+            </div>
+            <div class="cardinal-btn" onclick="showPanel('features')">
+                <div class="btn-icon">✨</div>
+                <div class="btn-label">Features</div>
+                <div class="btn-sublabel">See All</div>
+            </div>
+        </div>
+
+        <!-- South - Node Control -->
+        <div class="south">
+            <div class="cardinal-btn" onclick="showPanel('node')">
+                <div class="btn-icon">🖥️</div>
+                <div class="btn-label">Node Control</div>
+                <div class="btn-sublabel">Start/Stop</div>
+            </div>
+            <div class="cardinal-btn" onclick="showPanel('upgrade')">
+                <div class="btn-icon">⬆️</div>
+                <div class="btn-label">Upgrade</div>
+                <div class="btn-sublabel">Runtime</div>
+            </div>
+            <div class="cardinal-btn" onclick="showPanel('explorer')">
+                <div class="btn-icon">🔍</div>
+                <div class="btn-label">Explorer</div>
+                <div class="btn-sublabel">Blocks</div>
+            </div>
+        </div>
+
+        <!-- Center - Main Display -->
+        <div class="center">
+            <!-- Welcome Panel -->
+            <div class="panel active" id="welcome-panel">
+                <h2 class="panel-title">Welcome to QuantumHarmony</h2>
+                <div class="info-card">
+                    <h3>🎮 Zero-Friction Quantum Blockchain</h3>
+                    <p>The first blockchain that solves web3's biggest problems:</p>
+                    <ul>
+                        <li><strong>No KYC friction</strong> - Instant wallet creation</li>
+                        <li><strong>No key storage anxiety</strong> - Quantum-secure by default</li>
+                        <li><strong>No complex explorers</strong> - Beautiful integrated UI</li>
+                        <li><strong>Quantum-resistant</strong> - SPHINCS+ signatures producing blocks NOW</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>🎯 Cardinal Control Layout</h3>
+                    <p>Inspired by gaming consoles for intuitive navigation:</p>
+                    <ul>
+                        <li><strong>West</strong> - Send, Receive, History (Transactions)</li>
+                        <li><strong>East</strong> - Quantum, Toroidal, Features (Knowledge)</li>
+                        <li><strong>South</strong> - Node, Upgrade, Explorer (Control)</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>✨ Currently Active</h3>
+                    <p><strong>Testnet Status:</strong> SPHINCS+ blocks producing (#45+)</p>
+                    <p><strong>30,000+ TPS</strong> with toroidal mesh architecture</p>
+                    <p><strong>Instant finality</strong> via GRANDPA consensus</p>
+                </div>
+            </div>
+
+            <!-- Send Panel -->
+            <div class="panel" id="send-panel">
+                <h2 class="panel-title">💸 Send QH Tokens</h2>
+                <form class="tx-form" onsubmit="sendTransaction(event)">
+                    <div class="form-group">
+                        <label class="form-label">Recipient Address</label>
+                        <input type="text" class="form-input" id="recipient" placeholder="5GrwvaEF..." required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount (QH)</label>
+                        <input type="number" class="form-input" id="amount" placeholder="100" step="0.000001" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Note (optional)</label>
+                        <input type="text" class="form-input" id="note" placeholder="Payment for...">
+                    </div>
+                    <button type="submit" class="action-btn">Send with SPHINCS+</button>
+                </form>
+                <div class="info-card" style="margin-top: 20px;">
+                    <h3>🔒 Quantum-Safe Transaction</h3>
+                    <p>Every transaction is signed with <strong>SPHINCS+</strong> post-quantum signatures (49KB). Your transaction will be secure even against quantum computers.</p>
+                </div>
+            </div>
+
+            <!-- Receive Panel -->
+            <div class="panel" id="receive-panel">
+                <h2 class="panel-title">📥 Receive QH Tokens</h2>
+                <div class="info-card">
+                    <h3>Your Quantum-Safe Address</h3>
+                    <p style="word-break: break-all; font-family: monospace; font-size: 16px; color: #00bfff;" id="my-address">5FLy8UEZHa2C2hNHP2NRCxVenWJxSqZWbDf6K456KwV92eML</p>
+                    <button class="action-btn" style="margin-top: 15px;" onclick="copyAddress()">Copy Address</button>
+                </div>
+                <div class="info-card">
+                    <h3>🔐 About Your Address</h3>
+                    <p>This address is derived from your <strong>SPHINCS+ public key</strong> using quantum-resistant SHA3 hashing.</p>
+                    <p style="margin-top: 10px;"><strong>Key Features:</strong></p>
+                    <ul>
+                        <li>Quantum-resistant (won't be broken by quantum computers)</li>
+                        <li>64-byte public key (vs 32-byte classical)</li>
+                        <li>Deterministically generated from seed phrase</li>
+                        <li>Compatible with Substrate ecosystem</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quantum Panel -->
+            <div class="panel" id="quantum-panel">
+                <h2 class="panel-title">⚛️ Post-Quantum Cryptography</h2>
+                <div class="info-card">
+                    <h3>Why Quantum Resistance Matters</h3>
+                    <p>Traditional blockchains (Bitcoin, Ethereum, Solana) use ECDSA/Ed25519 signatures that will be <strong>broken by quantum computers</strong> within 10-20 years.</p>
+                    <p style="margin-top: 10px;">QuantumHarmony uses <strong>SPHINCS+</strong>, a NIST-standardized hash-based signature scheme that remains secure even against quantum attacks.</p>
+                </div>
+
+                <div class="info-card">
+                    <h3>🔐 Our PQC Stack</h3>
+                    <ul>
+                        <li><strong>SPHINCS+</strong> - Block signatures (49KB, NIST FIPS 206)</li>
+                        <li><strong>Falcon-512</strong> - Fast operations (679B)</li>
+                        <li><strong>Falcon-1024</strong> - P2P Triple Ratchet (1.3KB)</li>
+                        <li><strong>ML-KEM-1024</strong> - Key exchange (Kyber, NIST FIPS 203)</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>⚡ The Challenge: 49KB Signatures</h3>
+                    <p>SPHINCS+ signatures are <strong>768x larger</strong> than Ed25519 (49KB vs 64 bytes).</p>
+                    <p style="margin-top: 10px;">Single-node verification takes 200-300ms, making blockchain TPS impossible.</p>
+                    <p style="margin-top: 10px;"><strong>Our Solution:</strong> Toroidal mesh architecture distributes verification across 48+ nodes, achieving <strong>85ms verification</strong> and <strong>1000+ signatures/second</strong>.</p>
+                </div>
+            </div>
+
+            <!-- Toroidal Panel -->
+            <div class="panel" id="toroidal-panel">
+                <h2 class="panel-title">🌐 Toroidal Mesh Architecture</h2>
+                <div class="info-card">
+                    <h3>What is a Toroidal Mesh?</h3>
+                    <p>A topology where all nodes wrap around like a donut (torus). Every node has exactly 4 neighbors - no edge effects!</p>
+                    <pre style="color: #00bfff; margin-top: 10px; font-size: 12px;">
+    [A]---[B]---[C]---[A]  (wraps horizontally)
+     |     |     |     |
+    [D]---[E]---[F]---[D]
+     |     |     |     |
+    [G]---[H]---[I]---[G]
+     |     |     |     |
+    [A]---[B]---[C]---[A]  (wraps vertically)
+                    </pre>
+                </div>
+
+                <div class="info-card">
+                    <h3>🚀 Three-Layer Toroidal Design</h3>
+                    <ul>
+                        <li><strong>Signature Layer (8x6=48 nodes):</strong> Distributes 49KB SPHINCS+ signatures for parallel verification</li>
+                        <li><strong>Runtime Layer (8x8x8=512 segments):</strong> Micro-runtimes for hot-swappable modules, 76.7% memory reduction</li>
+                        <li><strong>P2P Network Layer:</strong> Fault-tolerant mesh with load-balanced gossip</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>📊 Performance</h3>
+                    <ul>
+                        <li>Single-node: 200-300ms verification, ~3-5 TPS</li>
+                        <li>Toroidal (48-node): <strong>85ms verification, 1000+ TPS</strong></li>
+                        <li>Toroidal (512 segments): <strong>&lt;10ms, 30,000+ TPS</strong></li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #00ff88;"><strong>Result: Faster than Solana with quantum security</strong></p>
+                </div>
+            </div>
+
+            <!-- Features Panel -->
+            <div class="panel" id="features-panel">
+                <h2 class="panel-title">✨ All Features</h2>
+                <div class="info-card">
+                    <h3>🔒 Security</h3>
+                    <ul>
+                        <li>SPHINCS+ post-quantum signatures (NIST FIPS 206)</li>
+                        <li>Triple Ratchet P2P (Signal SPQR approach)</li>
+                        <li>STARK zero-knowledge proofs (quantum-resistant)</li>
+                        <li>QKD integration (ETSI GS QKD 014)</li>
+                        <li>QRNG-seeded key generation (KIRQ Hub)</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>⚡ Performance</h3>
+                    <ul>
+                        <li>30,000+ TPS (512-segment toroidal mesh)</li>
+                        <li>Instant finality (GRANDPA consensus)</li>
+                        <li>85ms SPHINCS+ verification (48-node mesh)</li>
+                        <li>76.7% memory reduction (segmented runtime)</li>
+                        <li>41.77 GiB/s encoding (QSSH-RPC binary protocol)</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h3>🛠️ Developer Experience</h3>
+                    <ul>
+                        <li>Forkless runtime upgrades (zero downtime)</li>
+                        <li>Simplified transaction gateway API</li>
+                        <li>Substrate/Polkadot ecosystem compatibility</li>
+                        <li>Open-source (full audit transparency)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Node Control Panel -->
+            <div class="panel" id="node-panel">
+                <h2 class="panel-title">🖥️ Node Control</h2>
+                <div class="node-status">
+                    <span class="node-status-label">Docker Status:</span>
+                    <span class="node-status-value" id="docker-status">Not Running</span>
+                </div>
+                <div class="node-status">
+                    <span class="node-status-label">Current Block:</span>
+                    <span class="node-status-value" id="current-block">#45</span>
+                </div>
+                <div class="node-status">
+                    <span class="node-status-label">Peers Connected:</span>
+                    <span class="node-status-value" id="peers">1</span>
+                </div>
+
+                <button class="action-btn" onclick="startNode()" style="margin-bottom: 15px;">
+                    🚀 Start Node (docker-compose up)
+                </button>
+                <button class="action-btn" onclick="stopNode()" style="background: linear-gradient(135deg, #ff4444, #cc0000);">
+                    🛑 Stop Node (docker-compose down)
+                </button>
+
+                <div class="info-card" style="margin-top: 20px;">
+                    <h3>📝 Node Info</h3>
+                    <p><strong>Container:</strong> quantumharmony-node</p>
+                    <p><strong>Ports:</strong> 9944 (RPC), 30333 (P2P), 42 (QSSH)</p>
+                    <p><strong>Data Path:</strong> ./data/</p>
+                </div>
+
+                <div class="info-card">
+                    <h3>⚠️ Requirements</h3>
+                    <p>Docker and docker-compose must be installed and running on your system.</p>
+                </div>
+            </div>
+
+            <!-- Runtime Upgrade Panel -->
+            <div class="panel" id="upgrade-panel">
+                <h2 class="panel-title">⬆️ Runtime Upgrade</h2>
+                <div class="info-card">
+                    <h3>🔄 Forkless Upgrades</h3>
+                    <p>QuantumHarmony uses Substrate's <strong>on-chain WASM runtime</strong>. This means you can upgrade the blockchain logic without:</p>
+                    <ul>
+                        <li>Stopping the network</li>
+                        <li>Restarting nodes</li>
+                        <li>Coordinating hard forks</li>
+                        <li>Risking chain splits</li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #00ff88;"><strong>This is unique to Substrate/Polkadot - not available on Bitcoin, Ethereum, Solana, etc.</strong></p>
+                </div>
+
+                <div class="info-card">
+                    <h3>📦 Upload New Runtime</h3>
+                    <input type="file" id="wasm-file" accept=".wasm" class="form-input" style="margin-bottom: 15px;">
+                    <button class="action-btn" onclick="uploadRuntime()">
+                        📤 Submit Upgrade Proposal
+                    </button>
+                </div>
+
+                <div class="info-card">
+                    <h3>💡 Example Use Case</h3>
+                    <p><strong>Scenario:</strong> NIST discovers a flaw in Falcon-512</p>
+                    <p style="margin-top: 10px;"><strong>With forkless upgrades:</strong></p>
+                    <ul>
+                        <li>Developer patches runtime (1 hour)</li>
+                        <li>Build new WASM (2 hours)</li>
+                        <li>Submit governance proposal (5 minutes)</li>
+                        <li>Emergency approval (30 minutes)</li>
+                        <li>Upgrade takes effect next block (6 seconds)</li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #00bfff;"><strong>Total: ~4 hours, ZERO downtime</strong></p>
+                </div>
+            </div>
+
+            <!-- Explorer Panel -->
+            <div class="panel" id="explorer-panel">
+                <h2 class="panel-title">🔍 Block Explorer</h2>
+                <div class="info-card">
+                    <h3>Latest Blocks</h3>
+                    <div id="blocks-list">
+                        <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <strong>#45</strong> - 0x0184ef68... (6 seconds ago)
+                        </div>
+                        <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <strong>#44</strong> - 0xa0a11dd1... (12 seconds ago)
+                        </div>
+                        <div style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <strong>#43</strong> - 0x3f892bc4... (18 seconds ago)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>🔐 SPHINCS+ Signatures Active</h3>
+                    <p>Every block is signed with a 49KB post-quantum SPHINCS+ signature.</p>
+                    <p style="margin-top: 10px;">Verification distributed across toroidal mesh: <strong>85ms per block</strong></p>
+                </div>
+            </div>
+
+            <!-- History Panel -->
+            <div class="panel" id="history-panel">
+                <h2 class="panel-title">📜 Transaction History</h2>
+                <div class="info-card">
+                    <h3>Recent Transactions</h3>
+                    <p style="color: rgba(224, 230, 255, 0.5);">No transactions yet. Send your first quantum-safe transaction!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPanel = 'welcome';
+
+        function showPanel(panelName) {
+            // Hide all panels
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.cardinal-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected panel
+            const panel = document.getElementById(panelName + '-panel');
+            if (panel) {
+                panel.classList.add('active');
+                currentPanel = panelName;
+            }
+
+            // Highlight active button
+            event.target.closest('.cardinal-btn')?.classList.add('active');
+        }
+
+        async function sendTransaction(event) {
+            event.preventDefault();
+            const recipient = document.getElementById('recipient').value;
+            const amount = document.getElementById('amount').value;
+            const note = document.getElementById('note').value;
+
+            try {
+                const response = await fetch('/api/transaction/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        from: document.getElementById('my-address').textContent,
+                        to: recipient,
+                        amount: (parseFloat(amount) * 1e12).toString(),
+                        note: note
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ Transaction submitted with SPHINCS+ signature!\n\nHash: ' + result.data.hash);
+                    // Refresh balance
+                    updateBalance();
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('my-address').textContent;
+            navigator.clipboard.writeText(address);
+            alert('✅ Address copied to clipboard!');
+        }
+
+        async function startNode() {
+            try {
+                const response = await fetch('/api/docker/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ network_type: 'simple' })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('🚀 Node starting!\n\nDocker containers are building and starting...\nThis may take a few minutes on first run.');
+                    updateDockerStatus();
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function stopNode() {
+            if (!confirm('⚠️ Stop the node? This will halt block production.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/docker/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ network_type: 'simple' })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('🛑 Node stopped successfully');
+                    updateDockerStatus();
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        async function updateDockerStatus() {
+            try {
+                const response = await fetch('/api/docker/status');
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const status = result.data;
+                    document.getElementById('docker-status').textContent =
+                        status.running ? 'Running (' + status.containers + ' containers)' : 'Stopped';
+
+                    if (status.running) {
+                        document.getElementById('node-status').classList.add('active');
+                        document.getElementById('node-status').classList.remove('inactive');
+                        document.getElementById('node-text').textContent = 'Node Online';
+                    } else {
+                        document.getElementById('node-status').classList.remove('active');
+                        document.getElementById('node-status').classList.add('inactive');
+                        document.getElementById('node-text').textContent = 'Node Offline';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update Docker status:', error);
+            }
+        }
+
+        async function updateBalance() {
+            try {
+                const address = document.getElementById('my-address').textContent;
+                const response = await fetch('/api/balance/' + address);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const balance = parseFloat(result.data.balance) / 1e12;
+                    document.getElementById('balance-display').textContent =
+                        balance.toFixed(4) + ' QH';
+                }
+            } catch (error) {
+                console.error('Failed to update balance:', error);
+            }
+        }
+
+        async function uploadRuntime() {
+            const fileInput = document.getElementById('wasm-file');
+            if (!fileInput.files.length) {
+                alert('⚠️ Please select a WASM file first');
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // Read file as hex
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const arrayBuffer = e.target.result;
+                const bytes = new Uint8Array(arrayBuffer);
+                const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+                try {
+                    const response = await fetch('/api/runtime/upgrade', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ wasm_hex: hex })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        alert(`✅ Runtime upgrade proposal submitted!\n\nFile: ${file.name}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nProposal Hash: ${result.data.proposal_hash}\n\n${result.data.status}`);
+                    } else {
+                        alert('❌ Error: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('❌ Error: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Update block numbers and status periodically
+        setInterval(async () => {
+            // Update balance
+            updateBalance();
+
+            // Update Docker status
+            updateDockerStatus();
+
+            // Update block number
+            try {
+                const response = await fetch('/api/blocks/latest');
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    const latestBlock = result.data[0];
+                    document.getElementById('block-num').textContent = latestBlock.number;
+                    document.getElementById('current-block').textContent = '#' + latestBlock.number;
+                }
+            } catch (error) {
+                console.error('Failed to fetch blocks:', error);
+            }
+        }, 6000);
+
+        // Initial update on page load
+        window.addEventListener('load', () => {
+            updateBalance();
+            updateDockerStatus();
+        });
+    </script>
+</body>
+</html>

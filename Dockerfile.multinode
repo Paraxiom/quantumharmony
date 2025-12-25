@@ -1,0 +1,67 @@
+# QuantumHarmony Node - Multi-Stage Docker Build
+# Builds from source inside Linux container with all dependencies
+
+# Stage 1: Builder
+FROM rust:latest as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    clang \
+    libclang-dev \
+    cmake \
+    protobuf-compiler \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create directory structure matching /opt paths
+RUN mkdir -p /opt
+
+# Copy Polkadot SDK and parity-scale-codec dependencies
+COPY polkadot-sdk /opt/polkadot-sdk
+COPY parity-scale-codec /opt/parity-scale-codec
+
+# Set working directory
+WORKDIR /build
+
+# Copy the quantumharmony project
+COPY quantumharmony .
+
+# Remove wallet from workspace (has external dependencies)
+RUN sed -i '/wallet/d' Cargo.toml
+
+# Add wasm32 target and rust-src for runtime compilation
+RUN rustup target add wasm32-unknown-unknown && \
+    rustup component add rust-src
+
+# Build release binary (this will take a while)
+ENV SKIP_WASM_BUILD=0
+RUN cargo build --release -p quantumharmony-node
+
+# Stage 2: Runtime
+FROM ubuntu:22.04
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binary from builder stage
+COPY --from=builder /build/target/release/quantumharmony-node /usr/local/bin/quantumharmony-node
+RUN chmod +x /usr/local/bin/quantumharmony-node
+
+# Create data directory
+RUN mkdir -p /data
+
+# Expose ports
+# 30333 - P2P networking
+# 9944  - RPC (WebSocket/HTTP)
+# 9615  - Prometheus metrics
+EXPOSE 30333 9944 9615
+
+# Volume for chain data
+VOLUME ["/data"]
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/quantumharmony-node"]

@@ -1,0 +1,238 @@
+digraph QuantumHarmony {
+    graph [
+        rankdir=TB,
+        splines=ortho,
+        nodesep=1.5,
+        ranksep=2.0,
+        fontname="Arial",
+        fontsize=20,
+        label="QuantumHarmony System Architecture\n🔑 PRIORITY QUEUES: Per-Device QBER-Sorted Entropy Storage",
+        labelloc=t,
+        bgcolor="#ffffff"
+    ];
+
+    node [
+        shape=box,
+        style="rounded,filled",
+        fontname="Arial",
+        fontsize=14,
+        margin=0.5
+    ];
+
+    edge [
+        fontname="Arial",
+        fontsize=12,
+        arrowsize=1.2
+    ];
+
+    // ========== DETAILED VIEW: VALIDATOR A (FULL DETAIL) ==========
+
+    subgraph cluster_validator_a_detail {
+        label="🔍 VALIDATOR NODE A (Detailed View)";
+        style="filled,bold";
+        color="#0066cc";
+        fillcolor="#e6f3ff";
+        fontsize=18;
+        penwidth=5;
+
+        // Hardware Layer
+        subgraph cluster_hw_a {
+            label="Quantum Hardware";
+            style="filled";
+            color="#666666";
+            fillcolor="#f0f0f0";
+
+            hw_a1 [label="Toshiba QKD\nDevice", fillcolor="#ffcc99", shape=box3d, height=1.2, width=2];
+            hw_a2 [label="Crypto4A HSM\nDevice", fillcolor="#ffcc99", shape=box3d, height=1.2, width=2];
+        }
+
+        // ⭐⭐⭐ PRIORITY QUEUES - MAXIMUM VISIBILITY ⭐⭐⭐
+        subgraph cluster_pq_a {
+            label="⚠️  PRIORITY QUEUES (QBER-Sorted) ⚠️";
+            style="filled,bold";
+            color="#ff6600";
+            fillcolor="#fff0e6";
+            fontsize=20;
+            penwidth=8;
+
+            pq_a1 [
+                label="📊 PRIORITY QUEUE 1\n\nDevice: Toshiba QKD\nSorting: QBER (ascending)\nHolds: Raw entropy samples\nSelects: Best quality for Shamir",
+                fillcolor="#ff9933",
+                shape=folder,
+                penwidth=6,
+                fontsize=16,
+                height=2.5,
+                width=4
+            ];
+
+            pq_a2 [
+                label="📊 PRIORITY QUEUE 2\n\nDevice: Crypto4A HSM\nSorting: QBER (ascending)\nHolds: Raw entropy samples\nSelects: Best quality for Shamir",
+                fillcolor="#ff9933",
+                shape=folder,
+                penwidth=6,
+                fontsize=16,
+                height=2.5,
+                width=4
+            ];
+        }
+
+        // Local Shamir
+        shamir_a [
+            label="🔐 Local Shamir\nReconstruction\n\nK=2 (threshold)\nM=2 (total devices)\n\nCombines best entropy\nfrom priority queues",
+            fillcolor="#ffaa00",
+            penwidth=4,
+            fontsize=14,
+            height=2,
+            width=3
+        ];
+
+        // Share output
+        share_a [
+            label="✅ Validator Share A\n\nReady for network\nShamir reconstruction",
+            fillcolor="#66ff66",
+            penwidth=4,
+            fontsize=14,
+            height=1.5,
+            width=3
+        ];
+
+        // Connections
+        hw_a1 -> pq_a1 [label="  raw entropy  ", penwidth=4, color="#cc6600", fontsize=13];
+        hw_a2 -> pq_a2 [label="  raw entropy  ", penwidth=4, color="#cc6600", fontsize=13];
+        pq_a1 -> shamir_a [label="  BEST by QBER  ", penwidth=5, color="#ff0000", fontsize=14, style=bold];
+        pq_a2 -> shamir_a [label="  BEST by QBER  ", penwidth=5, color="#ff0000", fontsize=14, style=bold];
+        shamir_a -> share_a [penwidth=4, color="#00cc00"];
+    }
+
+    // ========== SIMPLIFIED VIEW: OTHER VALIDATORS ==========
+
+    subgraph cluster_validator_b_simple {
+        label="Validator Node B (Same Pattern)";
+        style="filled,bold";
+        color="#9933cc";
+        fillcolor="#f0e6ff";
+        fontsize=14;
+        penwidth=3;
+
+        simple_b [
+            label="IdQuantique QKD → 📊 PRIORITY QUEUE\nHWRNG → 📊 PRIORITY QUEUE\n↓\nLocal Shamir (K=2, M=2)\n↓\nShare B",
+            fillcolor="#e6ccff",
+            shape=box,
+            fontsize=12,
+            height=2,
+            width=3.5
+        ];
+    }
+
+    subgraph cluster_validator_c_simple {
+        label="Validator Node C (Same Pattern)";
+        style="filled,bold";
+        color="#cc3366";
+        fillcolor="#ffe6f0";
+        fontsize=14;
+        penwidth=3;
+
+        simple_c [
+            label="Crypto4A HSM → 📊 PRIORITY QUEUE\nHWRNG → 📊 PRIORITY QUEUE\n↓\nLocal Shamir (K=2, M=2)\n↓\nShare C",
+            fillcolor="#ffccdd",
+            shape=box,
+            fontsize=12,
+            height=2,
+            width=3.5
+        ];
+    }
+
+    // ========== LAYER 2: MEMPOOL VALIDATION (BYZANTINE FAULT TOLERANCE) ==========
+
+    // Mempool with 3-Level Validation
+    txpool [
+        label="⚡ TRANSACTION POOL (MEMPOOL)\n3-LEVEL VALIDATION\n\n🔍 Level 1: Local Queue Verification\n   Check K shares exist in priority queues\n\n🔍 Level 2: Shamir Reconstruction Check\n   Recompute and verify entropy matches\n\n🔍 Level 3: STARK Proof Verification\n   Verify quantum measurement authenticity\n\n✅ Substrate Validator Set Consensus\n   All validators agree before Shamir",
+        fillcolor="#ff6666",
+        shape=cylinder,
+        penwidth=5,
+        fontsize=12,
+        height=4,
+        width=5
+    ];
+
+    // Connections: Validator shares → Mempool
+    share_a -> txpool [label="  submit for validation  ", penwidth=3, color="#cc0000", fontsize=12];
+    simple_b -> txpool [label="  submit for validation  ", penwidth=3, color="#cc0000", fontsize=12];
+    simple_c -> txpool [label="  submit for validation  ", penwidth=3, color="#cc0000", fontsize=12];
+
+    // ========== LAYER 3: POST-VALIDATION DISTRIBUTION ==========
+
+    // Distribution decision
+    distribution [
+        label="📡 DISTRIBUTION STRATEGY\n[TBD: Nokia Requirements]\n\n Option A: ALL validators\n Option B: VRF-selected subset\n\nAfter mempool validation",
+        fillcolor="#ffeb99",
+        shape=diamond,
+        penwidth=3,
+        fontsize=13,
+        height=2,
+        width=3.5
+    ];
+
+    txpool -> distribution [label="  VALIDATED shares  ", penwidth=4, color="#00cc00", fontsize=12, style=bold];
+
+    // ========== LAYER 4: NETWORK CONSENSUS ==========
+
+    network_shamir [
+        label="🔐 NETWORK SHAMIR\nRECONSTRUCTION\n\nK=2, M=3 validators\n\nCombines validated shares\nfrom multiple validators",
+        fillcolor="#ff9900",
+        penwidth=4,
+        fontsize=13,
+        height=2,
+        width=3
+    ];
+
+    final_entropy [
+        label="✅ FINAL NETWORK\nENTROPY\n\nQuantum-verified\nByzantine-tolerant",
+        fillcolor="#00cc00",
+        penwidth=4,
+        fontsize=14,
+        height=1.5,
+        width=3
+    ];
+
+    consensus [
+        label="⚙️ CONSENSUS\n\nAura (6s blocks)\n+ GRANDPA finality",
+        fillcolor="#ffeb99",
+        penwidth=2
+    ];
+
+    relay [
+        label="🌐 RELAY COORDINATION\n\nQSSH relays between\nQKD islands (>100km)\n\nGeographic distribution",
+        fillcolor="#e6b3ff",
+        shape=hexagon,
+        penwidth=2,
+        height=2,
+        width=3
+    ];
+
+    distribution -> network_shamir [label="  distribute  ", penwidth=3, color="#9900ff", fontsize=12];
+    network_shamir -> final_entropy [label="  reconstruct  ", penwidth=4, color="#00cc00", fontsize=12];
+    final_entropy -> consensus [penwidth=2, color="#ff6600"];
+    final_entropy -> relay [penwidth=2, color="#9900ff"];
+
+    // ========== LEGEND ==========
+    subgraph cluster_legend {
+        label="LEGEND";
+        style=filled;
+        color="#f0f0f0";
+        fontsize=13;
+
+        leg_pq [label="PRIORITY QUEUE\n(QBER-sorted)\nHolds entropy samples", fillcolor="#ffd699", shape=folder, penwidth=3, fontsize=12];
+        leg_hw [label="Quantum Hardware", fillcolor="#ffcc99", shape=box3d];
+        leg_shamir [label="Shamir\nReconstruction", fillcolor="#ffaa00"];
+        leg_share [label="Validator Share", fillcolor="#66ff66", penwidth=2];
+        leg_network [label="Network Component", fillcolor="#ff9900", penwidth=2];
+        leg_final [label="Final Entropy", fillcolor="#00cc00", penwidth=2];
+
+        leg_pq -> leg_hw [style=invis];
+        leg_hw -> leg_shamir [style=invis];
+        leg_shamir -> leg_share [style=invis];
+        leg_share -> leg_network [style=invis];
+        leg_network -> leg_final [style=invis];
+    }
+}

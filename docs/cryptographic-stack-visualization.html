@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumHarmony - Complete Cryptographic Stack</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .canvas-container {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
+        }
+
+        .layer-details {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        .layer {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(0, 255, 255, 0.05);
+            border-left: 4px solid;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .layer:hover {
+            background: rgba(0, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .layer-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .layer-components {
+            margin-left: 30px;
+            margin-top: 10px;
+        }
+
+        .component {
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+
+        .component-name {
+            font-weight: bold;
+            color: #00ffff;
+        }
+
+        .component-desc {
+            color: #aaa;
+            font-size: 0.9em;
+            margin-top: 3px;
+        }
+
+        .layer5 { border-left-color: #ff00ff; }
+        .layer4 { border-left-color: #00ff00; }
+        .layer3 { border-left-color: #ffff00; }
+        .layer2 { border-left-color: #ff8800; }
+        .layer1 { border-left-color: #00ffff; }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            margin: 0 10px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .toroidal-section {
+            margin-top: 30px;
+        }
+
+        h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 QuantumHarmony Cryptographic Stack</h1>
+        <p class="subtitle">Complete Post-Quantum Security Architecture with Toroidal Mesh Consensus</p>
+
+        <div class="controls">
+            <button onclick="startAnimation()">▶️ Start</button>
+            <button onclick="pauseAnimation()">⏸️ Pause</button>
+            <button onclick="resetAnimation()">🔄 Reset</button>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left: Cryptographic Stack Visualization -->
+            <div class="canvas-container">
+                <h2 style="text-align: center; margin-bottom: 15px;">📚 5-Layer Stack</h2>
+                <canvas id="stackCanvas" width="800" height="900"></canvas>
+            </div>
+
+            <!-- Right: Layer Details -->
+            <div class="layer-details">
+                <h2>Layer Breakdown</h2>
+
+                <div class="layer layer5">
+                    <div class="layer-title">
+                        <span style="font-size: 1.5em;">📱</span>
+                        <span>Layer 5: Application/Protocol</span>
+                    </div>
+                    <div class="layer-components">
+                        <div class="component">
+                            <div class="component-name">QSBR (Quantum-Safe Binary RPC)</div>
+                            <div class="component-desc">Optimized RPC protocol with quantum-resistant serialization</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Ternary Coordinates</div>
+                            <div class="component-desc">3-base coordinate system for efficient state addressing</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Quaternary Checksums</div>
+                            <div class="component-desc">4-base error detection for enhanced data integrity</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer layer4">
+                    <div class="layer-title">
+                        <span style="font-size: 1.5em;">✍️</span>
+                        <span>Layer 4: Cryptographic Signatures</span>
+                    </div>
+                    <div class="layer-components">
+                        <div class="component">
+                            <div class="component-name">SPHINCS+ (Hash-based Signatures)</div>
+                            <div class="component-desc">Stateless post-quantum signatures, 49KB signatures, NIST Level 5</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Lamport Chains (One-Time Signatures)</div>
+                            <div class="component-desc">Hash-based OTS for ephemeral signing, quantum-safe</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer layer3">
+                    <div class="layer-title">
+                        <span style="font-size: 1.5em;">🔑</span>
+                        <span>Layer 3: Key Management</span>
+                    </div>
+                    <div class="layer-components">
+                        <div class="component">
+                            <div class="component-name">SPQDR (Sparse Post-Quantum Double Ratchet)</div>
+                            <div class="component-desc">Kyber-based key agreement with forward secrecy</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">Triple Ratchet</div>
+                            <div class="component-desc">Enhanced Signal protocol with quantum resistance</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer layer2">
+                    <div class="layer-title">
+                        <span style="font-size: 1.5em;">🌐</span>
+                        <span>Layer 2: Network/Transport</span>
+                    </div>
+                    <div class="layer-components">
+                        <div class="component">
+                            <div class="component-name">QUIC (Quantum-Upgraded Internet Connection)</div>
+                            <div class="component-desc">Packet-level encryption with Kyber KEM, UDP-based</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer layer1">
+                    <div class="layer-title">
+                        <span style="font-size: 1.5em;">⚡</span>
+                        <span>Layer 1: Consensus/Runtime</span>
+                    </div>
+                    <div class="layer-components">
+                        <div class="component">
+                            <div class="component-name">Toroidal Mesh</div>
+                            <div class="component-desc">Parallel block execution with wrap-around topology</div>
+                        </div>
+                        <div class="component">
+                            <div class="component-name">GRANDPA Finality</div>
+                            <div class="component-desc">Byzantine fault tolerant finality gadget</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toroidal Mesh Visualization -->
+        <div class="toroidal-section">
+            <div class="canvas-container">
+                <h2 style="text-align: center; margin-bottom: 15px;">🍩 Toroidal Mesh Topology</h2>
+                <p style="text-align: center; color: #aaa; margin-bottom: 15px;">
+                    Each validator connects to its neighbors in a wrap-around grid for parallel execution
+                </p>
+                <canvas id="toroidCanvas" width="1400" height="700"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stackCanvas = document.getElementById('stackCanvas');
+        const stackCtx = stackCanvas.getContext('2d');
+        const toroidCanvas = document.getElementById('toroidCanvas');
+        const toroidCtx = toroidCanvas.getContext('2d');
+
+        let animationRunning = false;
+        let frame = 0;
+
+        // Layer definitions
+        const layers = [
+            {
+                name: 'Layer 5: Application/Protocol',
+                y: 100,
+                color: '#ff00ff',
+                components: ['QSBR', 'Ternary Coords', 'Quaternary Checksums'],
+                icon: '📱'
+            },
+            {
+                name: 'Layer 4: Cryptographic Signatures',
+                y: 240,
+                color: '#00ff00',
+                components: ['SPHINCS+', 'Lamport Chains'],
+                icon: '✍️'
+            },
+            {
+                name: 'Layer 3: Key Management',
+                y: 380,
+                color: '#ffff00',
+                components: ['SPQDR', 'Triple Ratchet'],
+                icon: '🔑'
+            },
+            {
+                name: 'Layer 2: Network/Transport',
+                y: 520,
+                color: '#ff8800',
+                components: ['QUIC'],
+                icon: '🌐'
+            },
+            {
+                name: 'Layer 1: Consensus/Runtime',
+                y: 660,
+                color: '#00ffff',
+                components: ['Toroidal Mesh', 'GRANDPA'],
+                icon: '⚡'
+            }
+        ];
+
+        // Toroidal mesh grid
+        const meshGrid = {
+            rows: 5,
+            cols: 8,
+            nodeSize: 30,
+            spacing: 120
+        };
+
+        function drawStackLayer(layer, index) {
+            const x = 400;
+            const y = layer.y;
+            const width = 600;
+            const height = 100;
+
+            // Pulsing effect
+            const pulse = Math.sin(frame * 0.05 + index) * 5;
+
+            // Layer box
+            stackCtx.fillStyle = `${layer.color}20`;
+            stackCtx.strokeStyle = layer.color;
+            stackCtx.lineWidth = 3;
+            stackCtx.fillRect(x - width/2, y, width, height);
+            stackCtx.strokeRect(x - width/2, y, width, height);
+
+            // Glow effect
+            const gradient = stackCtx.createRadialGradient(x, y + height/2, 0, x, y + height/2, width/2);
+            gradient.addColorStop(0, `${layer.color}40`);
+            gradient.addColorStop(1, `${layer.color}00`);
+            stackCtx.fillStyle = gradient;
+            stackCtx.fillRect(x - width/2 - 20, y - 10, width + 40, height + 20);
+
+            // Icon
+            stackCtx.font = '40px Arial';
+            stackCtx.fillText(layer.icon, x - width/2 + 20, y + 55);
+
+            // Layer name
+            stackCtx.fillStyle = '#fff';
+            stackCtx.font = 'bold 18px Arial';
+            stackCtx.textAlign = 'left';
+            stackCtx.fillText(layer.name, x - width/2 + 80, y + 35);
+
+            // Components
+            stackCtx.font = '14px Arial';
+            stackCtx.fillStyle = layer.color;
+            const componentsText = layer.components.join(' | ');
+            stackCtx.fillText(componentsText, x - width/2 + 80, y + 65);
+
+            // Data flow particles
+            if (frame % 30 === index * 6) {
+                for (let i = 0; i < 3; i++) {
+                    const px = x - width/2 + Math.random() * width;
+                    const py = y + height;
+                    particles.push({
+                        x: px,
+                        y: py,
+                        vx: 0,
+                        vy: 2,
+                        color: layer.color,
+                        life: 1,
+                        size: 3
+                    });
+                }
+            }
+        }
+
+        const particles = [];
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.01;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                stackCtx.globalAlpha = p.life;
+                stackCtx.fillStyle = p.color;
+                stackCtx.beginPath();
+                stackCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                stackCtx.fill();
+                stackCtx.globalAlpha = 1;
+            }
+        }
+
+        function drawStackVisualization() {
+            stackCtx.fillStyle = 'rgba(10, 10, 26, 0.3)';
+            stackCtx.fillRect(0, 0, stackCanvas.width, stackCanvas.height);
+
+            // Draw connections between layers
+            stackCtx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+            stackCtx.lineWidth = 2;
+            for (let i = 0; i < layers.length - 1; i++) {
+                const y1 = layers[i].y + 100;
+                const y2 = layers[i + 1].y;
+                stackCtx.beginPath();
+                stackCtx.moveTo(400, y1);
+                stackCtx.lineTo(400, y2);
+                stackCtx.stroke();
+
+                // Arrow
+                stackCtx.beginPath();
+                stackCtx.moveTo(390, y2 - 10);
+                stackCtx.lineTo(400, y2);
+                stackCtx.lineTo(410, y2 - 10);
+                stackCtx.stroke();
+            }
+
+            layers.forEach((layer, index) => drawStackLayer(layer, index));
+            updateParticles();
+
+            // Title
+            stackCtx.fillStyle = '#00ffff';
+            stackCtx.font = 'bold 24px Arial';
+            stackCtx.textAlign = 'center';
+            stackCtx.fillText('Post-Quantum Security Stack', 400, 50);
+        }
+
+        function drawToroidalMesh() {
+            toroidCtx.fillStyle = 'rgba(10, 10, 26, 0.1)';
+            toroidCtx.fillRect(0, 0, toroidCanvas.width, toroidCanvas.height);
+
+            const offsetX = 150;
+            const offsetY = 100;
+
+            // Draw connections first (behind nodes)
+            toroidCtx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+            toroidCtx.lineWidth = 2;
+
+            for (let row = 0; row < meshGrid.rows; row++) {
+                for (let col = 0; col < meshGrid.cols; col++) {
+                    const x = offsetX + col * meshGrid.spacing;
+                    const y = offsetY + row * meshGrid.spacing;
+
+                    // Right connection (wraps around)
+                    const nextCol = (col + 1) % meshGrid.cols;
+                    const nextX = offsetX + nextCol * meshGrid.spacing;
+
+                    // Pulsing effect
+                    const pulse = (Math.sin(frame * 0.05 + row + col) + 1) / 2;
+                    toroidCtx.globalAlpha = 0.3 + pulse * 0.3;
+
+                    toroidCtx.beginPath();
+                    toroidCtx.moveTo(x + meshGrid.nodeSize, y);
+
+                    if (nextCol === 0) {
+                        // Wrap-around connection (curved)
+                        toroidCtx.strokeStyle = `rgba(255, 0, 255, ${0.3 + pulse * 0.3})`;
+                        toroidCtx.setLineDash([5, 5]);
+                        toroidCtx.bezierCurveTo(
+                            x + meshGrid.spacing, y - 50,
+                            nextX - meshGrid.spacing + meshGrid.cols * meshGrid.spacing, y - 50,
+                            nextX - meshGrid.nodeSize, y
+                        );
+                    } else {
+                        toroidCtx.strokeStyle = `rgba(0, 255, 255, ${0.3 + pulse * 0.3})`;
+                        toroidCtx.setLineDash([]);
+                        toroidCtx.lineTo(nextX - meshGrid.nodeSize, y);
+                    }
+                    toroidCtx.stroke();
+
+                    // Down connection (wraps around)
+                    const nextRow = (row + 1) % meshGrid.rows;
+                    const nextY = offsetY + nextRow * meshGrid.spacing;
+
+                    toroidCtx.beginPath();
+                    toroidCtx.moveTo(x, y + meshGrid.nodeSize);
+
+                    if (nextRow === 0) {
+                        // Wrap-around connection (curved)
+                        toroidCtx.strokeStyle = `rgba(255, 0, 255, ${0.3 + pulse * 0.3})`;
+                        toroidCtx.setLineDash([5, 5]);
+                        toroidCtx.bezierCurveTo(
+                            x - 50, y + meshGrid.spacing,
+                            x - 50, nextY - meshGrid.spacing + meshGrid.rows * meshGrid.spacing,
+                            x, nextY - meshGrid.nodeSize
+                        );
+                    } else {
+                        toroidCtx.strokeStyle = `rgba(0, 255, 255, ${0.3 + pulse * 0.3})`;
+                        toroidCtx.setLineDash([]);
+                        toroidCtx.lineTo(x, nextY - meshGrid.nodeSize);
+                    }
+                    toroidCtx.stroke();
+                }
+            }
+
+            toroidCtx.setLineDash([]);
+            toroidCtx.globalAlpha = 1;
+
+            // Draw nodes
+            for (let row = 0; row < meshGrid.rows; row++) {
+                for (let col = 0; col < meshGrid.cols; col++) {
+                    const x = offsetX + col * meshGrid.spacing;
+                    const y = offsetY + row * meshGrid.spacing;
+                    const nodeIndex = row * meshGrid.cols + col;
+
+                    // Pulsing
+                    const pulse = Math.sin(frame * 0.05 + nodeIndex * 0.2) * 5;
+
+                    // Glow
+                    const gradient = toroidCtx.createRadialGradient(x, y, 0, x, y, meshGrid.nodeSize + 20);
+                    gradient.addColorStop(0, 'rgba(0, 255, 255, 0.3)');
+                    gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                    toroidCtx.fillStyle = gradient;
+                    toroidCtx.beginPath();
+                    toroidCtx.arc(x, y, meshGrid.nodeSize + 20 + pulse, 0, Math.PI * 2);
+                    toroidCtx.fill();
+
+                    // Node circle
+                    toroidCtx.fillStyle = '#00ffff';
+                    toroidCtx.strokeStyle = '#00ffff';
+                    toroidCtx.lineWidth = 3;
+                    toroidCtx.beginPath();
+                    toroidCtx.arc(x, y, meshGrid.nodeSize, 0, Math.PI * 2);
+                    toroidCtx.globalAlpha = 0.2;
+                    toroidCtx.fill();
+                    toroidCtx.globalAlpha = 1;
+                    toroidCtx.stroke();
+
+                    // Validator icon
+                    toroidCtx.fillStyle = '#fff';
+                    toroidCtx.font = 'bold 20px Arial';
+                    toroidCtx.textAlign = 'center';
+                    toroidCtx.textBaseline = 'middle';
+                    toroidCtx.fillText('V', x, y);
+
+                    // Node number
+                    toroidCtx.fillStyle = '#00ffff';
+                    toroidCtx.font = 'bold 12px Arial';
+                    toroidCtx.fillText(`${nodeIndex}`, x, y + 45);
+                }
+            }
+
+            // Labels
+            toroidCtx.fillStyle = '#ff00ff';
+            toroidCtx.font = 'bold 16px Arial';
+            toroidCtx.textAlign = 'center';
+            toroidCtx.fillText('← Horizontal Wrap-Around (Magenta Dashed Lines)', 700, 40);
+            toroidCtx.fillText('Vertical Wrap-Around (Magenta Dashed Lines) ↑↓', 1300, 350);
+
+            // Topology explanation
+            toroidCtx.fillStyle = '#aaa';
+            toroidCtx.font = '14px Arial';
+            toroidCtx.textAlign = 'left';
+            const explanations = [
+                'Each validator (V) connects to 4 neighbors: right, left, up, down',
+                'Edges wrap around: rightmost connects to leftmost, bottom to top',
+                'Enables parallel block execution with consistent connectivity',
+                'Fault tolerance: Multiple paths between any two validators'
+            ];
+            explanations.forEach((text, i) => {
+                toroidCtx.fillText('• ' + text, 50, 650 + i * 20);
+            });
+        }
+
+        function animate() {
+            if (!animationRunning) return;
+
+            frame++;
+            drawStackVisualization();
+            drawToroidalMesh();
+
+            requestAnimationFrame(animate);
+        }
+
+        function startAnimation() {
+            animationRunning = true;
+            animate();
+        }
+
+        function pauseAnimation() {
+            animationRunning = false;
+        }
+
+        function resetAnimation() {
+            frame = 0;
+            particles.length = 0;
+            stackCtx.clearRect(0, 0, stackCanvas.width, stackCanvas.height);
+            toroidCtx.clearRect(0, 0, toroidCanvas.width, toroidCanvas.height);
+            drawStackVisualization();
+            drawToroidalMesh();
+        }
+
+        // Initial draw
+        drawStackVisualization();
+        drawToroidalMesh();
+        startAnimation();
+    </script>
+</body>
+</html>

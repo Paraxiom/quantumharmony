@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=320">
+  <title>QuantumHarmony Wallet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 320px;
+      min-height: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      padding: 15px;
+    }
+    .header {
+      text-align: center;
+      padding: 15px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 15px;
+    }
+    .logo { font-size: 24px; margin-bottom: 5px; }
+    h1 { color: #a78bfa; font-size: 16px; font-weight: 600; }
+    .subtitle { font-size: 11px; opacity: 0.7; }
+    .section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #818cf8;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-success { background: #059669; color: white; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-secondary { background: #4b5563; color: white; }
+    .account-info {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid #10b981;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .account-name { font-weight: bold; color: #34d399; }
+    .account-address {
+      font-size: 10px;
+      font-family: monospace;
+      word-break: break-all;
+      opacity: 0.8;
+    }
+    .status {
+      text-align: center;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .status-connected { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .status-disconnected { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .hidden { display: none; }
+    .tabs {
+      display: flex;
+      margin-bottom: 12px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      background: rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-size: 12px;
+      border: none;
+      color: #aaa;
+    }
+    .tab:first-child { border-radius: 6px 0 0 6px; }
+    .tab:last-child { border-radius: 0 6px 6px 0; }
+    .tab.active { background: #6366f1; color: white; }
+    .network-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      background: #7c3aed;
+    }
+    .balance {
+      font-size: 24px;
+      font-weight: bold;
+      color: #a78bfa;
+      text-align: center;
+      padding: 15px 0;
+    }
+    .balance-label { font-size: 11px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Q</div>
+    <h1>QuantumHarmony Wallet</h1>
+    <div class="subtitle">Post-Quantum Secure</div>
+  </div>
+
+  <!-- Setup View (No wallet) -->
+  <div id="setupView">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('import')">Import Key</button>
+      <button class="tab" onclick="showTab('create')">Create New</button>
+    </div>
+
+    <div id="importTab">
+      <div class="section">
+        <div class="section-title">Import Existing Key</div>
+        <input type="text" id="importName" placeholder="Account Name (e.g., Alice)">
+        <textarea id="importKey" placeholder="SPHINCS+ Secret Key (0x...)" rows="4"></textarea>
+        <input type="password" id="importPassword" placeholder="Create Password">
+        <input type="password" id="importPasswordConfirm" placeholder="Confirm Password">
+        <button class="btn-primary" onclick="importKey()">Import & Encrypt</button>
+      </div>
+    </div>
+
+    <div id="createTab" class="hidden">
+      <div class="section">
+        <div class="section-title">Generate New Key</div>
+        <input type="text" id="createName" placeholder="Account Name">
+        <input type="password" id="createPassword" placeholder="Create Password">
+        <input type="password" id="createPasswordConfirm" placeholder="Confirm Password">
+        <button class="btn-success" onclick="createKey()">Generate SPHINCS+ Key</button>
+        <p style="font-size: 10px; opacity: 0.7; margin-top: 8px;">
+          Note: Key generation requires the node binary. For testing, use Import with test keys.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unlock View (Wallet locked) -->
+  <div id="unlockView" class="hidden">
+    <div class="section">
+      <div class="section-title">Unlock Wallet</div>
+      <input type="password" id="unlockPassword" placeholder="Enter Password">
+      <button class="btn-primary" onclick="unlock()">Unlock</button>
+    </div>
+  </div>
+
+  <!-- Main View (Wallet unlocked) -->
+  <div id="mainView" class="hidden">
+    <div id="connectionStatus" class="status status-disconnected">Not Connected</div>
+
+    <div class="account-info">
+      <div class="account-name" id="accountName">Alice</div>
+      <div class="account-address" id="accountAddress">5HDj...P5Qi</div>
+      <div style="margin-top: 5px;">
+        <span class="network-badge">Testnet</span>
+      </div>
+    </div>
+
+    <div class="balance">
+      <div class="balance-label">Balance</div>
+      <div id="accountBalance">-- QMHY</div>
+    </div>
+
+    <div class="section">
+      <button class="btn-primary" onclick="connect()">Connect to Site</button>
+      <button class="btn-secondary" onclick="refreshBalance()">Refresh Balance</button>
+      <button class="btn-danger" onclick="lock()">Lock Wallet</button>
+    </div>
+
+    <div id="pendingRequest" class="section hidden">
+      <div class="section-title">Pending Request</div>
+      <div id="requestDetails"></div>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button class="btn-success" style="flex: 1;" onclick="approveRequest()">Approve</button>
+        <button class="btn-danger" style="flex: 1;" onclick="rejectRequest()">Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

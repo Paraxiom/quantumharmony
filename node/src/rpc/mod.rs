@@ -1,0 +1,141 @@
+//! A collection of node-specific RPC methods.
+
+use std::sync::Arc;
+
+// Substrate
+use sc_client_api::client::BlockchainEvents;
+use sc_rpc_api::DenyUnsafe;
+use sc_service::TransactionPool;
+use sc_transaction_pool_api::TransactionPool as TxPool;
+use sp_api::ProvideRuntimeApi;
+use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+// QUANTUM: Using SPHINCS+ instead of sr25519
+use sp_consensus_aura::sphincs::AuthorityId as AuraId;
+use jsonrpsee::RpcModule;
+
+// Runtime
+use quantumharmony_runtime::{opaque::Block, AccountId, Balance, Nonce};
+
+// Transaction gateway for wallet integration
+pub mod transaction_gateway;
+use transaction_gateway::{TransactionGateway, TransactionGatewayApiServer};
+
+// Threshold QRNG RPC for real-time device monitoring
+pub mod threshold_qrng_rpc;
+use threshold_qrng_rpc::{ThresholdQrngRpc, ThresholdQrngApiServer};
+
+// Runtime Segmentation RPC for 512-segment toroidal mesh monitoring
+pub mod runtime_segmentation_rpc;
+use runtime_segmentation_rpc::{RuntimeSegmentationRpc, RuntimeSegmentationApiServer};
+// Re-export the segment routing helper for use by transaction_gateway
+pub use runtime_segmentation_rpc::route_and_record_transaction;
+
+// Sudo RPC for quantum-safe runtime upgrades
+pub mod sudo_rpc;
+use sudo_rpc::{SudoRpc, SudoApiServer};
+
+// Runtime Upgrade RPC with SPHINCS+ signing
+pub mod runtime_upgrade_rpc;
+use runtime_upgrade_rpc::{RuntimeUpgradeRpc, RuntimeUpgradeApiServer};
+
+// Chunked Upgrade RPC for large runtime upgrades
+pub mod chunked_upgrade_rpc;
+use chunked_upgrade_rpc::{ChunkedUpgradeRpc, ChunkedUpgradeApiServer};
+
+// Governance & Rewards RPC for dashboard integration
+pub mod governance_rpc;
+use governance_rpc::{GovernanceRpc, GovernanceApiServer};
+
+/// Full client dependencies (governance-only, no Frontier)
+pub struct FullDeps<C, P> {
+    /// The client instance to use.
+    pub client: Arc<C>,
+    /// Transaction pool instance.
+    pub pool: Arc<P>,
+    /// Whether to deny unsafe calls
+    pub deny_unsafe: DenyUnsafe,
+}
+
+/// Instantiate all Full RPC extensions
+pub fn create_full<C, Pool>(
+    deps: FullDeps<C, Pool>,
+) -> Result<RpcModule<()>, sc_service::Error>
+where
+    C: ProvideRuntimeApi<Block> + BlockchainEvents<Block> + 'static,
+    C::Api: sp_block_builder::BlockBuilder<Block>,
+    C::Api: sp_consensus_aura::AuraApi<Block, AuraId>,
+    C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
+    C::Api: frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce>,
+    C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
+    C::Api: pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>,
+    C::Api: quantumharmony_runtime::wallet_api::WalletApi<Block, AccountId, Balance>,
+    C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
+    Pool: TxPool<Block = Block> + 'static,
+{
+    let mut module = RpcModule::new(());
+
+    // Create transaction gateway instance
+    let transaction_gateway = TransactionGateway::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge transaction gateway RPC into module
+    module.merge(transaction_gateway.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Transaction Gateway RPC methods registered");
+
+    // Create threshold QRNG RPC instance
+    let threshold_qrng_rpc = ThresholdQrngRpc::<Block>::new();
+
+    // Merge threshold QRNG RPC into module
+    module.merge(threshold_qrng_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Threshold QRNG RPC methods registered");
+
+    // Create runtime segmentation RPC instance
+    let runtime_segmentation_rpc = RuntimeSegmentationRpc::<Block>::new();
+
+    // Merge runtime segmentation RPC into module
+    module.merge(runtime_segmentation_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Runtime Segmentation RPC methods registered");
+
+    // Create sudo RPC instance
+    let sudo_rpc = SudoRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge sudo RPC into module
+    module.merge(sudo_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Sudo RPC methods registered (quantum-safe runtime upgrades)");
+
+    // Create runtime upgrade RPC instance with SPHINCS+ signing
+    let runtime_upgrade_rpc = RuntimeUpgradeRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge runtime upgrade RPC into module
+    module.merge(runtime_upgrade_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Runtime Upgrade RPC with SPHINCS+ signing registered");
+
+    // Create chunked upgrade RPC instance for large runtime upgrades
+    let chunked_upgrade_rpc = ChunkedUpgradeRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge chunked upgrade RPC into module
+    module.merge(chunked_upgrade_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Chunked Upgrade RPC registered (for large runtime upgrades)");
+
+    // Create governance & rewards RPC instance for dashboard integration
+    let governance_rpc = GovernanceRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge governance RPC into module
+    module.merge(governance_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Governance & Rewards RPC methods registered (quantumharmony_*)");
+
+    Ok(module)
+}

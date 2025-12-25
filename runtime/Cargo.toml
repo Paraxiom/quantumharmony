@@ -1,0 +1,205 @@
+[package]
+name = "quantumharmony-runtime"
+version = "0.1.0"
+license = "Unlicense"
+description = "A fresh FRAME-based Substrate runtime."
+publish = false
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+scale-codec = { workspace = true }
+scale-info = { workspace = true }
+static_assertions = "1.1.0"
+log = { workspace = true }
+# Substrate
+sp-api = { workspace = true }
+sp-block-builder = { workspace = true }
+sp-consensus-aura = { workspace = true }
+# sp-consensus-grandpa = { workspace = true }  # Removed - quantum-vulnerable
+sp-core = { workspace = true }
+sp-genesis-builder = { workspace = true }
+sp-inherents = { workspace = true }
+sp-io = { workspace = true }
+sp-offchain = { workspace = true }
+sp-runtime = { workspace = true }
+sp-session = { workspace = true }
+sp-std = { workspace = true }
+sp-transaction-pool = { workspace = true }
+sp-version = { workspace = true }
+# Substrate FRAME
+frame-benchmarking = { workspace = true, optional = true }
+frame-executive = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+frame-system-benchmarking = { workspace = true, optional = true }
+frame-system-rpc-runtime-api = { workspace = true }
+pallet-aura = { workspace = true }
+pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
+# pallet-grandpa = { workspace = true }  # Removed - quantum-vulnerable
+pallet-sudo = { workspace = true }
+pallet-timestamp = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-transaction-payment-rpc-runtime-api = { workspace = true }
+# pallet-contracts = { workspace = true }
+# pallet-parameters = { workspace = true }
+# pallet-insecure-randomness-collective-flip = { workspace = true }
+# pallet-assets = { workspace = true }
+# pallet-indices = { workspace = true }
+# pallet-multisig = { workspace = true }
+# pallet-recovery = { workspace = true }
+pallet-session = { workspace = true }
+pallet-authorship = { workspace = true }
+# pallet-uniques = { workspace = true }
+# pallet-im-online = { workspace = true }
+substrate-validator-set = { workspace = true }
+pallet-validator-governance = { workspace = true }
+
+hex-literal = { workspace = true }
+# pallet-registration = { workspace = true }
+
+# Quantum-resistant cryptography
+hash256-std-hasher = { version = "0.15", default-features = false }
+
+# Governance pallets
+pallet-democracy = { workspace = true }
+pallet-collective = { workspace = true }
+pallet-treasury = { workspace = true }
+pallet-scheduler = { workspace = true }
+pallet-preimage = { workspace = true }
+pallet-proxy = { workspace = true }
+pallet-identity = { workspace = true }
+sp-application-crypto = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+environmental = { workspace = true }
+# sp-consensus-babe = { workspace = true }
+# pallet-babe = { workspace = true }
+
+# Quantum pallets
+pallet-quantum-crypto = { path = "/opt/polkadot-sdk/substrate/frame/quantum-crypto", default-features = false }
+pallet-proof-of-coherence = { path = "/opt/polkadot-sdk/substrate/frame/proof-of-coherence", default-features = false }
+pallet-runtime-segmentation = { path = "../pallets/runtime-segmentation", default-features = false }
+pallet-validator-entropy = { path = "../pallets/validator-entropy", default-features = false }
+pallet-relay-coordination = { path = "../pallets/relay-coordination", default-features = false }
+pallet-sphincs-keystore = { path = "../pallets/sphincs-keystore", default-features = false }
+
+# Dev governance pallet
+pallet-dev-governance = { path = "../pallets/dev-governance", default-features = false }
+
+# Academic/Legal governance pallets
+pallet-academic-vouch = { path = "../pallets/academic-vouch", default-features = false }
+pallet-ricardian-contracts = { path = "../pallets/ricardian-contracts", default-features = false }
+pallet-notarial = { path = "../pallets/notarial", default-features = false }
+
+# Validator rewards pallet
+pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false }
+
+# Consensus level tracking pallet
+pallet-consensus-level = { path = "../pallets/consensus-level", default-features = false }
+
+[build-dependencies]
+substrate-wasm-builder = { workspace = true }
+
+[features]
+default = ["std", "with-rocksdb-weights"]
+with-rocksdb-weights = []
+with-paritydb-weights = []
+std = [
+	# "pallet-insecure-randomness-collective-flip/std",
+	
+	# "pallet-babe/std",
+	# "sp-consensus-babe/std",
+	"sp-application-crypto/std",
+	"scale-codec/std",
+	"scale-info/std",
+	# Substrate
+	"sp-api/std",
+	"sp-block-builder/std",
+	"sp-consensus-aura/std",
+	# "sp-consensus-grandpa/std",  # Removed - quantum-vulnerable
+	"sp-core/std",
+	"sp-genesis-builder/std",
+	"sp-inherents/std",
+	"sp-io/std",
+	"sp-offchain/std",
+	"sp-runtime/std",
+	"sp-session/std",
+	"sp-std/std",
+	"sp-transaction-pool/std",
+	"sp-version/std",
+	# Substrate FRAME
+	"frame-benchmarking/std",
+	"frame-executive/std",
+	"frame-support/std",
+	"frame-system/std",
+	"frame-system-rpc-runtime-api/std",
+	"frame-system-benchmarking?/std",
+	"pallet-aura/std",
+	"pallet-authorship/std",
+	"pallet-session/std",
+	"pallet-balances/std",
+	# "pallet-grandpa/std",  # Removed - quantum-vulnerable
+	"pallet-sudo/std",
+	"pallet-timestamp/std",
+	"pallet-transaction-payment/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
+	# "pallet-contracts/std",
+	# "pallet-parameters/std",
+	# "pallet-assets/std",
+	# "pallet-indices/std",
+	# "pallet-multisig/std",
+	# "pallet-recovery/std",
+	# "pallet-uniques/std",
+	"substrate-validator-set/std",
+	"pallet-validator-governance/std",
+
+	# "pallet-im-online/std",
+	"pallet-quantum-crypto/std",
+	"pallet-proof-of-coherence/std",
+	"pallet-runtime-segmentation/std",
+	"pallet-validator-entropy/std",
+	"pallet-relay-coordination/std",
+	"pallet-sphincs-keystore/std",
+	"pallet-dev-governance/std",
+	"pallet-validator-rewards/std",
+	"pallet-academic-vouch/std",
+	"pallet-ricardian-contracts/std",
+	"pallet-notarial/std",
+	"pallet-consensus-level/std",
+
+	# Governance pallets
+	"pallet-democracy/std",
+	"pallet-collective/std",
+	"pallet-treasury/std",
+	"pallet-scheduler/std",
+	"pallet-preimage/std",
+	"pallet-proxy/std",
+	"pallet-identity/std",
+	"hash256-std-hasher/std",
+]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-system-benchmarking/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	# "pallet-grandpa/runtime-benchmarks",  # Removed - quantum-vulnerable
+	"pallet-timestamp/runtime-benchmarks",
+	"pallet-sudo/runtime-benchmarks",
+	"pallet-democracy/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
+	"pallet-treasury/runtime-benchmarks",
+	"pallet-scheduler/runtime-benchmarks",
+	"pallet-preimage/runtime-benchmarks",
+	"pallet-proxy/runtime-benchmarks",
+	"pallet-identity/runtime-benchmarks",
+	"pallet-validator-entropy/runtime-benchmarks",
+	"pallet-relay-coordination/runtime-benchmarks",
+
+	# "pallet-validator-set/runtime-benchmarks",
+]
+try-runtime = []

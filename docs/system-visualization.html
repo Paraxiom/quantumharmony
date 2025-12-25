@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumHarmony System Architecture - Animated</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            margin: 0 10px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .canvas-container {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .legend-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid;
+            transition: all 0.3s;
+        }
+
+        .legend-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .legend-desc {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .qkd-island { border-left-color: #ff00ff; }
+        .validator { border-left-color: #00ff00; }
+        .relay { border-left-color: #ffff00; }
+        .blockchain { border-left-color: #00ffff; }
+        .offchain { border-left-color: #ff8800; }
+        .qssh { border-left-color: #ff0088; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚛️ QuantumHarmony System Architecture</h1>
+        <p class="subtitle">Post-Quantum Blockchain with QKD Islands & QSSH Relay Coordination</p>
+
+        <div class="controls">
+            <button onclick="startAnimation()">▶️ Start Animation</button>
+            <button onclick="pauseAnimation()">⏸️ Pause</button>
+            <button onclick="resetAnimation()">🔄 Reset</button>
+            <button onclick="toggleSpeed()">⚡ Speed: <span id="speed">1x</span></button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="blockCount">0</div>
+                <div class="stat-label">Blocks Produced</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="txCount">0</div>
+                <div class="stat-label">Transactions</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="relayCount">3</div>
+                <div class="stat-label">Active Relays</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="qkdCount">4</div>
+                <div class="stat-label">QKD Islands</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item qkd-island">
+                <div class="legend-title">🏝️ QKD Islands</div>
+                <div class="legend-desc">Geographic locations with quantum key distribution hardware. Generate true quantum entropy for validators.</div>
+            </div>
+
+            <div class="legend-item validator">
+                <div class="legend-title">🔐 Validators (SPHINCS+)</div>
+                <div class="legend-desc">Block producers using post-quantum SPHINCS+ signatures. Can register entropy source type (QKD, HWRNG, Hybrid, StakeOnly).</div>
+            </div>
+
+            <div class="legend-item relay">
+                <div class="legend-title">🔀 QSSH Relays</div>
+                <div class="legend-desc">Elected relay nodes bridging QKD islands with quantum-safe SSH. Off-chain workers submit metrics via unsigned transactions.</div>
+            </div>
+
+            <div class="legend-item blockchain">
+                <div class="legend-title">⛓️ Blockchain Layer</div>
+                <div class="legend-desc">Substrate-based chain with custom pallets: validator-entropy, relay-coordination. GRANDPA finality with SPHINCS+.</div>
+            </div>
+
+            <div class="legend-item offchain">
+                <div class="legend-title">🔄 Off-Chain Workers</div>
+                <div class="legend-desc">Monitor relay health, submit unsigned transactions with metrics (uptime, success/fail counts). Validated by ValidateUnsigned.</div>
+            </div>
+
+            <div class="legend-item qssh">
+                <div class="legend-title">🛡️ QSSH Protocol</div>
+                <div class="legend-desc">Quantum-safe SSH tunnels using PQ-Transport-Gateway (Kyber KEM + Dilithium signatures). Encrypts validator-to-validator communication.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = 1400;
+        canvas.height = 900;
+
+        // Animation state
+        let animationRunning = false;
+        let animationFrame = 0;
+        let speedMultiplier = 1;
+        let blockCount = 0;
+        let txCount = 0;
+
+        // Particle system for quantum effects
+        const particles = [];
+
+        // Data flow animations
+        const dataFlows = [];
+
+        // QKD Islands (geographic locations)
+        const qkdIslands = [
+            { x: 200, y: 200, name: 'Tokyo', region: 'Asia-Pacific' },
+            { x: 600, y: 250, name: 'Singapore', region: 'Asia-Pacific' },
+            { x: 1000, y: 200, name: 'London', region: 'Europe' },
+            { x: 1200, y: 300, name: 'New York', region: 'Americas' }
+        ];
+
+        // Validators (some connected to QKD, some not)
+        const validators = [
+            { x: 200, y: 450, name: 'V1-QKD', type: 'QKD', island: 0, entropy: 'QKD' },
+            { x: 400, y: 450, name: 'V2-Hybrid', type: 'Hybrid', island: 1, entropy: 'Hybrid' },
+            { x: 600, y: 450, name: 'V3-HWRNG', type: 'HardwareRNG', island: null, entropy: 'HWRNG' },
+            { x: 800, y: 450, name: 'V4-QKD', type: 'QKD', island: 2, entropy: 'QKD' },
+            { x: 1000, y: 450, name: 'V5-Stake', type: 'StakeOnly', island: null, entropy: 'Stake' },
+            { x: 1200, y: 450, name: 'V6-Hybrid', type: 'Hybrid', island: 3, entropy: 'Hybrid' }
+        ];
+
+        // Relays (elected to bridge QKD islands)
+        const relays = [
+            { x: 400, y: 200, name: 'Relay-1', connects: [0, 1], active: true },
+            { x: 800, y: 200, name: 'Relay-2', connects: [1, 2], active: true },
+            { x: 1100, y: 250, name: 'Relay-3', connects: [2, 3], active: true }
+        ];
+
+        // Blockchain layer
+        const blockchain = {
+            x: 700,
+            y: 650,
+            blocks: []
+        };
+
+        // Off-chain workers
+        const offchainWorkers = [
+            { x: 300, y: 650, relay: 0 },
+            { x: 700, y: 750, relay: 1 },
+            { x: 1100, y: 650, relay: 2 }
+        ];
+
+        class Particle {
+            constructor(x, y, color = '#00ffff') {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.life = 1;
+                this.decay = 0.01 + Math.random() * 0.02;
+                this.size = 2 + Math.random() * 3;
+                this.color = color;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+                this.size *= 0.98;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class DataFlow {
+            constructor(start, end, color, label) {
+                this.startX = start.x;
+                this.startY = start.y;
+                this.endX = end.x;
+                this.endY = end.y;
+                this.progress = 0;
+                this.color = color;
+                this.label = label;
+                this.speed = 0.01 + Math.random() * 0.02;
+            }
+
+            update() {
+                this.progress += this.speed * speedMultiplier;
+                return this.progress >= 1;
+            }
+
+            draw() {
+                const x = this.startX + (this.endX - this.startX) * this.progress;
+                const y = this.startY + (this.endY - this.startY) * this.progress;
+
+                // Draw flowing particle
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Trail effect
+                for (let i = 0; i < 5; i++) {
+                    const trailProgress = Math.max(0, this.progress - i * 0.05);
+                    const tx = this.startX + (this.endX - this.startX) * trailProgress;
+                    const ty = this.startY + (this.endY - this.startY) * trailProgress;
+                    ctx.globalAlpha = 0.3 - i * 0.05;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawQKDIsland(island) {
+            // Pulsing effect
+            const pulse = Math.sin(animationFrame * 0.05) * 3;
+
+            // Outer glow
+            const gradient = ctx.createRadialGradient(island.x, island.y, 0, island.x, island.y, 40 + pulse);
+            gradient.addColorStop(0, 'rgba(255, 0, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(island.x, island.y, 40 + pulse, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Island circle
+            ctx.fillStyle = '#ff00ff';
+            ctx.strokeStyle = '#ff88ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(island.x, island.y, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // QKD symbol
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Q', island.x, island.y);
+
+            // Label
+            ctx.fillStyle = '#ff88ff';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(island.name, island.x, island.y + 45);
+            ctx.font = 'bold 11px Arial';
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillText('🏝️ QKD ISLAND', island.x, island.y - 50);
+            ctx.font = '11px Arial';
+            ctx.fillStyle = '#aaa';
+            ctx.fillText(island.region, island.x, island.y + 60);
+        }
+
+        function drawValidator(validator) {
+            const colors = {
+                'QKD': '#00ff00',
+                'Hybrid': '#ffff00',
+                'HardwareRNG': '#00ffff',
+                'StakeOnly': '#ff8800'
+            };
+
+            const color = colors[validator.type];
+
+            // Hexagon shape
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i;
+                const x = validator.x + Math.cos(angle) * 20;
+                const y = validator.y + Math.sin(angle) * 20;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+
+            // SPHINCS+ indicator
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('S+', validator.x, validator.y);
+
+            // Type label above
+            ctx.fillStyle = color;
+            ctx.font = 'bold 10px Arial';
+            ctx.fillText('🔐 VALIDATOR', validator.x, validator.y - 35);
+
+            // Name and entropy type
+            ctx.fillStyle = color;
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(validator.name, validator.x, validator.y + 35);
+            ctx.font = 'bold 11px Arial';
+            ctx.fillText(validator.entropy, validator.x, validator.y + 50);
+
+            // Connection to QKD island (if applicable)
+            if (validator.island !== null) {
+                const island = qkdIslands[validator.island];
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = 0.3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(validator.x, validator.y - 20);
+                ctx.lineTo(island.x, island.y + 25);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawRelay(relay) {
+            const color = relay.active ? '#ffff00' : '#666';
+
+            // Diamond shape
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(relay.x, relay.y - 25);
+            ctx.lineTo(relay.x + 20, relay.y);
+            ctx.lineTo(relay.x, relay.y + 25);
+            ctx.lineTo(relay.x - 20, relay.y);
+            ctx.closePath();
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+
+            // QSSH indicator
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('SSH', relay.x, relay.y);
+
+            // Type label
+            ctx.fillStyle = color;
+            ctx.font = 'bold 10px Arial';
+            ctx.fillText('🔀 QSSH RELAY', relay.x, relay.y - 40);
+
+            // Name
+            ctx.fillStyle = color;
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(relay.name, relay.x, relay.y + 40);
+
+            // Connections to islands
+            relay.connects.forEach(islandIdx => {
+                const island = qkdIslands[islandIdx];
+                const pulse = (Math.sin(animationFrame * 0.1 + islandIdx) + 1) / 2;
+
+                ctx.strokeStyle = `rgba(255, 255, 0, ${0.3 + pulse * 0.3})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(relay.x, relay.y);
+                ctx.lineTo(island.x, island.y);
+                ctx.stroke();
+            });
+        }
+
+        function drawBlockchain() {
+            // Main blockchain box
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.fillRect(blockchain.x - 150, blockchain.y - 40, 300, 80);
+            ctx.strokeRect(blockchain.x - 150, blockchain.y - 40, 300, 80);
+
+            // Title
+            ctx.fillStyle = '#00ffff';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('⛓️ BLOCKCHAIN LAYER', blockchain.x, blockchain.y - 15);
+
+            // Pallets
+            ctx.font = 'bold 12px Arial';
+            ctx.fillStyle = '#00ffff';
+            ctx.fillText('Pallets: validator-entropy | relay-coordination', blockchain.x, blockchain.y + 5);
+            ctx.font = '11px Arial';
+            ctx.fillStyle = '#aaa';
+            ctx.fillText('Consensus: GRANDPA + SPHINCS+', blockchain.x, blockchain.y + 22);
+
+            // Recent blocks
+            blockchain.blocks.forEach((block, i) => {
+                const x = blockchain.x - 140 + i * 30;
+                const y = blockchain.y - 80;
+                const alpha = 1 - (i * 0.15);
+
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#00ffff';
+                ctx.fillRect(x, y, 25, 25);
+                ctx.strokeStyle = '#00ffff';
+                ctx.strokeRect(x, y, 25, 25);
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 10px Arial';
+                ctx.fillText(block, x + 12.5, y + 12.5);
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        function drawOffchainWorker(worker, index) {
+            const relay = relays[worker.relay];
+
+            // Worker circle
+            ctx.fillStyle = '#ff8800';
+            ctx.strokeStyle = '#ffaa44';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(worker.x, worker.y, 20, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+
+            // Worker icon
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚙', worker.x, worker.y);
+
+            // Type label
+            ctx.font = 'bold 10px Arial';
+            ctx.fillStyle = '#ff8800';
+            ctx.fillText('⚙️ OFF-CHAIN WORKER', worker.x, worker.y - 35);
+
+            // Label
+            ctx.font = 'bold 12px Arial';
+            ctx.fillStyle = '#ff8800';
+            ctx.fillText(`OCW-${index + 1}`, worker.x, worker.y + 35);
+            ctx.font = '10px Arial';
+            ctx.fillStyle = '#aaa';
+            ctx.fillText('Monitoring Relay', worker.x, worker.y + 48);
+
+            // Connection to relay
+            ctx.strokeStyle = 'rgba(255, 136, 0, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(worker.x, worker.y - 20);
+            ctx.lineTo(relay.x, relay.y + 25);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Connection to blockchain (unsigned tx)
+            ctx.strokeStyle = 'rgba(255, 136, 0, 0.3)';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(worker.x, worker.y + 20);
+            ctx.lineTo(blockchain.x, blockchain.y - 40);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function spawnParticles(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function createDataFlow(type) {
+            switch(type) {
+                case 'qkd-to-validator':
+                    const qkdVal = validators.find(v => v.type === 'QKD' && v.island !== null);
+                    if (qkdVal) {
+                        const island = qkdIslands[qkdVal.island];
+                        dataFlows.push(new DataFlow(island, qkdVal, '#ff00ff', 'Quantum Entropy'));
+                    }
+                    break;
+
+                case 'relay-metrics':
+                    const randomWorker = offchainWorkers[Math.floor(Math.random() * offchainWorkers.length)];
+                    dataFlows.push(new DataFlow(randomWorker, blockchain, '#ff8800', 'Relay Metrics'));
+                    txCount++;
+                    document.getElementById('txCount').textContent = txCount;
+                    break;
+
+                case 'validator-register':
+                    const randomVal = validators[Math.floor(Math.random() * validators.length)];
+                    dataFlows.push(new DataFlow(randomVal, blockchain, '#00ff00', 'Register Entropy'));
+                    txCount++;
+                    document.getElementById('txCount').textContent = txCount;
+                    break;
+
+                case 'qssh-tunnel':
+                    const randomRelay = relays[Math.floor(Math.random() * relays.length)];
+                    const island1 = qkdIslands[randomRelay.connects[0]];
+                    const island2 = qkdIslands[randomRelay.connects[1]];
+                    dataFlows.push(new DataFlow(island1, island2, '#ffff00', 'QSSH Tunnel'));
+                    break;
+            }
+        }
+
+        function produceBlock() {
+            blockCount++;
+            blockchain.blocks.unshift(blockCount);
+            if (blockchain.blocks.length > 10) {
+                blockchain.blocks.pop();
+            }
+            document.getElementById('blockCount').textContent = blockCount;
+            spawnParticles(blockchain.x, blockchain.y - 40, 20, '#00ffff');
+        }
+
+        function animate() {
+            if (!animationRunning) return;
+
+            // Clear canvas
+            ctx.fillStyle = 'rgba(10, 10, 26, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            animationFrame++;
+
+            // Draw connections layer (behind everything)
+            ctx.globalAlpha = 0.1;
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+
+            // Draw all connections
+            validators.forEach(v => {
+                if (v.island !== null) {
+                    const island = qkdIslands[v.island];
+                    ctx.beginPath();
+                    ctx.moveTo(v.x, v.y);
+                    ctx.lineTo(island.x, island.y);
+                    ctx.stroke();
+                }
+            });
+            ctx.globalAlpha = 1;
+
+            // Draw layer headers
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 16px Arial';
+
+            // QKD Islands layer header
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillText('LAYER 1: QUANTUM KEY DISTRIBUTION ISLANDS', 50, 150);
+
+            // Validators layer header
+            ctx.fillStyle = '#00ff00';
+            ctx.fillText('LAYER 2: VALIDATORS (SPHINCS+ POST-QUANTUM)', 50, 400);
+
+            // Off-chain workers layer header
+            ctx.fillStyle = '#ff8800';
+            ctx.fillText('LAYER 3: OFF-CHAIN WORKERS', 50, 600);
+
+            // Draw components
+            qkdIslands.forEach(drawQKDIsland);
+            relays.forEach(drawRelay);
+            validators.forEach(drawValidator);
+            drawBlockchain();
+            offchainWorkers.forEach(drawOffchainWorker);
+
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update and draw data flows
+            for (let i = dataFlows.length - 1; i >= 0; i--) {
+                const done = dataFlows[i].update();
+                dataFlows[i].draw();
+                if (done) {
+                    const flow = dataFlows[i];
+                    spawnParticles(flow.endX, flow.endY, 10, flow.color);
+                    dataFlows.splice(i, 1);
+                }
+            }
+
+            // Spawn random events
+            if (animationFrame % 60 === 0) {
+                const events = ['qkd-to-validator', 'relay-metrics', 'validator-register', 'qssh-tunnel'];
+                const event = events[Math.floor(Math.random() * events.length)];
+                createDataFlow(event);
+            }
+
+            // Produce blocks
+            if (animationFrame % 180 === 0) {
+                produceBlock();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function startAnimation() {
+            animationRunning = true;
+            animate();
+        }
+
+        function pauseAnimation() {
+            animationRunning = false;
+        }
+
+        function resetAnimation() {
+            animationFrame = 0;
+            blockCount = 0;
+            txCount = 0;
+            particles.length = 0;
+            dataFlows.length = 0;
+            blockchain.blocks = [];
+            document.getElementById('blockCount').textContent = '0';
+            document.getElementById('txCount').textContent = '0';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            animate();
+        }
+
+        function toggleSpeed() {
+            const speeds = [0.5, 1, 2, 4];
+            const currentIndex = speeds.indexOf(speedMultiplier);
+            speedMultiplier = speeds[(currentIndex + 1) % speeds.length];
+            document.getElementById('speed').textContent = speedMultiplier + 'x';
+        }
+
+        // Initial draw
+        animate();
+        startAnimation();
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+[package]
+name = "pallet-pedersen-commitment"
+version = "0.1.0"
+authors = ["QuantumHarmony Team"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/quantumharmony/quantumharmony"
+description = "Pedersen commitment scheme for information-theoretic hiding of quantum entropy"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive"] }
+scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
+frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+sp-runtime = { version = "24.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+sp-std = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+sp-io = { version = "23.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+
+# BLS12-381 for Pedersen commitments
+bls12_381 = { version = "0.8", default-features = false, features = ["groups", "pairings", "alloc"] }
+ff = { version = "0.13", default-features = false }
+group = { version = "0.13", default-features = false }
+
+# Randomness for blinding factors
+rand_core = { version = "0.6", default-features = false }
+getrandom = { version = "0.2", default-features = false, features = ["custom"] }
+
+[dev-dependencies]
+sp-core = { version = "21.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.1.0" }
+rand = "0.8"
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-benchmarking?/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"sp-io/std",
+	# Note: bls12_381, ff, and group don't have std feature, they're always std
+	"rand_core/std",
+	"getrandom/std",
+]
+runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+try-runtime = ["frame-support/try-runtime"]

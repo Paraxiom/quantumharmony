@@ -1,0 +1,72 @@
+[package]
+name = "quantumharmony-wallet"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sylvain Cormier <sylvain@quantumharmony.io>"]
+description = "Self-documenting 3D spiral wallet for QuantumHarmony blockchain"
+license = "Unlicense"
+
+[[bin]]
+name = "qh-wallet"
+path = "src/main.rs"
+
+[[bin]]
+name = "runtime-upgrade"
+path = "src/bin/runtime_upgrade.rs"
+
+[dependencies]
+# Core Substrate
+sp-core = { workspace = true, features = ["full_crypto"] }
+sp-runtime = { workspace = true }
+sp-keyring = { workspace = true }
+
+# CLI parsing
+clap = { version = "4.4", features = ["derive"] }
+
+# RPC client
+jsonrpsee = { workspace = true, features = ["ws-client", "http-client", "client-core"] }
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = "1.0"
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+log = "0.4"
+
+# HTTP client (for RPC wallet)
+reqwest = { version = "0.11", features = ["json"], optional = true }
+
+# Terminal UI (TUI mode)
+ratatui = { version = "0.25", optional = true }
+crossterm = { version = "0.27", optional = true }
+
+# Documentation embedding
+include_dir = "0.7"
+pulldown-cmark = "0.9"
+
+# Cryptography
+blake2 = { workspace = true }
+hex = { workspace = true }
+sha3 = "0.10"
+rand = "0.8"
+
+# Utils
+dirs = "5.0"
+tempfile = "3.8"
+
+[features]
+default = ["std", "tui"]
+std = ["reqwest"]
+tui = ["ratatui", "crossterm"]

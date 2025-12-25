@@ -1,0 +1,42 @@
+[package]
+name = "pallet-validator-rewards"
+version = "0.1.0"
+description = "Validator rewards and slashing for QuantumHarmony"
+authors = ["QuantumVerse Protocols"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/QuantumVerseProtocols/quantumharmony"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+scale-codec = { workspace = true, default-features = false, features = ["derive"] }
+scale-info = { workspace = true, default-features = false, features = ["derive"] }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+pallet-authorship = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+pallet-balances = { workspace = true, default-features = false }
+log = { workspace = true }
+
+[dev-dependencies]
+sp-io = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+    "scale-codec/std",
+    "scale-info/std",
+    "frame-support/std",
+    "frame-system/std",
+    "pallet-authorship/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "sp-core/std",
+    "pallet-balances/std",
+]
+runtime-benchmarks = ["frame-support/runtime-benchmarks"]
+try-runtime = ["frame-support/try-runtime"]

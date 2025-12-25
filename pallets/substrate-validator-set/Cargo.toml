@@ -1,0 +1,64 @@
+[package]
+name = 'substrate-validator-set'
+version = '1.1.0'
+authors = ['Gautam Dhameja <quasijatt@outlook.com>']
+edition = '2021'
+license = 'Apache-2.0'
+repository = 'https://github.com/gautamdhameja/substrate-validator-set'
+
+[dependencies]
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+sp-staking = { workspace = true }
+frame-benchmarking = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+pallet-session = { workspace = true }
+sp-weights = { workspace = true }
+scale-info = { workspace = true }
+log = { workspace = true }
+scale-codec = { workspace = true }
+hex-literal = { workspace = true }
+sp-application-crypto = { workspace = true }
+serde = { workspace = true }
+sp-consensus-aura = { workspace = true }
+# fp-account = { workspace = true } # Removed - QuantumHarmony doesn't use EVM
+# pallet-evm = { workspace = true } # Removed - QuantumHarmony doesn't use EVM
+# pallet-babe = { workspace = true } # Removed - BABE incompatible with SPHINCS+, using Aura instead
+# sp-consensus-babe = { workspace = true } # Removed - BABE incompatible with SPHINCS+
+# schnorrkel = { workspace = true } # Removed - Used by BABE
+qkd-client = { path = "../qkd-client", default-features = false }
+
+[dev-dependencies]
+sp-state-machine = { workspace = true }
+serde = { workspace = true }
+sp-consensus-aura = { workspace = true, features = ["std"] }
+sp-api = { workspace = true }
+sp-std = { workspace = true }
+sp-runtime = { workspace = true }
+# schnorrkel = { workspace = true } # Removed - Used by BABE
+pallet-timestamp = { workspace = true }
+
+[features]
+default = ['std']
+runtime-benchmarks = ['frame-benchmarking/runtime-benchmarks']
+std = [
+    'qkd-client/std',
+    'scale-codec/std',
+    'frame-benchmarking/std',
+    'frame-support/std',
+    'frame-system/std',
+    'scale-info/std',
+    'sp-core/std',
+    'sp-io/std',
+    'sp-std/std',
+    'sp-runtime/std',
+    'pallet-session/std',
+    # 'pallet-babe/std', # Removed - BABE incompatible with SPHINCS+
+    # 'sp-consensus-babe/std', # Removed - BABE incompatible with SPHINCS+
+    # 'schnorrkel/std', # Removed - Used by BABE
+    'pallet-timestamp/std',
+]
+try-runtime = ['frame-support/try-runtime']

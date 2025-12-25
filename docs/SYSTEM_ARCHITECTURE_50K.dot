@@ -1,0 +1,267 @@
+digraph QuantumHarmony50K {
+    graph [
+        rankdir=TB,
+        splines=ortho,
+        nodesep=1.8,
+        ranksep=2.5,
+        fontname="Arial",
+        fontsize=22,
+        label="QuantumHarmony 50,000-Node Secure Architecture\nHierarchical Sharding + Pedersen Commitments",
+        labelloc=t,
+        bgcolor="#ffffff"
+    ];
+
+    node [
+        shape=box,
+        style="rounded,filled",
+        fontname="Arial",
+        fontsize=13,
+        margin=0.5
+    ];
+
+    edge [
+        fontname="Arial",
+        fontsize=11,
+        arrowsize=1.2
+    ];
+
+    // ========== LEGEND (TOP) ==========
+    subgraph cluster_legend {
+        label="🔑 KEY CONCEPTS";
+        style="filled,bold";
+        color="#333333";
+        fillcolor="#f9f9f9";
+        fontsize=16;
+        penwidth=3;
+
+        leg_text [
+            label="50,000 nodes = 50 shards × 1,000 nodes\nPedersen Commitments = Zero-knowledge validation\nTwo-Phase Protocol = Commit → Reveal\nPorts: 30333 (P2P), 9944 (RPC), +offset per shard",
+            shape=plaintext,
+            fontsize=12
+        ];
+    }
+
+    // ========== LAYER 1: PER-VALIDATOR (Example from Shard 5) ==========
+    subgraph cluster_validator_example {
+        label="📍 VALIDATOR NODE (Shard 5, ID: 5273)\nPorts: P2P=30383, RPC=9994";
+        style="filled,bold";
+        color="#0066cc";
+        fillcolor="#e6f3ff";
+        fontsize=16;
+        penwidth=4;
+
+        // Hardware
+        subgraph cluster_hw {
+            label="Quantum Hardware";
+            style=filled;
+            color="#666";
+            fillcolor="#f5f5f5";
+
+            hw1 [label="Toshiba QKD", fillcolor="#ffcc99", shape=box3d, width=2];
+            hw2 [label="Crypto4A HSM", fillcolor="#ffcc99", shape=box3d, width=2];
+        }
+
+        // Priority Queues
+        subgraph cluster_pq {
+            label="📊 PRIORITY QUEUES (QBER-Sorted)";
+            style="filled,bold";
+            color="#ff6600";
+            fillcolor="#fff5e6";
+            fontsize=14;
+            penwidth=5;
+
+            pq1 [
+                label="PQ: Toshiba QKD\nQBER < 1.0%\nTop 100 samples",
+                fillcolor="#ffa500",
+                shape=folder,
+                penwidth=3,
+                width=2.5
+            ];
+
+            pq2 [
+                label="PQ: Crypto4A\nEntropy > 7.9/8.0\nTop 100 samples",
+                fillcolor="#ffa500",
+                shape=folder,
+                penwidth=3,
+                width=2.5
+            ];
+        }
+
+        // Local Shamir
+        local_shamir [
+            label="Local Shamir K=2, M=2\nSelect best from each PQ",
+            fillcolor="#ffcc00",
+            penwidth=3,
+            width=3
+        ];
+
+        // Connections
+        hw1 -> pq1 [label=" raw ", penwidth=2, color="#cc6600"];
+        hw2 -> pq2 [label=" raw ", penwidth=2, color="#cc6600"];
+        pq1 -> local_shamir [label=" best ", penwidth=3, color="#ff0000"];
+        pq2 -> local_shamir [label=" best ", penwidth=3, color="#ff0000"];
+    }
+
+    // ========== LAYER 2: COMMIT PHASE (Block N) ==========
+    subgraph cluster_commit_phase {
+        label="⏱️ BLOCK N: COMMIT PHASE (No Entropy Revealed)";
+        style="filled,bold";
+        color="#9900cc";
+        fillcolor="#f3e6ff";
+        fontsize=16;
+        penwidth=4;
+
+        commit_box [
+            label="📝 Pedersen Commitment\n\nC = g^entropy × h^blinding\n\nCommitment: 48 bytes (G1 point)\nSignature: SPHINCS+ (64B)\nMetadata: QBER, timestamp\n\n✅ HIDING: Zero info about entropy\n✅ BINDING: Can't change later",
+            fillcolor="#cc99ff",
+            shape=box,
+            penwidth=4,
+            fontsize=12,
+            width=4,
+            height=3
+        ];
+
+        shard_mempool_commit [
+            label="🗄️ SHARD 5 MEMPOOL\nCommit Phase\n\n1,000 commitments received\nValidate signatures only\nNo entropy visible\n\nFinalize commitment set",
+            fillcolor="#99ccff",
+            shape=cylinder,
+            penwidth=4,
+            fontsize=12,
+            width=3,
+            height=2.5
+        ];
+
+        local_shamir -> commit_box [label=" create\ncommitment ", penwidth=3, color="#9900cc", fontsize=11];
+        commit_box -> shard_mempool_commit [label=" submit\n(200 bytes) ", penwidth=3, color="#0066cc", fontsize=11];
+    }
+
+    // ========== LAYER 3: REVEAL PHASE (Block N+1) ==========
+    subgraph cluster_reveal_phase {
+        label="🔓 BLOCK N+1: REVEAL PHASE (After Commitments Finalized)";
+        style="filled,bold";
+        color="#cc0000";
+        fillcolor="#ffe6e6";
+        fontsize=16;
+        penwidth=4;
+
+        reveal_box [
+            label="🔐 Entropy Reveal\n\nEntropy: 32 bytes (revealed)\nBlinding: 32 bytes (revealed)\nSTARK Proof: ~4 KB\n\nVerify:\n1. Commitment match\n2. STARK proof valid\n3. QBER acceptable",
+            fillcolor="#ff9999",
+            shape=box,
+            penwidth=4,
+            fontsize=12,
+            width=4,
+            height=3
+        ];
+
+        shard_mempool_reveal [
+            label="🗄️ SHARD 5 MEMPOOL\nReveal Phase\n\n3-Level Validation:\n✓ Commitment match\n✓ STARK proof verify\n✓ Quality check\n\nReject invalid reveals",
+            fillcolor="#ff6666",
+            shape=cylinder,
+            penwidth=4,
+            fontsize=12,
+            width=3,
+            height=2.5
+        ];
+
+        shard_shamir [
+            label="🔐 SHARD SHAMIR\nReconstruction\n\nK=700, M=1000\n(70% threshold)\n\nProduce Shard Share",
+            fillcolor="#ff9900",
+            penwidth=4,
+            fontsize=12,
+            width=3,
+            height=2
+        ];
+
+        commit_box -> reveal_box [label=" after\nfinalization ", penwidth=2, color="#666", style=dashed, fontsize=10];
+        reveal_box -> shard_mempool_reveal [label=" submit\n(5 KB) ", penwidth=3, color="#cc0000", fontsize=11];
+        shard_mempool_reveal -> shard_shamir [label=" valid\nreveals ", penwidth=4, color="#00cc00", fontsize=11, style=bold];
+    }
+
+    // ========== LAYER 4: CROSS-SHARD AGGREGATION (Block N+2) ==========
+    subgraph cluster_cross_shard {
+        label="🌐 BLOCK N+2: CROSS-SHARD AGGREGATION (50 Shards)";
+        style="filled,bold";
+        color="#006600";
+        fillcolor="#e6ffe6";
+        fontsize=16;
+        penwidth=4;
+
+        // Simplified shard representations
+        shard_0 [label="Shard 0\nShare", fillcolor="#99ff99", width=1.5];
+        shard_1 [label="Shard 1\nShare", fillcolor="#99ff99", width=1.5];
+        shard_dots [label="...", shape=plaintext, fontsize=20];
+        shard_5 [label="Shard 5\nShare", fillcolor="#66ff66", penwidth=3, width=1.5];
+        shard_dots2 [label="...", shape=plaintext, fontsize=20];
+        shard_49 [label="Shard 49\nShare", fillcolor="#99ff99", width=1.5];
+
+        network_shamir [
+            label="🔐 NETWORK SHAMIR\nReconstruction\n\nK=34, M=50 shards\n(68% threshold)\n\nCombine shard shares\ninto network entropy",
+            fillcolor="#ff9900",
+            penwidth=5,
+            fontsize=13,
+            width=4,
+            height=2.5
+        ];
+
+        final_entropy [
+            label="✅ FINAL NETWORK ENTROPY\n\n32 bytes quantum-verified\nByzantine fault tolerant\nPublic after finalization\n\nUsed for:\n• VRF seed\n• Block randomness\n• Relay coordination",
+            fillcolor="#00cc00",
+            penwidth=5,
+            fontsize=13,
+            width=4,
+            height=3
+        ];
+
+        // Connect shards to network Shamir
+        shard_shamir -> shard_5 [penwidth=3, color="#00cc00"];
+        shard_0 -> network_shamir [penwidth=2, color="#009900"];
+        shard_1 -> network_shamir [penwidth=2, color="#009900"];
+        shard_5 -> network_shamir [label=" shard\nshare ", penwidth=3, color="#006600", fontsize=11, style=bold];
+        shard_49 -> network_shamir [penwidth=2, color="#009900"];
+
+        network_shamir -> final_entropy [label=" reconstruct ", penwidth=5, color="#00cc00", fontsize=12, style=bold];
+
+        // Invisible edges for layout
+        shard_0 -> shard_1 [style=invis];
+        shard_1 -> shard_dots [style=invis];
+        shard_dots -> shard_5 [style=invis];
+        shard_5 -> shard_dots2 [style=invis];
+        shard_dots2 -> shard_49 [style=invis];
+    }
+
+    // ========== LAYER 5: DISTRIBUTION ==========
+    consensus [
+        label="⚙️ CONSENSUS\n\nAura (6s blocks)\nGRANDPA finality\n\nAll 50 shards agree",
+        fillcolor="#ffeb99",
+        penwidth=3,
+        width=2.5
+    ];
+
+    relay [
+        label="🌐 RELAY COORDINATION\n\nQSSH bridges\nGeographic distribution\nCross-QKD-island",
+        fillcolor="#e6b3ff",
+        shape=hexagon,
+        penwidth=3,
+        width=2.5
+    ];
+
+    final_entropy -> consensus [penwidth=3, color="#ff6600"];
+    final_entropy -> relay [penwidth=3, color="#9900ff"];
+
+    // ========== PERFORMANCE STATS (Bottom) ==========
+    subgraph cluster_stats {
+        label="📊 PERFORMANCE METRICS";
+        style="filled,bold";
+        color="#333333";
+        fillcolor="#f0f0f0";
+        fontsize=16;
+        penwidth=3;
+
+        stats_text [
+            label="Latency: 18 seconds (3 blocks)\nBandwidth: <1 Mbps per validator\nStorage: ~500 GB (6 months, pruned)\nScalability: O(n) per shard, not O(n²)\nSecurity: 68% attack threshold\nPrivacy: Information-theoretic hiding",
+            shape=plaintext,
+            fontsize=12
+        ];
+    }
+}

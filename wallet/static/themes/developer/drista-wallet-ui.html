@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drista Quantum Wallet</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+            color: #0ff;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border: 1px solid #0ff;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,255,255,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+        .status {
+            padding: 10px;
+            background: rgba(0,255,255,0.1);
+            border-left: 3px solid #0ff;
+            margin: 10px 0;
+        }
+        button {
+            background: linear-gradient(45deg, #0ff, #00a);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        button:hover {
+            box-shadow: 0 0 20px rgba(0,255,255,0.5);
+            transform: translateY(-2px);
+        }
+        .info-box {
+            background: rgba(0,50,50,0.3);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .balance {
+            font-size: 24px;
+            color: #0f0;
+        }
+        #log {
+            background: black;
+            color: #0f0;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #0f0;
+            font-family: 'Courier New', monospace;
+        }
+        .quantum-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #f0f, #0ff);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Drista Quantum Wallet <span class="quantum-badge">QSSH Ready</span></h1>
+
+        <div class="status" id="connection-status">
+            Click "Connect" to start
+        </div>
+
+        <div class="info-box">
+            <button onclick="connectToKirq()">🔌 Connect to Production Testnet</button>
+            <button onclick="disconnect()">❌ Disconnect</button>
+        </div>
+
+        <div class="info-box">
+            <h3>Network Info</h3>
+            <div id="network-info">Not connected</div>
+        </div>
+
+        <div class="info-box">
+            <h3>Account Balance</h3>
+            <div>Alice: <span id="alice-balance" class="balance">---</span></div>
+            <div>Bob: <span id="bob-balance" class="balance">---</span></div>
+        </div>
+
+        <div class="info-box">
+            <h3>Actions</h3>
+            <button onclick="transfer()">💸 Transfer 1 UNIT (Alice → Bob)</button>
+            <button onclick="checkSudo()">🔑 Check Sudo Access</button>
+            <button onclick="getRuntimeInfo()">ℹ️ Get Runtime Info</button>
+            <button onclick="updateBalances()">🔄 Refresh Balances</button>
+        </div>
+
+        <div class="info-box">
+            <h3>🚀 Runtime Upgrade</h3>
+            <p style="font-size: 12px; color: #0ff;">Upload new runtime WASM to upgrade the blockchain (requires sudo)</p>
+            <input type="file" id="wasmFile" accept=".wasm" style="margin: 10px 0; color: #0ff;"/>
+            <br>
+            <button onclick="performRuntimeUpgrade()">⚡ Upgrade Runtime (Sudo)</button>
+        </div>
+
+        <div class="info-box">
+            <h3>Console Log</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <!-- Load Polkadot.js API bundles -->
+    <script src="https://unpkg.com/@polkadot/util-crypto@12.6.2/bundle-polkadot-util-crypto.js"></script>
+    <script src="https://unpkg.com/@polkadot/api@10.11.1/bundle-polkadot-api.js"></script>
+
+    <script>
+        // Production testnet endpoints:
+        // Alice (OVH): ws://localhost:9944
+        // Bob (OVH): ws://localhost:9944
+        // Charlie (DigitalOcean, sudo authority): ws://localhost:9944
+        const KIRQ_ENDPOINT = 'ws://localhost:9944';  // Charlie has sudo authority
+        let api = null;
+        let keyring = null;
+
+        window.log = function(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        window.connectToKirq = async function() {
+            try {
+                log('Initializing Polkadot.js...');
+
+                // Wait for crypto library to be ready
+                await polkadotUtilCrypto.cryptoWaitReady();
+
+                log('Connecting to production testnet...');
+
+                const provider = new polkadotApi.WsProvider(KIRQ_ENDPOINT);
+                api = await polkadotApi.ApiPromise.create({ provider });
+
+                const [chain, nodeName, nodeVersion] = await Promise.all([
+                    api.rpc.system.chain(),
+                    api.rpc.system.name(),
+                    api.rpc.system.version()
+                ]);
+
+                document.getElementById('connection-status').innerHTML =
+                    '✅ Connected to QuantumHarmony Production Testnet';
+
+                document.getElementById('network-info').innerHTML =
+                    `Chain: ${chain}<br>Node: ${nodeName}<br>Version: ${nodeVersion}`;
+
+                log('Connected successfully!');
+
+                // Initialize keyring
+                keyring = new polkadotApi.Keyring({ type: 'sr25519' });
+
+                // Update balances
+                window.updateBalances();
+
+                // Make api global for other functions
+                window.api = api;
+                window.keyring = keyring;
+
+            } catch (error) {
+                log('Error: ' + error.message);
+                document.getElementById('connection-status').innerHTML =
+                    '❌ Connection failed: ' + error.message;
+            }
+        }
+
+        window.disconnect = async function() {
+            if (api) {
+                await api.disconnect();
+                api = null;
+                window.api = null;
+                document.getElementById('connection-status').innerHTML = 'Disconnected';
+                document.getElementById('network-info').innerHTML = 'Not connected';
+                log('Disconnected from Production Testnet');
+            }
+        }
+
+        window.updateBalances = async function() {
+            if (!window.api || !window.keyring) {
+                log('Not connected');
+                return;
+            }
+
+            const alice = window.keyring.addFromUri('//Alice');
+            const bob = window.keyring.addFromUri('//Bob');
+
+            const [aliceAccount, bobAccount] = await Promise.all([
+                window.api.query.system.account(alice.address),
+                window.api.query.system.account(bob.address)
+            ]);
+
+            document.getElementById('alice-balance').textContent =
+                aliceAccount.data.free.toHuman();
+            document.getElementById('bob-balance').textContent =
+                bobAccount.data.free.toHuman();
+
+            log('Balances updated');
+        }
+
+        window.transfer = async function() {
+            if (!window.api || !window.keyring) {
+                log('Not connected');
+                return;
+            }
+
+            log('Initiating transfer...');
+
+            const alice = window.keyring.addFromUri('//Alice');
+            const bob = window.keyring.addFromUri('//Bob');
+
+            const transfer = window.api.tx.balances.transferKeepAlive(bob.address, 1000000000000);
+
+            await transfer.signAndSend(alice, ({ status }) => {
+                if (status.isInBlock) {
+                    log('Transfer included in block: ' + status.asInBlock);
+                }
+                if (status.isFinalized) {
+                    log('✅ Transfer finalized!');
+                    window.updateBalances();
+                }
+            });
+        }
+
+        window.checkSudo = async function() {
+            if (!window.api || !window.keyring) {
+                log('Not connected');
+                return;
+            }
+
+            try {
+                const sudoKey = await window.api.query.sudo.key();
+                const alice = window.keyring.addFromUri('//Alice');
+
+                if (sudoKey.toString() === alice.address) {
+                    log('✅ Alice has sudo access - can perform runtime upgrades!');
+                } else {
+                    log('❌ Alice does not have sudo access');
+                }
+            } catch (error) {
+                log('❌ Sudo pallet not available');
+            }
+        }
+
+        window.getRuntimeInfo = async function() {
+            if (!window.api) {
+                log('Not connected');
+                return;
+            }
+
+            const version = await window.api.rpc.state.getRuntimeVersion();
+            log(`Runtime: ${version.specName} v${version.specVersion}`);
+        }
+
+        window.performRuntimeUpgrade = async function() {
+            if (!window.api || !window.keyring) {
+                log('❌ Not connected');
+                return;
+            }
+
+            const fileInput = document.getElementById('wasmFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                log('❌ Please select a WASM file first');
+                return;
+            }
+
+            try {
+                log('📖 Reading WASM file...');
+                const file = fileInput.files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const wasmCode = new Uint8Array(arrayBuffer);
+
+                log(`✅ WASM loaded: ${wasmCode.length} bytes`);
+                log('🔍 Checking sudo authority...');
+
+                // Check who has sudo
+                const sudoKey = await window.api.query.sudo.key();
+                log(`Sudo key: ${sudoKey.toString()}`);
+
+                // Try Charlie first (should have sudo in production testnet)
+                const charlie = window.keyring.addFromUri('//Charlie');
+
+                if (sudoKey.toString() !== charlie.address) {
+                    log(`❌ Charlie does not have sudo access`);
+                    log(`   Current sudo: ${sudoKey.toString()}`);
+                    log(`   Charlie addr: ${charlie.address}`);
+                    return;
+                }
+
+                log('✅ Charlie has sudo access - proceeding with upgrade');
+                log('🚀 Submitting runtime upgrade transaction...');
+
+                // Create the runtime upgrade proposal
+                const proposal = window.api.tx.system.setCode(wasmCode);
+
+                // Wrap it in sudo call
+                const sudoCall = window.api.tx.sudo.sudo(proposal);
+
+                // Sign and send
+                const unsub = await sudoCall.signAndSend(charlie, ({ status, events }) => {
+                    if (status.isInBlock) {
+                        log(`✅ Runtime upgrade included in block: ${status.asInBlock}`);
+
+                        // Check for events
+                        events.forEach(({ event }) => {
+                            const { section, method, data } = event;
+                            log(`   Event: ${section}.${method} ${data.toString()}`);
+
+                            if (section === 'sudo' && method === 'Sudid') {
+                                log('✅ Sudo executed successfully!');
+                            }
+                            if (section === 'system' && method === 'CodeUpdated') {
+                                log('🎉 RUNTIME UPGRADED SUCCESSFULLY!');
+                            }
+                        });
+                    }
+
+                    if (status.isFinalized) {
+                        log(`✅ Runtime upgrade finalized in block: ${status.asFinalized}`);
+                        log('🎉 UPGRADE COMPLETE - Runtime has been updated!');
+
+                        // Get new runtime version
+                        setTimeout(async () => {
+                            const newVersion = await window.api.rpc.state.getRuntimeVersion();
+                            log(`📊 New runtime version: ${newVersion.specName} v${newVersion.specVersion}`);
+                        }, 2000);
+
+                        unsub();
+                    }
+                });
+
+            } catch (error) {
+                log('❌ Runtime upgrade failed: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Wait for all libraries to load
+        window.addEventListener('load', function() {
+            log('UI ready. Click "Connect to Production Testnet" to start.');
+        });
+    </script>
+</body>
+</html>

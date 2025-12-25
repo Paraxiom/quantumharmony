@@ -1,0 +1,257 @@
+//! Mock helpers for Validator Set pallet.
+#![cfg(test)]
+use super::*;
+use crate as validator_set;
+use frame_support::{derive_impl, parameter_types};
+use frame_system::EnsureRoot;
+use pallet_session::*;
+use sp_core::{crypto::key_types::DUMMY, H160};
+use sp_runtime::{
+    impl_opaque_keys,
+    testing::UintAuthorityId,
+    traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
+    BuildStorage,
+};
+use std::collections::BTreeMap;
+use sp_std::{result::Result, vec::Vec};
+
+// Mock QKD client for tests
+#[cfg(test)]
+pub mod qkd_client {
+    use sp_std::vec::Vec;
+
+    // Deterministic "quantum" random bytes for testing
+    pub fn get_quantum_random_bytes(size: usize) -> Vec<u8> {
+        let mut random_bytes = Vec::with_capacity(size);
+        for i in 0..size {
+            random_bytes.push((i % 256) as u8);
+        }
+        random_bytes
+    }
+}
+
+impl_opaque_keys! {
+    pub struct MockSessionKeys {
+        pub dummy: UintAuthorityId,
+    }
+}
+
+impl From<UintAuthorityId> for MockSessionKeys {
+    fn from(dummy: UintAuthorityId) -> Self {
+        Self { dummy }
+    }
+}
+
+type Block = frame_system::mocking::MockBlock<Test>;
+
+// Configure a mock runtime to test the pallet.
+frame_support::construct_runtime!(
+    pub enum Test
+    {
+        System: frame_system,
+        ValidatorSet: validator_set,
+        Session: pallet_session,
+        Timestamp: pallet_timestamp,
+    }
+);
+
+use sp_runtime::traits::{ConstU32, ConstU64};
+
+parameter_types! {
+    pub static Validators: Vec<u64> = vec![1, 2, 3];
+    pub static NextValidators: Vec<u64> = vec![1, 2, 3];
+    pub static Authorities: Vec<UintAuthorityId> =
+        vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)];
+    pub static ForceSessionEnd: bool = false;
+    pub static SessionLength: u64 = 2;
+    pub static SessionChanged: bool = false;
+    pub static ValidatorAccounts: BTreeMap<u64, u64> = BTreeMap::new();
+    pub static BlockWindow: u32 = 2;
+}
+
+pub struct TestShouldEndSession;
+impl ShouldEndSession<u64> for TestShouldEndSession {
+    fn should_end_session(now: u64) -> bool {
+        let l = SessionLength::get();
+        now % l == 0 || ForceSessionEnd::mutate(|l| std::mem::replace(l, false))
+    }
+}
+
+pub struct TestSessionHandler;
+impl SessionHandler<u64> for TestSessionHandler {
+    const KEY_TYPE_IDS: &'static [sp_runtime::KeyTypeId] = &[UintAuthorityId::ID];
+    fn on_genesis_session<T: OpaqueKeys>(_validators: &[(u64, T)]) {}
+    fn on_new_session<T: OpaqueKeys>(
+        changed: bool,
+        validators: &[(u64, T)],
+        _queued_validators: &[(u64, T)],
+    ) {
+        SessionChanged::mutate(|l| *l = changed);
+        Authorities::mutate(|l| {
+            *l = validators
+                .iter()
+                .map(|(_, id)| id.get::<UintAuthorityId>(DUMMY).unwrap_or_default())
+                .collect()
+        });
+    }
+    fn on_disabled(_validator_index: u32) {}
+}
+
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig as frame_system::DefaultConfig)]
+impl frame_system::Config for Test {
+    type BaseCallFilter = frame_support::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = ();
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
+    type Nonce = u64;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Block = Block;
+    type RuntimeEvent = RuntimeEvent;
+    type BlockHashCount = frame_support::traits::ConstU64<250>;
+    type Version = ();
+    type PalletInfo = PalletInfo;
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+    type SystemWeightInfo = ();
+    type SS58Prefix = ();
+    type OnSetCode = ();
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+
+parameter_types! {
+    pub const MinAuthorities: u32 = 2;
+    pub const MaxValidators: u32 = 10;
+}
+
+// Implement the Randomness trait for testing
+pub struct TestRandomness;
+impl frame_support::traits::Randomness<H256, u64> for TestRandomness {
+    fn random(subject: &[u8]) -> (H256, u64) {
+        // Use the mocked QKD client to get "quantum" random bytes
+        let quantum_bytes = qkd_client::get_quantum_random_bytes(32);
+        
+        // Create a hash from the quantum bytes
+        let mut hash = H256::zero();
+        for (i, byte) in quantum_bytes.iter().enumerate().take(32) {
+            hash.as_mut()[i] = *byte;
+        }
+        
+        // Additional entropy from the subject
+        let seed = if !subject.is_empty() {
+            u64::from_le_bytes([
+                subject[0], 
+                subject.get(1).copied().unwrap_or(0),
+                subject.get(2).copied().unwrap_or(0),
+                subject.get(3).copied().unwrap_or(0),
+                subject.get(4).copied().unwrap_or(0),
+                subject.get(5).copied().unwrap_or(0),
+                subject.get(6).copied().unwrap_or(0),
+                subject.get(7).copied().unwrap_or(0),
+            ])
+        } else {
+            0
+        };
+        
+        (hash, seed)
+    }
+}
+
+impl validator_set::Config for Test {
+    type AddRemoveOrigin = EnsureRoot<Self::AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    type MinAuthorities = MinAuthorities;
+    type MaxValidators = MaxValidators;
+    type ValidatorIdToAccountId = sp_runtime::traits::ConvertInto;
+    type AccountIdToValidatorId = sp_runtime::traits::ConvertInto;
+    type WeightInfo = ();
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type EVMAddress = H160;
+    type Randomness = TestRandomness;
+}
+
+parameter_types! {
+    pub const CommitteeSize: u32 = 3;
+}
+
+impl pallet_session::Config for Test {
+    type ValidatorId = u64;
+    type ValidatorIdOf = validator_set::ValidatorOf<Self>;
+    type ShouldEndSession = TestShouldEndSession;
+    type NextSessionRotation = ();
+    type SessionManager = ValidatorSet;
+    type SessionHandler = TestSessionHandler;
+    type Keys = MockSessionKeys;
+    type WeightInfo = ();
+    type RuntimeEvent = RuntimeEvent;
+}
+
+parameter_types! {
+    pub const MinimumPeriod: u64 = 3_000; // Assuming 6 second block time (3_000 is half the block time)
+}
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
+}
+
+pub fn authorities() -> Vec<UintAuthorityId> {
+    Authorities::get().to_vec()
+}
+
+// Build genesis storage according to the mock runtime.
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    let mut t = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
+    let keys: Vec<_> = NextValidators::get()
+        .iter()
+        .cloned()
+        .map(|i| (i, i, UintAuthorityId(i).into()))
+        .collect();
+    
+    validator_set::GenesisConfig::<Test> {
+        initial_validators: keys.iter().map(|x| x.0).collect::<Vec<_>>(),
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
+    
+    pallet_session::GenesisConfig::<Test> { keys }
+        .assimilate_storage(&mut t)
+        .unwrap();
+    
+    let mut ext = sp_io::TestExternalities::new(t);
+    ext.execute_with(|| {
+        let validators = NextValidators::get().iter().cloned().map(|i| (i, i)).collect();
+        ValidatorAccounts::mutate(|accounts| *accounts = validators);
+        
+        // Initialize BlockWindow
+        validator_set::BlockWindow::<Test>::put(BlockWindow::get());
+        
+        // Set up initial block number
+        System::set_block_number(1);
+    });
+    
+    ext
+}
+
+// Helper function to advance blocks
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        let current_block = System::block_number();
+        System::on_finalize(current_block);
+        ValidatorSet::on_finalize(current_block);
+        Session::on_finalize(current_block);
+        
+        System::set_block_number(current_block + 1);
+        
+        System::on_initialize(System::block_number());
+        ValidatorSet::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
+    }
+}

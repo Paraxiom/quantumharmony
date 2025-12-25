@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  alice:
+    image: quantumharmony:latest
+    build:
+      context: ..
+      dockerfile: quantumharmony/Dockerfile.multinode
+    container_name: quantumharmony-alice
+    hostname: alice
+    ports:
+      - "9944:9944"
+      - "30333:30333"
+    volumes:
+      - alice-data:/data
+    command: >
+      --chain=local
+      --alice
+      --validator
+      --base-path=/data
+      --unsafe-rpc-external
+      --rpc-cors=all
+      --rpc-methods=unsafe
+      --unsafe-ws-external
+      --port=30333
+      --rpc-port=9944
+      --node-key=0000000000000000000000000000000000000000000000000000000000000001
+    networks:
+      quantum-net:
+        ipv4_address: 172.20.0.10
+    environment:
+      - RUST_LOG=info,coherence=debug
+
+  bob:
+    image: quantumharmony:latest
+    build:
+      context: ..
+      dockerfile: quantumharmony/Dockerfile.multinode
+    container_name: quantumharmony-bob
+    hostname: bob
+    ports:
+      - "9945:9944"
+      - "30334:30333"
+    volumes:
+      - bob-data:/data
+    command: >
+      --chain=local
+      --bob
+      --validator
+      --base-path=/data
+      --unsafe-rpc-external
+      --rpc-cors=all
+      --rpc-methods=unsafe
+      --unsafe-ws-external
+      --port=30333
+      --rpc-port=9944
+      --node-key=0000000000000000000000000000000000000000000000000000000000000002
+      --bootnodes=/ip4/172.20.0.10/tcp/30333/p2p/12D3KooWNpaTf134DUqez17tRCLPwdgBeQGAwh7hV94iPnd1u37d
+    networks:
+      quantum-net:
+        ipv4_address: 172.20.0.11
+    environment:
+      - RUST_LOG=info,coherence=debug
+    depends_on:
+      - alice
+
+  charlie:
+    image: quantumharmony:latest
+    build:
+      context: ..
+      dockerfile: quantumharmony/Dockerfile.multinode
+    container_name: quantumharmony-charlie
+    hostname: charlie
+    ports:
+      - "9946:9944"
+      - "30335:30333"
+    volumes:
+      - charlie-data:/data
+    command: >
+      --chain=local
+      --charlie
+      --validator
+      --base-path=/data
+      --unsafe-rpc-external
+      --rpc-cors=all
+      --rpc-methods=unsafe
+      --unsafe-ws-external
+      --port=30333
+      --rpc-port=9944
+      --node-key=0000000000000000000000000000000000000000000000000000000000000003
+      --bootnodes=/ip4/172.20.0.10/tcp/30333/p2p/12D3KooWNpaTf134DUqez17tRCLPwdgBeQGAwh7hV94iPnd1u37d
+    networks:
+      quantum-net:
+        ipv4_address: 172.20.0.12
+    environment:
+      - RUST_LOG=info,coherence=debug
+    depends_on:
+      - alice
+
+volumes:
+  alice-data:
+  bob-data:
+  charlie-data:
+
+networks:
+  quantum-net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,36 @@
+[package]
+name = "pallet-notarial"
+version = "1.0.0"
+description = "Notarial pallet for on-chain document attestation and timestamping"
+authors = ["QuantumVerse Protocols"]
+homepage = "https://quantumverse.io"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/quantumverse/quantumharmony"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", path = "/opt/parity-scale-codec", default-features = false, features = ["derive"] }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
+frame-support = { path = "/opt/polkadot-sdk/substrate/frame/support", default-features = false }
+frame-system = { path = "/opt/polkadot-sdk/substrate/frame/system", default-features = false }
+sp-std = { path = "/opt/polkadot-sdk/substrate/primitives/std", default-features = false }
+sp-runtime = { path = "/opt/polkadot-sdk/substrate/primitives/runtime", default-features = false }
+
+[dev-dependencies]
+sp-core = { path = "/opt/polkadot-sdk/substrate/primitives/core" }
+sp-io = { path = "/opt/polkadot-sdk/substrate/primitives/io" }
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+    "scale-info/std",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-std/std",
+    "sp-runtime/std",
+]
+try-runtime = ["frame-support/try-runtime"]
