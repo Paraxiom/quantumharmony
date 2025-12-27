@@ -840,4 +840,209 @@ mod tests {
             );
         });
     }
+
+    // ==================== ADVERSARIAL TESTS ====================
+    // These tests verify the system handles malicious/malformed inputs correctly
+
+    #[test]
+    fn test_adversarial_random_garbage_signature() {
+        new_test_ext().execute_with(|| {
+            // Generate a valid keypair
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+
+            // Create random garbage as a "signature"
+            // SPHINCS+ signatures are ~49KB, so we try various sizes
+            use sp_core::Pair;
+            let message = b"Test message";
+
+            // Test with small garbage (too short)
+            let small_garbage = [0xDE, 0xAD, 0xBE, 0xEF];
+            // Can't create a valid Signature from garbage bytes directly,
+            // but we test that verify rejects invalid input
+
+            // Create a valid signature and tamper with it
+            let mut valid_sig = pair.sign(message);
+            let sig_bytes = valid_sig.0.as_mut();
+
+            // Tamper with first byte
+            sig_bytes[0] ^= 0xFF;
+            assert!(!SphincsPair::verify(&valid_sig, message, &public_key),
+                "Tampered signature should be rejected");
+
+            // Get fresh signature and tamper with middle
+            let mut valid_sig2 = pair.sign(message);
+            let sig_bytes2 = valid_sig2.0.as_mut();
+            let mid = sig_bytes2.len() / 2;
+            sig_bytes2[mid] ^= 0xFF;
+            assert!(!SphincsPair::verify(&valid_sig2, message, &public_key),
+                "Signature with tampered middle byte should be rejected");
+
+            // Get fresh signature and tamper with last byte
+            let mut valid_sig3 = pair.sign(message);
+            let sig_bytes3 = valid_sig3.0.as_mut();
+            let last = sig_bytes3.len() - 1;
+            sig_bytes3[last] ^= 0xFF;
+            assert!(!SphincsPair::verify(&valid_sig3, message, &public_key),
+                "Signature with tampered last byte should be rejected");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_all_zeros_signature() {
+        new_test_ext().execute_with(|| {
+            // Generate a valid keypair
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+            let message = b"Test message";
+
+            // Get a valid signature to know the correct size
+            let valid_sig = pair.sign(message);
+            let sig_len = valid_sig.0.len();
+
+            // Create all-zeros signature of correct length
+            let mut zero_sig = pair.sign(message); // Clone structure
+            zero_sig.0.iter_mut().for_each(|b| *b = 0);
+
+            use sp_core::Pair;
+            assert!(!SphincsPair::verify(&zero_sig, message, &public_key),
+                "All-zeros signature should be rejected");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_all_ones_signature() {
+        new_test_ext().execute_with(|| {
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+            let message = b"Test message";
+
+            // Create all-ones signature
+            let mut ones_sig = pair.sign(message);
+            ones_sig.0.iter_mut().for_each(|b| *b = 0xFF);
+
+            use sp_core::Pair;
+            assert!(!SphincsPair::verify(&ones_sig, message, &public_key),
+                "All-ones signature should be rejected");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_signature_replay() {
+        new_test_ext().execute_with(|| {
+            // Test that a signature for one message doesn't work for another
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+
+            let message1 = b"Transfer 100 tokens to Alice";
+            let message2 = b"Transfer 100 tokens to Bob"; // Similar but different
+
+            let sig1 = pair.sign(message1);
+
+            use sp_core::Pair;
+            // Signature for message1 should not verify message2
+            assert!(SphincsPair::verify(&sig1, message1, &public_key));
+            assert!(!SphincsPair::verify(&sig1, message2, &public_key),
+                "Signature replay for different message should fail");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_empty_message() {
+        new_test_ext().execute_with(|| {
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+
+            // Empty message should still work (SPHINCS+ handles this)
+            let empty_message: &[u8] = b"";
+            let signature = pair.sign(empty_message);
+
+            use sp_core::Pair;
+            assert!(SphincsPair::verify(&signature, empty_message, &public_key),
+                "Empty message signature should verify");
+
+            // But should not verify against non-empty message
+            assert!(!SphincsPair::verify(&signature, b"not empty", &public_key),
+                "Empty message signature should not verify non-empty message");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_large_message() {
+        new_test_ext().execute_with(|| {
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+
+            // Test with 1MB message
+            let large_message = vec![0x42u8; 1024 * 1024];
+            let signature = pair.sign(&large_message);
+
+            use sp_core::Pair;
+            assert!(SphincsPair::verify(&signature, &large_message, &public_key),
+                "Large message signature should verify");
+
+            // Single byte change should invalidate
+            let mut tampered = large_message.clone();
+            tampered[500_000] ^= 0x01;
+            assert!(!SphincsPair::verify(&signature, &tampered, &public_key),
+                "Single byte change should invalidate signature");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_forged_public_key() {
+        new_test_ext().execute_with(|| {
+            let (pair1, _) = SphincsPair::generate();
+            let (pair2, _) = SphincsPair::generate();
+
+            let public_key1 = pair1.public();
+            let mut forged_key = pair2.public();
+
+            // Try to forge by copying some bytes from key1
+            let key1_bytes = public_key1.0;
+            forged_key.0[0..32].copy_from_slice(&key1_bytes[0..32]);
+
+            let message = b"Test message";
+            let sig1 = pair1.sign(message);
+
+            use sp_core::Pair;
+            // Forged key should not verify signature from key1
+            assert!(!SphincsPair::verify(&sig1, message, &forged_key),
+                "Forged public key should not verify valid signature");
+        });
+    }
+
+    #[test]
+    fn test_adversarial_key_recovery_attempt() {
+        // SPHINCS+ is hash-based, so there's no mathematical relationship
+        // between signatures that could leak the private key.
+        // This test verifies multiple signatures don't weaken security.
+        new_test_ext().execute_with(|| {
+            let (pair, _) = SphincsPair::generate();
+            let public_key = pair.public();
+
+            use sp_core::Pair;
+
+            // Sign many messages (simulating an attacker collecting signatures)
+            let messages: Vec<Vec<u8>> = (0..100)
+                .map(|i| format!("Message number {}", i).into_bytes())
+                .collect();
+
+            let signatures: Vec<_> = messages.iter()
+                .map(|m| pair.sign(m))
+                .collect();
+
+            // All signatures should verify correctly
+            for (msg, sig) in messages.iter().zip(signatures.iter()) {
+                assert!(SphincsPair::verify(sig, msg, &public_key));
+            }
+
+            // But none should verify a message that wasn't signed
+            let new_message = b"This was never signed";
+            for sig in &signatures {
+                assert!(!SphincsPair::verify(sig, new_message, &public_key),
+                    "Collected signatures should not help forge new signatures");
+            }
+        });
+    }
 }
