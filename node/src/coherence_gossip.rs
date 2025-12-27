@@ -41,7 +41,7 @@ pub const COHERENCE_PROTOCOL_NAME: &str = "/quantumharmony/coherence/1";
 /// (see `qpp_integration::ValidatorMessaging`). To integrate encrypted vote gossip:
 ///
 /// 1. Add new enum variant:
-///    ```rust
+///    ```ignore
 ///    EncryptedVote {
 ///        recipient_id: ValidatorId,
 ///        ciphertext: Vec<u8>,
@@ -50,25 +50,25 @@ pub const COHERENCE_PROTOCOL_NAME: &str = "/quantumharmony/coherence/1";
 ///    ```
 ///
 /// 2. Initialize Triple Ratchet in `CoherenceGadget`:
-///    ```rust
+///    ```ignore
 ///    let mut validator_messaging = ValidatorMessaging::new();
 ///    validator_messaging.initialize_from_falcon(falcon_sk, falcon_pk)?;
 ///    ```
 ///
 /// 3. Encrypt votes before gossiping:
-///    ```rust
+///    ```ignore
 ///    let vote_bytes = vote.encode();
 ///    let ciphertext = validator_messaging.encrypt_message(&vote_bytes)?;
 ///    ```
 ///
 /// 4. Decrypt votes on reception:
-///    ```rust
+///    ```ignore
 ///    let plaintext = validator_messaging.decrypt_message(&ciphertext)?;
 ///    let vote = CoherenceVote::decode(&mut &plaintext[..])?;
 ///    ```
 ///
 /// 5. Check for rekeying periodically:
-///    ```rust
+///    ```ignore
 ///    if validator_messaging.needs_rekey(1000, 3600) {
 ///        validator_messaging.rekey()?;
 ///    }
