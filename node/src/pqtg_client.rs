@@ -1,7 +1,7 @@
 //! PQTG Client - Direct integration with PQ-Transport-Gateway for entropy extraction
 //!
 //! Architecture:
-//! ```
+//! ```text
 //! QKD/HWRNG Hardware → PQTG (localhost:8443) → Validator Node (pqtg_client)
 //! ```
 //!

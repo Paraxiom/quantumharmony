@@ -35,6 +35,7 @@ impl TernaryCoordinates {
     ///
     /// # Example
     /// ```
+    /// use pallet_runtime_segmentation::ternary::TernaryCoordinates;
     /// let coords = TernaryCoordinates::encode(5, 3, 7);
     /// assert_eq!(coords.decode(), (5, 3, 7));
     /// ```

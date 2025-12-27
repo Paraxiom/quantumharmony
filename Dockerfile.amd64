@@ -1,0 +1,23 @@
+# QuantumHarmony Node Docker Image (linux/amd64)
+FROM ubuntu:22.04
+
+LABEL org.opencontainers.image.title="QuantumHarmony Node"
+LABEL org.opencontainers.image.description="Post-quantum secure blockchain node using SPHINCS+ signatures"
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /node
+
+COPY target/release/quantumharmony-node-amd64 /usr/local/bin/quantumharmony-node
+COPY production-3val-chainspec.json /node/chainspec.json
+
+RUN chmod +x /usr/local/bin/quantumharmony-node
+
+EXPOSE 9944 9933 30333
+
+ENTRYPOINT ["quantumharmony-node"]
+CMD ["--chain", "/node/chainspec.json", "--rpc-external", "--rpc-cors=all"]
