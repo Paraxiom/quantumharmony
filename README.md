@@ -1,12 +1,32 @@
 # QuantumHarmony Blockchain
 
+> **Technical Preview v0.30.0** - Research Testnet
+>
+> This is an **experimental post-quantum blockchain** for research and development purposes.
+>
+> **NOT FOR PRODUCTION USE** - No economic security guarantees. APIs may change. Not audited.
+
+---
+
 A post-quantum secure Layer 1 blockchain built on Substrate, featuring SPHINCS+ signatures, quantum-resistant consensus, and innovative governance mechanisms including academic vouching and on-chain Ricardian contracts.
+
+## Status
+
+| Component | Status |
+|-----------|--------|
+| Post-Quantum Crypto (SPHINCS+) | Tested |
+| Consensus (Aura) | Operational |
+| Validator Rewards | Tested |
+| Governance Pallets | Experimental |
+| QKD Integration | Interface Ready |
+| Security Audit | Pending |
+| Fuzzing/Adversarial Tests | Partial |
+
+**Current Deployment**: Technical preview testnet with 3 validators.
 
 ## Overview
 
-QuantumHarmony is a production-ready blockchain that replaces quantum-vulnerable cryptographic primitives (ECDSA, Ed25519, GRANDPA) with post-quantum alternatives. The chain uses SPHINCS+ hash-based signatures (NIST-standardized, stateless) and Keccak-256 hashing throughout.
-
-**Current Status**: Production testnet operational with 3 validators across distributed infrastructure.
+QuantumHarmony is a research blockchain that replaces quantum-vulnerable cryptographic primitives (ECDSA, Ed25519, GRANDPA) with post-quantum alternatives. The chain uses SPHINCS+ hash-based signatures (NIST-standardized, stateless) and Keccak-256 hashing throughout.
 
 ## Core Security Features
 
