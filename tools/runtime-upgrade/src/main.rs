@@ -11,8 +11,19 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 
 /// SPHINCS+ secret keys for test accounts (128 bytes each)
+///
+/// ⚠️  WARNING: DEVELOPMENT/TEST KEYS ONLY ⚠️
+///
+/// These keys are for LOCAL DEVELOPMENT and TESTING purposes only.
+/// They are publicly known and must NEVER be used for:
+/// - Production deployments
+/// - Mainnet validators
+/// - Any system holding real value
+///
+/// For production, generate fresh keys using `generate_prod_key` tool.
 mod test_accounts {
     /// Alice's 128-byte SPHINCS+ secret key (from test_accounts.rs)
+    /// ⚠️  DEV KEY - DO NOT USE IN PRODUCTION
     pub const ALICE_SECRET: [u8; 128] = [
         0xe7, 0x17, 0x5a, 0x54, 0x1e, 0xe0, 0x55, 0xe4, 0x23, 0xe0, 0x70, 0xee, 0xe2, 0xcf, 0xd2, 0xa9,
         0xf4, 0x47, 0xa8, 0x20, 0xf4, 0xe6, 0x1b, 0xf0, 0x31, 0x80, 0x80, 0x5d, 0xbc, 0x8c, 0x4a, 0x7f,
