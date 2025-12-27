@@ -167,6 +167,17 @@ async fn test_block_production_continues() {
 async fn test_storage_query_before_and_after_transaction() {
     let client = wait_for_node().await;
 
+    // Check if this is a production chain (test accounts won't have funds)
+    let chain_type: String = client
+        .request("system_chainType", rpc_params![])
+        .await
+        .expect("Failed to get chain type");
+
+    if chain_type.contains("Live") {
+        println!("Skipping transaction test on Live chain - test accounts have no funds");
+        return;
+    }
+
     // Use SPHINCS+ Alice/Bob addresses from test_accounts module
     // These match the addresses used in genesis config
     let alice_ss58 = "5FLy8UEZHa2C2hNHP2NRCxVenWJxSqZWbDf6K456KwV92eML";
@@ -336,10 +347,10 @@ async fn test_chain_type_and_name() {
 
     println!("Chain type: {}", chain_type);
 
-    // For dev chain, should be "Development" or "Local"
+    // Chain type can be "Development", "Local", or "Live" for production
     assert!(
-        chain_type.contains("Development") || chain_type.contains("Local"),
-        "Dev chain should be Development or Local type"
+        chain_type.contains("Development") || chain_type.contains("Local") || chain_type.contains("Live"),
+        "Chain type should be Development, Local, or Live"
     );
 }
 

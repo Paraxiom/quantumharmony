@@ -46,13 +46,6 @@ fn get_sphincs_test_account(name: &str) -> (sp_core::crypto::AccountId32, String
     (account, ss58)
 }
 
-/// Helper to create RPC client
-async fn create_client() -> HttpClient {
-    HttpClientBuilder::default()
-        .build(NODE_URL)
-        .expect("Failed to create RPC client")
-}
-
 /// Helper to wait for node to be ready
 async fn wait_for_node() -> HttpClient {
     for i in 0..30 {
@@ -68,9 +61,24 @@ async fn wait_for_node() -> HttpClient {
     panic!("Node did not start within 30 seconds");
 }
 
+/// Check if running on a Live (production) chain where test accounts have no funds
+async fn is_live_chain(client: &HttpClient) -> bool {
+    let chain_type: String = client
+        .request("system_chainType", rpc_params![])
+        .await
+        .unwrap_or_else(|_| "Unknown".to_string());
+    chain_type.contains("Live")
+}
+
 #[tokio::test]
 async fn test_transaction_gateway_balance() {
     let client = wait_for_node().await;
+
+    // Skip on Live chain - test accounts have no funds
+    if is_live_chain(&client).await {
+        println!("Skipping balance test on Live chain - test accounts have no funds");
+        return;
+    }
 
     // Get balance for Alice (SPHINCS+)
     let (alice_account, alice_ss58) = get_sphincs_test_account("Alice");
@@ -139,6 +147,12 @@ async fn test_transaction_gateway_genesis_hash() {
 async fn test_transaction_submission() {
     let client = wait_for_node().await;
 
+    // Skip on Live chain - test accounts have no funds
+    if is_live_chain(&client).await {
+        println!("Skipping transaction test on Live chain - test accounts have no funds");
+        return;
+    }
+
     // Create a transfer from Alice to Bob (SPHINCS+)
     let (_, alice_ss58) = get_sphincs_test_account("Alice");
     let (_, bob_ss58) = get_sphincs_test_account("Bob");
@@ -181,6 +195,12 @@ async fn test_transaction_submission() {
 #[tokio::test]
 async fn test_balance_transfer_end_to_end() {
     let client = wait_for_node().await;
+
+    // Skip on Live chain - test accounts have no funds
+    if is_live_chain(&client).await {
+        println!("Skipping transfer test on Live chain - test accounts have no funds");
+        return;
+    }
 
     // Get initial balances (SPHINCS+)
     let (_, alice_ss58) = get_sphincs_test_account("Alice");
@@ -289,6 +309,12 @@ async fn test_account_creation() {
 #[tokio::test]
 async fn test_multiple_transactions_nonce_increment() {
     let client = wait_for_node().await;
+
+    // Skip on Live chain - test accounts have no funds
+    if is_live_chain(&client).await {
+        println!("Skipping nonce test on Live chain - test accounts have no funds");
+        return;
+    }
 
     let (_, alice_ss58) = get_sphincs_test_account("Alice");
     let (_, bob_ss58) = get_sphincs_test_account("Bob");
