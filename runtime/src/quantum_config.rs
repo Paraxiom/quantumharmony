@@ -85,10 +85,10 @@ impl pallet_quantum_crypto::Config for Runtime {
 // ====== Proof of Coherence Configuration ======
 
 parameter_types! {
-    /// Reward for maintaining coherence: 10 QHMY
+    /// Reward for maintaining coherence: 10 QMHY
     pub const CoherenceReward: Balance = 10 * 10u128.pow(18);
 
-    /// Slash for losing coherence: 1 QHMY
+    /// Slash for losing coherence: 1 QMHY
     pub const CoherenceSlash: Balance = 1 * 10u128.pow(18);
 }
 

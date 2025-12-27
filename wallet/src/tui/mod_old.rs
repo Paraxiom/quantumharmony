@@ -969,7 +969,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         Spans::from(vec![
             Span::raw("⬡ 📜 "),
             Span::styled(
-                format!("[{}] Block #{} imported → Reward: +2.5 QHM 💎", 
+                format!("[{}] Block #{} imported → Reward: +2.5 QMHY 💎", 
                     chrono::Local::now().format("%H:%M:%S"),
                     app.node_status.block_number
                 ),

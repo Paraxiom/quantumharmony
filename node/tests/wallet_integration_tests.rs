@@ -161,7 +161,7 @@ async fn test_transaction_submission() {
     let tx_request = json!({
         "from": alice_ss58,
         "to": bob_ss58,
-        "amount": "1000000000000", // 1 unit with 12 decimals
+        "amount": "1000000000000000000", // 1 QMHY with 18 decimals
         "nonce": nonce,
         "genesisHash": genesis_hash
     });
