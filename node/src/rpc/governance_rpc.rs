@@ -35,6 +35,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use substrate_frame_rpc_system::AccountNonceApi as SystemAccountNonceApi;
+use pallet_validator_rewards::runtime_api::ValidatorRewardsApi;
 
 /// Generic signed extrinsic request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -176,7 +177,8 @@ where
     C::Api: sp_block_builder::BlockBuilder<Block>
         + sp_api::Core<Block>
         + substrate_frame_rpc_system::AccountNonceApi<Block, AccountId32, u32>
-        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId32, u32>,
+        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId32, u32>
+        + pallet_validator_rewards::runtime_api::ValidatorRewardsApi<Block, AccountId32, u128>,
     P: TransactionPool<Block = Block> + 'static,
 {
     async fn submit_signed_extrinsic(&self, request: Value) -> RpcResult<Value> {
@@ -369,36 +371,111 @@ where
     async fn get_rewards_info(&self, account: String) -> RpcResult<RewardsInfo> {
         log::info!("🏛️ Governance RPC: Getting rewards for {}", account);
 
-        // For now, return placeholder data
-        // Full implementation would query ValidatorRewards storage
+        // Parse account from SS58 or hex
+        let account_id: AccountId32 = if account.starts_with("0x") {
+            // Hex format
+            let bytes = hex::decode(account.trim_start_matches("0x"))
+                .map_err(|e| ErrorObject::owned(
+                    ErrorCode::InvalidParams.code(),
+                    format!("Invalid hex account: {}", e),
+                    None::<()>
+                ))?;
+            AccountId32::try_from(bytes.as_slice())
+                .map_err(|_| ErrorObject::owned(
+                    ErrorCode::InvalidParams.code(),
+                    "Invalid account bytes length",
+                    None::<()>
+                ))?
+        } else {
+            // SS58 format
+            use sp_runtime::traits::IdentifyAccount;
+            use std::str::FromStr;
+            AccountId32::from_str(&account)
+                .map_err(|_| ErrorObject::owned(
+                    ErrorCode::InvalidParams.code(),
+                    format!("Invalid SS58 account: {}", account),
+                    None::<()>
+                ))?
+        };
+
+        let best_hash = self.client.info().best_hash;
+
+        // Query runtime API
+        let stake = self.client.runtime_api()
+            .validator_stake(best_hash, account_id.clone())
+            .unwrap_or(0u128);
+
+        let pending = self.client.runtime_api()
+            .pending_rewards(best_hash, account_id.clone())
+            .unwrap_or(0u128);
+
+        let cert_level = self.client.runtime_api()
+            .certification_level(best_hash, account_id)
+            .unwrap_or(0u8);
+
+        // Format values (18 decimals)
+        let stake_qmhy = stake as f64 / 1e18;
+        let pending_qmhy = pending as f64 / 1e18;
+
+        let (cert_name, multiplier) = match cert_level {
+            0 => ("Uncertified", "70%"),
+            1 => ("KYC Verified", "100%"),
+            2 => ("Agent Certified", "120%"),
+            _ => ("Unknown", "0%"),
+        };
+
         Ok(RewardsInfo {
-            pending_rewards: "0 QHM".to_string(),
-            total_staked: "0 QHM".to_string(),
-            certification_level: "Uncertified".to_string(),
-            reward_multiplier: "70%".to_string(),
+            pending_rewards: format!("{:.2} QMHY", pending_qmhy),
+            total_staked: format!("{:.2} QMHY", stake_qmhy),
+            certification_level: cert_name.to_string(),
+            reward_multiplier: multiplier.to_string(),
         })
     }
 
     async fn get_validator_set(&self) -> RpcResult<Vec<ValidatorInfo>> {
         log::info!("🏛️ Governance RPC: Getting validator set");
 
-        // For now, return the known validators
-        Ok(vec![
-            ValidatorInfo {
-                account: "Alice".to_string(),
-                is_active: true,
-                session_key: None,
-            },
-            ValidatorInfo {
-                account: "Bob".to_string(),
-                is_active: true,
-                session_key: None,
-            },
-            ValidatorInfo {
-                account: "Charlie".to_string(),
-                is_active: true,
-                session_key: None,
-            },
-        ])
+        let best_hash = self.client.info().best_hash;
+
+        // Query all staked validators from runtime API
+        let validators = self.client.runtime_api()
+            .all_validators(best_hash)
+            .unwrap_or_default();
+
+        // Convert to ValidatorInfo
+        let validator_infos: Vec<ValidatorInfo> = validators
+            .into_iter()
+            .map(|(account, stake)| {
+                let stake_qmhy = (stake as f64) / 1e18;
+                ValidatorInfo {
+                    account: format!("{}", account),
+                    is_active: stake > 0,
+                    session_key: Some(format!("{:.2} QMHY staked", stake_qmhy)),
+                }
+            })
+            .collect();
+
+        // If no validators found from storage, return known validators
+        if validator_infos.is_empty() {
+            Ok(vec![
+                ValidatorInfo {
+                    account: "Alice (5GDGYeQv...)".to_string(),
+                    is_active: true,
+                    session_key: None,
+                },
+                ValidatorInfo {
+                    account: "Bob (5CT4mnE7...)".to_string(),
+                    is_active: true,
+                    session_key: None,
+                },
+                ValidatorInfo {
+                    account: "Charlie (5FMbuNfb...)".to_string(),
+                    is_active: true,
+                    session_key: None,
+                },
+            ])
+        } else {
+            Ok(validator_infos)
+        }
     }
 }

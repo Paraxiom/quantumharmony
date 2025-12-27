@@ -116,6 +116,7 @@ pallet-im-online = { workspace = true, features = ["std"] }
 # Quantum pallets (for gadget access to types)
 pallet-proof-of-coherence = { path = "/opt/polkadot-sdk/substrate/frame/proof-of-coherence", default-features = false, features = ["std"] }
 pallet-quantum-crypto = { path = "/opt/polkadot-sdk/substrate/frame/quantum-crypto", default-features = false, features = ["std"] }
+pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false, features = ["std"] }
 
 # Frontier dependencies removed for governance-only node
 quantumharmony-runtime = { workspace = true, features = ["std"] }

@@ -347,7 +347,7 @@ impl pallet_validator_entropy::Config for Runtime {
 }
 
 // Configure RelayCoordination pallet
-pub const UNITS: Balance = 1_000_000_000_000; // 1 unit = 10^12 base units
+pub const UNITS: Balance = 1_000_000_000_000_000_000; // 1 QMHY = 10^18 base units
 
 parameter_types! {
     pub const MinRelayStake: Balance = 100 * UNITS;
@@ -889,6 +889,40 @@ impl_runtime_apis! {
     impl wallet_api::WalletApi<Block, AccountId, Balance> for Runtime {
         fn get_balance(account: AccountId) -> Balance {
             Balances::free_balance(&account)
+        }
+    }
+
+    impl pallet_validator_rewards::runtime_api::ValidatorRewardsApi<Block, AccountId, Balance> for Runtime {
+        fn validator_stake(account: AccountId) -> Balance {
+            ValidatorRewards::validator_stake(&account)
+        }
+
+        fn pending_rewards(account: AccountId) -> Balance {
+            ValidatorRewards::pending_rewards(&account)
+        }
+
+        fn certification_level(account: AccountId) -> u8 {
+            match ValidatorRewards::certification(&account) {
+                pallet_validator_rewards::CertificationLevel::Uncertified => 0,
+                pallet_validator_rewards::CertificationLevel::KYCVerified => 1,
+                pallet_validator_rewards::CertificationLevel::AgentCertified => 2,
+            }
+        }
+
+        fn all_validators() -> sp_std::vec::Vec<(AccountId, Balance)> {
+            pallet_validator_rewards::ValidatorStake::<Runtime>::iter().collect()
+        }
+
+        fn min_stake() -> Balance {
+            ValidatorRewards::min_stake()
+        }
+
+        fn block_reward() -> Balance {
+            ValidatorRewards::block_reward()
+        }
+
+        fn total_staked() -> Balance {
+            ValidatorRewards::total_staked()
         }
     }
 }
