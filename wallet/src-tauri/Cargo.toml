@@ -24,10 +24,10 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 hex = "0.4"
-sp-core = { path = "/opt/polkadot-sdk/substrate/primitives/core" }
-sp-runtime = { path = "/opt/polkadot-sdk/substrate/primitives/runtime" }
+sp-core = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sp-runtime = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
 subxt = { version = "0.35", features = ["substrate-compat"] }
-scale-codec = { package = "parity-scale-codec", path = "/opt/parity-scale-codec", features = ["derive"] }
+scale-codec = { package = "parity-scale-codec", git = "https://github.com/Paraxiom/parity-scale-codec", features = ["derive"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2.0"

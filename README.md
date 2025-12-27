@@ -113,6 +113,17 @@ docker-compose up -d
 
 See `docs/DOCKER.md` for detailed Docker deployment instructions.
 
+## Dependencies
+
+QuantumHarmony uses forked Substrate dependencies with post-quantum cryptographic modifications:
+
+| Repository | Fork URL | Key Modifications |
+|------------|----------|-------------------|
+| polkadot-sdk | [Paraxiom/polkadot-sdk](https://github.com/Paraxiom/polkadot-sdk) | SPHINCS+ signatures, Falcon1024 consensus, PQC transport layer, quantum entropy integration |
+| parity-scale-codec | [Paraxiom/parity-scale-codec](https://github.com/Paraxiom/parity-scale-codec) | Increased preallocation limits for PQC signature sizes (17KB SPHINCS+ signatures) |
+
+These dependencies are pulled automatically via Cargo from the `daily/2025-10-16-sphincs-deterministic-keys` branch.
+
 ## Network Information
 
 ### Production Testnet

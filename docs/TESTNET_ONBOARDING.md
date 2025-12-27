@@ -31,8 +31,7 @@ Welcome to QuantumHarmony - the first post-quantum secure blockchain using multi
 | Alice (V1) | Canada (OVH) | YOUR_NODE_IP | 9944 | 30333 |
 | Bob (V2) | Canada (OVH) | YOUR_NODE_IP | 9944 | 30334 |
 
-> **Note (Dec 2025)**: Charlie validator (DigitalOcean Frankfurt) was decommissioned.
-> Network currently runs with 2 validators. Third validator slot available for new operators.
+> **Note (Dec 2025)**: Network runs with 3 validators (Alice, Bob, Charlie).
 
 ---
 

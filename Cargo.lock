@@ -850,6 +850,7 @@ dependencies = [
 [[package]]
 name = "binary-merkle-tree"
 version = "13.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "hash-db",
  "log",
@@ -2015,6 +2016,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-parachain-inherent"
 version = "0.1.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2024,7 +2026,7 @@ dependencies = [
  "parity-scale-codec",
  "sc-client-api",
  "sc-consensus-babe",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-inherents 26.0.0",
  "sp-runtime 31.0.1",
  "sp-state-machine 0.35.0",
@@ -2035,6 +2037,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.7.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bytes",
  "cumulus-pallet-parachain-system-proc-macro",
@@ -2060,7 +2063,7 @@ dependencies = [
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
  "sp-state-machine 0.35.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-trie 29.0.0",
  "sp-version 29.0.0",
  "staging-xcm",
@@ -2071,6 +2074,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-parachain-system-proc-macro"
 version = "0.6.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "proc-macro-crate 3.4.0",
  "proc-macro2",
@@ -2081,6 +2085,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-core"
 version = "0.7.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "polkadot-core-primitives",
@@ -2097,6 +2102,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-parachain-inherent"
 version = "0.7.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2110,6 +2116,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-proof-size-hostfunction"
 version = "0.2.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "sp-externalities 0.25.0",
  "sp-runtime-interface 24.0.0",
@@ -2119,6 +2126,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-interface"
 version = "0.7.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2138,6 +2146,7 @@ dependencies = [
 [[package]]
 name = "cumulus-test-relay-sproof-builder"
 version = "0.7.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "cumulus-primitives-core",
  "parity-scale-codec",
@@ -3181,6 +3190,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 [[package]]
 name = "fork-tree"
 version = "12.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
 ]
@@ -3238,6 +3248,7 @@ dependencies = [
 [[package]]
 name = "frame-benchmarking"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-support-procedural 23.0.0",
@@ -3261,6 +3272,7 @@ dependencies = [
 [[package]]
 name = "frame-benchmarking-cli"
 version = "32.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "Inflector",
  "array-bytes",
@@ -3313,7 +3325,7 @@ dependencies = [
  "sp-transaction-pool",
  "sp-trie 29.0.0",
  "sp-version 29.0.0",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "subxt 0.41.0",
  "subxt-signer",
  "thiserror 1.0.69",
@@ -3337,6 +3349,7 @@ dependencies = [
 [[package]]
 name = "frame-election-provider-solution-type"
 version = "13.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "proc-macro-crate 3.4.0",
  "proc-macro2",
@@ -3347,6 +3360,7 @@ dependencies = [
 [[package]]
 name = "frame-election-provider-support"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-election-provider-solution-type",
  "frame-support 28.0.0",
@@ -3357,12 +3371,13 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-npos-elections",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "frame-executive"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "aquamarine 0.5.0",
  "frame-support 28.0.0",
@@ -3374,7 +3389,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-tracing 16.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -3438,6 +3453,7 @@ dependencies = [
 [[package]]
 name = "frame-storage-access-test-runtime"
 version = "0.1.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "parity-scale-codec",
@@ -3491,6 +3507,7 @@ dependencies = [
 [[package]]
 name = "frame-support"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "aquamarine 0.5.0",
  "array-bytes",
@@ -3513,7 +3530,7 @@ dependencies = [
  "sp-arithmetic 23.0.0",
  "sp-core 28.0.0",
  "sp-crypto-hashing-proc-macro",
- "sp-debug-derive 14.0.0",
+ "sp-debug-derive 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-genesis-builder 0.8.0",
  "sp-inherents 26.0.0",
  "sp-io 30.0.0",
@@ -3521,8 +3538,8 @@ dependencies = [
  "sp-runtime 31.0.1",
  "sp-staking 26.0.0",
  "sp-state-machine 0.35.0",
- "sp-std 14.0.0",
- "sp-tracing 16.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-trie 29.0.0",
  "sp-weights 27.0.0",
  "tt-call",
@@ -3549,6 +3566,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural"
 version = "23.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "Inflector",
  "cfg-expr",
@@ -3561,7 +3579,7 @@ dependencies = [
  "proc-macro-warning 1.84.1",
  "proc-macro2",
  "quote",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "syn 2.0.111",
 ]
 
@@ -3580,6 +3598,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools"
 version = "10.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support-procedural-tools-derive 11.0.0",
  "proc-macro-crate 3.4.0",
@@ -3601,6 +3620,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "11.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3629,6 +3649,7 @@ dependencies = [
 [[package]]
 name = "frame-system"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "cfg-if",
  "docify",
@@ -3647,6 +3668,7 @@ dependencies = [
 [[package]]
 name = "frame-system-benchmarking"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -3660,6 +3682,7 @@ dependencies = [
 [[package]]
 name = "frame-system-rpc-runtime-api"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "parity-scale-codec",
@@ -3669,6 +3692,7 @@ dependencies = [
 [[package]]
 name = "frame-try-runtime"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "parity-scale-codec",
@@ -7473,12 +7497,13 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "pallet-asset-conversion"
 version = "10.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -7496,6 +7521,7 @@ dependencies = [
 [[package]]
 name = "pallet-aura"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-system 28.0.0",
@@ -7511,6 +7537,7 @@ dependencies = [
 [[package]]
 name = "pallet-authority-discovery"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-system 28.0.0",
@@ -7525,6 +7552,7 @@ dependencies = [
 [[package]]
 name = "pallet-authorship"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-system 28.0.0",
@@ -7537,6 +7565,7 @@ dependencies = [
 [[package]]
 name = "pallet-babe"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -7559,6 +7588,7 @@ dependencies = [
 [[package]]
 name = "pallet-balances"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -7574,6 +7604,7 @@ dependencies = [
 [[package]]
 name = "pallet-broker"
 version = "0.6.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bitvec",
  "frame-benchmarking 28.0.0",
@@ -7591,6 +7622,7 @@ dependencies = [
 [[package]]
 name = "pallet-collective"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -7616,12 +7648,13 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "pallet-democracy"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -7647,12 +7680,13 @@ dependencies = [
  "scale-info",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "pallet-identity"
 version = "29.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "enumflags2",
  "frame-benchmarking 28.0.0",
@@ -7668,6 +7702,7 @@ dependencies = [
 [[package]]
 name = "pallet-im-online"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -7686,6 +7721,7 @@ dependencies = [
 [[package]]
 name = "pallet-message-queue"
 version = "31.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "environmental",
  "frame-benchmarking 28.0.0",
@@ -7704,6 +7740,7 @@ dependencies = [
 [[package]]
 name = "pallet-mmr"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "log",
  "parity-scale-codec",
@@ -7723,7 +7760,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -7750,6 +7787,7 @@ dependencies = [
 [[package]]
 name = "pallet-preimage"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -7765,6 +7803,7 @@ dependencies = [
 [[package]]
 name = "pallet-proof-of-coherence"
 version = "1.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-system 28.0.0",
@@ -7776,12 +7815,13 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "pallet-proxy"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "polkadot-sdk-frame",
@@ -7791,6 +7831,7 @@ dependencies = [
 [[package]]
 name = "pallet-quantum-crypto"
 version = "1.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-system 28.0.0",
@@ -7808,7 +7849,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "winter-crypto",
  "winter-math",
  "winter-utils",
@@ -7828,7 +7869,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -7842,7 +7883,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -7858,12 +7899,13 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "pallet-scheduler"
 version = "29.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -7880,6 +7922,7 @@ dependencies = [
 [[package]]
 name = "pallet-session"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-support 28.0.0",
  "frame-system 28.0.0",
@@ -7909,12 +7952,13 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "pallet-staking"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-election-provider-support",
@@ -7936,6 +7980,7 @@ dependencies = [
 [[package]]
 name = "pallet-sudo"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -7950,6 +7995,7 @@ dependencies = [
 [[package]]
 name = "pallet-timestamp"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -7967,6 +8013,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
@@ -7981,6 +8028,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment-rpc"
 version = "30.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "jsonrpsee 0.24.10",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -7996,6 +8044,7 @@ dependencies = [
 [[package]]
 name = "pallet-transaction-payment-rpc-runtime-api"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "pallet-transaction-payment",
  "parity-scale-codec",
@@ -8007,6 +8056,7 @@ dependencies = [
 [[package]]
 name = "pallet-treasury"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -8033,7 +8083,7 @@ dependencies = [
  "scale-info",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -8047,7 +8097,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "substrate-validator-set",
 ]
 
@@ -8066,7 +8116,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -8076,8 +8126,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e69bf016dc406eff7d53a7d3f7cf1c2e72c82b9088aac1118591e36dd2cd3e9"
 dependencies = [
  "bitcoin_hashes 0.13.0",
- "rand 0.8.5",
- "rand_core 0.6.4",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
  "serde",
  "unicode-normalization",
 ]
@@ -8106,6 +8156,7 @@ dependencies = [
 [[package]]
 name = "parity-scale-codec"
 version = "3.7.5"
+source = "git+https://github.com/Paraxiom/parity-scale-codec#d43fe8b683736c9cf0b8958bac8a3f5bd397594f"
 dependencies = [
  "arrayvec 0.7.6",
  "bitvec",
@@ -8121,6 +8172,7 @@ dependencies = [
 [[package]]
 name = "parity-scale-codec-derive"
 version = "3.7.5"
+source = "git+https://github.com/Paraxiom/parity-scale-codec#d43fe8b683736c9cf0b8958bac8a3f5bd397594f"
 dependencies = [
  "proc-macro-crate 3.4.0",
  "proc-macro2",
@@ -8440,6 +8492,7 @@ dependencies = [
 [[package]]
 name = "polkadot-core-primitives"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -8450,6 +8503,7 @@ dependencies = [
 [[package]]
 name = "polkadot-node-metrics"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bs58",
  "futures 0.3.31",
@@ -8466,6 +8520,7 @@ dependencies = [
 [[package]]
 name = "polkadot-node-network-protocol"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-channel 1.9.0",
  "async-trait",
@@ -8490,6 +8545,7 @@ dependencies = [
 [[package]]
 name = "polkadot-node-primitives"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bitvec",
  "bounded-vec",
@@ -8514,6 +8570,7 @@ dependencies = [
 [[package]]
 name = "polkadot-node-subsystem-types"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "derive_more 0.99.20",
@@ -8541,6 +8598,7 @@ dependencies = [
 [[package]]
 name = "polkadot-overseer"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -8560,6 +8618,7 @@ dependencies = [
 [[package]]
 name = "polkadot-parachain-primitives"
 version = "6.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bounded-collections 0.3.2",
  "derive_more 0.99.20",
@@ -8575,6 +8634,7 @@ dependencies = [
 [[package]]
 name = "polkadot-primitives"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bitvec",
  "bounded-collections 0.3.2",
@@ -8598,24 +8658,26 @@ dependencies = [
  "sp-keystore 0.34.0",
  "sp-runtime 31.0.1",
  "sp-staking 26.0.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "polkadot-runtime-metrics"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bs58",
  "frame-benchmarking 28.0.0",
  "parity-scale-codec",
  "polkadot-primitives",
- "sp-tracing 16.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "polkadot-runtime-parachains"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bitflags 1.3.2",
  "bitvec",
@@ -8654,7 +8716,7 @@ dependencies = [
  "sp-runtime 31.0.1",
  "sp-session",
  "sp-staking 26.0.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "staging-xcm",
  "staging-xcm-executor",
  "static_assertions",
@@ -8663,6 +8725,7 @@ dependencies = [
 [[package]]
 name = "polkadot-sdk-frame"
 version = "0.1.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-benchmarking 28.0.0",
@@ -8697,6 +8760,7 @@ dependencies = [
 [[package]]
 name = "polkadot-statement-table"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "polkadot-primitives",
@@ -9328,7 +9392,7 @@ dependencies = [
  "rand 0.8.5",
  "sp-core 28.0.0",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -9428,7 +9492,7 @@ dependencies = [
  "sp-consensus-aura",
  "sp-consensus-grandpa",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-genesis-builder 0.8.0",
  "sp-inherents 26.0.0",
  "sp-io 30.0.0",
@@ -9509,7 +9573,7 @@ dependencies = [
  "sp-offchain",
  "sp-runtime 31.0.1",
  "sp-session",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-transaction-pool",
  "sp-version 29.0.0",
  "static_assertions",
@@ -10475,16 +10539,18 @@ dependencies = [
 [[package]]
 name = "sc-allocator"
 version = "23.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "log",
  "sp-core 28.0.0",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "sc-authority-discovery"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -10516,6 +10582,7 @@ dependencies = [
 [[package]]
 name = "sc-basic-authorship"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "futures 0.3.31",
  "log",
@@ -10536,6 +10603,7 @@ dependencies = [
 [[package]]
 name = "sc-block-builder"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "sp-api 26.0.0",
@@ -10550,6 +10618,7 @@ dependencies = [
 [[package]]
 name = "sc-chain-spec"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "docify",
@@ -10564,17 +10633,18 @@ dependencies = [
  "serde_json",
  "sp-blockchain",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-genesis-builder 0.8.0",
  "sp-io 30.0.0",
  "sp-runtime 31.0.1",
  "sp-state-machine 0.35.0",
- "sp-tracing 16.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "sc-chain-spec-derive"
 version = "11.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "proc-macro-crate 3.4.0",
  "proc-macro2",
@@ -10585,6 +10655,7 @@ dependencies = [
 [[package]]
 name = "sc-cli"
 version = "0.36.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "chrono",
@@ -10626,6 +10697,7 @@ dependencies = [
 [[package]]
 name = "sc-client-api"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "fnv",
  "futures 0.3.31",
@@ -10651,6 +10723,7 @@ dependencies = [
 [[package]]
 name = "sc-client-db"
 version = "0.35.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "hash-db",
  "kvdb",
@@ -10678,6 +10751,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -10700,6 +10774,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-aura"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -10728,6 +10803,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-babe"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "fork-tree",
@@ -10752,7 +10828,7 @@ dependencies = [
  "sp-consensus-babe",
  "sp-consensus-slots",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-inherents 26.0.0",
  "sp-keystore 0.34.0",
  "sp-runtime 31.0.1",
@@ -10763,6 +10839,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-epochs"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "fork-tree",
  "parity-scale-codec",
@@ -10775,6 +10852,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-grandpa"
 version = "0.19.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "ahash 0.8.12",
  "array-bytes",
@@ -10808,7 +10886,7 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-grandpa",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-keystore 0.34.0",
  "sp-runtime 31.0.1",
  "substrate-prometheus-endpoint",
@@ -10818,6 +10896,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-slots"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -10840,6 +10919,7 @@ dependencies = [
 [[package]]
 name = "sc-executor"
 version = "0.32.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "parking_lot 0.12.5",
@@ -10855,18 +10935,19 @@ dependencies = [
  "sp-runtime-interface 24.0.0",
  "sp-trie 29.0.0",
  "sp-version 29.0.0",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "tracing",
 ]
 
 [[package]]
 name = "sc-executor-common"
 version = "0.29.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "polkavm",
  "sc-allocator",
  "sp-maybe-compressed-blob",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "thiserror 1.0.69",
  "wasm-instrument",
 ]
@@ -10874,16 +10955,18 @@ dependencies = [
 [[package]]
 name = "sc-executor-polkavm"
 version = "0.29.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "log",
  "polkavm",
  "sc-executor-common",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
 name = "sc-executor-wasmtime"
 version = "0.29.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "anyhow",
  "log",
@@ -10892,13 +10975,14 @@ dependencies = [
  "sc-allocator",
  "sc-executor-common",
  "sp-runtime-interface 24.0.0",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "wasmtime",
 ]
 
 [[package]]
 name = "sc-informant"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "console",
  "futures 0.3.31",
@@ -10914,6 +10998,7 @@ dependencies = [
 [[package]]
 name = "sc-keystore"
 version = "25.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "parking_lot 0.12.5",
@@ -10927,6 +11012,7 @@ dependencies = [
 [[package]]
 name = "sc-mixnet"
 version = "0.4.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "arrayvec 0.7.6",
@@ -10954,6 +11040,7 @@ dependencies = [
 [[package]]
 name = "sc-network"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "aes-gcm",
  "array-bytes",
@@ -11012,6 +11099,7 @@ dependencies = [
 [[package]]
 name = "sc-network-common"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bitflags 1.3.2",
  "parity-scale-codec",
@@ -11021,6 +11109,7 @@ dependencies = [
 [[package]]
 name = "sc-network-gossip"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "ahash 0.8.12",
  "futures 0.3.31",
@@ -11039,6 +11128,7 @@ dependencies = [
 [[package]]
 name = "sc-network-light"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "async-channel 1.9.0",
@@ -11059,6 +11149,7 @@ dependencies = [
 [[package]]
 name = "sc-network-sync"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "async-channel 1.9.0",
@@ -11093,6 +11184,7 @@ dependencies = [
 [[package]]
 name = "sc-network-transactions"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "futures 0.3.31",
@@ -11111,6 +11203,7 @@ dependencies = [
 [[package]]
 name = "sc-network-types"
 version = "0.10.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bs58",
  "bytes",
@@ -11132,6 +11225,7 @@ dependencies = [
 [[package]]
 name = "sc-offchain"
 version = "29.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bytes",
  "fnv",
@@ -11165,6 +11259,7 @@ dependencies = [
 [[package]]
 name = "sc-proposer-metrics"
 version = "0.17.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "log",
  "substrate-prometheus-endpoint",
@@ -11173,6 +11268,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc"
 version = "29.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "futures 0.3.31",
  "jsonrpsee 0.24.10",
@@ -11204,6 +11300,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-api"
 version = "0.33.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "jsonrpsee 0.24.10",
  "parity-scale-codec",
@@ -11223,6 +11320,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-server"
 version = "11.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "dyn-clone",
  "forwarded-header-value",
@@ -11246,6 +11344,7 @@ dependencies = [
 [[package]]
 name = "sc-rpc-spec-v2"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "futures 0.3.31",
@@ -11278,20 +11377,22 @@ dependencies = [
 [[package]]
 name = "sc-runtime-utilities"
 version = "0.1.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "sc-executor",
  "sc-executor-common",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-state-machine 0.35.0",
- "sp-wasm-interface 20.0.0",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "sc-service"
 version = "0.35.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "directories",
@@ -11355,6 +11456,7 @@ dependencies = [
 [[package]]
 name = "sc-state-db"
 version = "0.30.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "log",
  "parity-scale-codec",
@@ -11365,6 +11467,7 @@ dependencies = [
 [[package]]
 name = "sc-sysinfo"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "derive_more 0.99.20",
  "futures 0.3.31",
@@ -11377,13 +11480,14 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-io 30.0.0",
 ]
 
 [[package]]
 name = "sc-telemetry"
 version = "15.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "chrono",
  "futures 0.3.31",
@@ -11402,6 +11506,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "chrono",
  "console",
@@ -11419,7 +11524,7 @@ dependencies = [
  "sp-core 28.0.0",
  "sp-rpc",
  "sp-runtime 31.0.1",
- "sp-tracing 16.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "thiserror 1.0.69",
  "tracing",
  "tracing-log 0.2.0",
@@ -11429,6 +11534,7 @@ dependencies = [
 [[package]]
 name = "sc-tracing-proc-macro"
 version = "11.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "proc-macro-crate 3.4.0",
  "proc-macro2",
@@ -11439,6 +11545,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -11455,9 +11562,9 @@ dependencies = [
  "sp-api 26.0.0",
  "sp-blockchain",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-runtime 31.0.1",
- "sp-tracing 16.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-transaction-pool",
  "substrate-prometheus-endpoint",
  "thiserror 1.0.69",
@@ -11469,6 +11576,7 @@ dependencies = [
 [[package]]
 name = "sc-transaction-pool-api"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -11485,6 +11593,7 @@ dependencies = [
 [[package]]
 name = "sc-utils"
 version = "14.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-channel 1.9.0",
  "futures 0.3.31",
@@ -12595,6 +12704,7 @@ dependencies = [
 [[package]]
 name = "sp-api"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "hash-db",
@@ -12630,6 +12740,7 @@ dependencies = [
 [[package]]
 name = "sp-api-proc-macro"
 version = "15.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "Inflector",
  "blake2 0.10.6",
@@ -12656,6 +12767,7 @@ dependencies = [
 [[package]]
 name = "sp-application-crypto"
 version = "30.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12708,6 +12820,7 @@ dependencies = [
 [[package]]
 name = "sp-arithmetic"
 version = "23.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "integer-sqrt",
@@ -12751,6 +12864,7 @@ dependencies = [
 [[package]]
 name = "sp-authority-discovery"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12763,6 +12877,7 @@ dependencies = [
 [[package]]
 name = "sp-block-builder"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "sp-api 26.0.0",
  "sp-inherents 26.0.0",
@@ -12772,6 +12887,7 @@ dependencies = [
 [[package]]
 name = "sp-blockchain"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "futures 0.3.31",
  "parity-scale-codec",
@@ -12790,6 +12906,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus"
 version = "0.32.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "futures 0.3.31",
@@ -12803,6 +12920,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-aura"
 version = "0.32.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "parity-scale-codec",
@@ -12818,6 +12936,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-babe"
 version = "0.32.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "parity-scale-codec",
@@ -12835,6 +12954,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-grandpa"
 version = "13.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "finality-grandpa",
  "log",
@@ -12851,6 +12971,7 @@ dependencies = [
 [[package]]
 name = "sp-consensus-slots"
 version = "0.32.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -12907,6 +13028,7 @@ dependencies = [
 [[package]]
 name = "sp-core"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "bitflags 1.3.2",
@@ -12932,10 +13054,10 @@ dependencies = [
  "scale-info",
  "secrecy 0.8.0",
  "serde",
- "sp-crypto-hashing 0.1.0",
- "sp-debug-derive 14.0.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
+ "sp-debug-derive 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-externalities 0.25.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-storage 19.0.0",
  "ss58-registry",
  "substrate-bip39 0.4.7",
@@ -13064,18 +13186,6 @@ dependencies = [
 [[package]]
 name = "sp-crypto-hashing"
 version = "0.1.0"
-dependencies = [
- "blake2b_simd",
- "byteorder",
- "digest 0.10.7",
- "sha2 0.10.9",
- "sha3",
- "twox-hash",
-]
-
-[[package]]
-name = "sp-crypto-hashing"
-version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc9927a7f81334ed5b8a98a4a978c81324d12bd9713ec76b5c68fd410174c5eb"
 dependencies = [
@@ -13088,17 +13198,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-crypto-hashing"
+version = "0.1.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
+dependencies = [
+ "blake2b_simd",
+ "byteorder",
+ "digest 0.10.7",
+ "sha2 0.10.9",
+ "sha3",
+ "twox-hash",
+]
+
+[[package]]
 name = "sp-crypto-hashing-proc-macro"
 version = "0.1.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "quote",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "syn 2.0.111",
 ]
 
 [[package]]
 name = "sp-database"
 version = "10.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "kvdb",
  "parking_lot 0.12.5",
@@ -13117,6 +13242,8 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48d09fa0a5f7299fb81ee25ae3853d26200f7a348148aed6de76be905c007dbe"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -13126,8 +13253,7 @@ dependencies = [
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48d09fa0a5f7299fb81ee25ae3853d26200f7a348148aed6de76be905c007dbe"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -13148,6 +13274,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -13191,6 +13318,7 @@ dependencies = [
 [[package]]
 name = "sp-genesis-builder"
 version = "0.8.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -13216,6 +13344,7 @@ dependencies = [
 [[package]]
 name = "sp-inherents"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "impl-trait-for-tuples",
@@ -13252,6 +13381,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "30.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bytes",
  "docify",
@@ -13260,12 +13390,12 @@ dependencies = [
  "polkavm-derive 0.26.0",
  "rustversion",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-externalities 0.25.0",
  "sp-keystore 0.34.0",
  "sp-runtime-interface 24.0.0",
  "sp-state-machine 0.35.0",
- "sp-tracing 16.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-trie 29.0.0",
  "tracing",
  "tracing-core",
@@ -13328,6 +13458,7 @@ dependencies = [
 [[package]]
 name = "sp-keyring"
 version = "31.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "sp-core 28.0.0",
  "sp-runtime 31.0.1",
@@ -13360,6 +13491,7 @@ dependencies = [
 [[package]]
 name = "sp-keystore"
 version = "0.34.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "parking_lot 0.12.5",
@@ -13394,6 +13526,7 @@ dependencies = [
 [[package]]
 name = "sp-maybe-compressed-blob"
 version = "11.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "thiserror 1.0.69",
  "zstd 0.12.4",
@@ -13413,6 +13546,7 @@ dependencies = [
 [[package]]
 name = "sp-metadata-ir"
 version = "0.6.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "frame-metadata 23.0.1",
  "parity-scale-codec",
@@ -13422,6 +13556,7 @@ dependencies = [
 [[package]]
 name = "sp-mixnet"
 version = "0.4.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -13432,6 +13567,7 @@ dependencies = [
 [[package]]
 name = "sp-mmr-primitives"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "log",
  "parity-scale-codec",
@@ -13440,7 +13576,7 @@ dependencies = [
  "serde",
  "sp-api 26.0.0",
  "sp-core 28.0.0",
- "sp-debug-derive 14.0.0",
+ "sp-debug-derive 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-runtime 31.0.1",
  "thiserror 1.0.69",
 ]
@@ -13448,6 +13584,7 @@ dependencies = [
 [[package]]
 name = "sp-npos-elections"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -13460,6 +13597,7 @@ dependencies = [
 [[package]]
 name = "sp-offchain"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "sp-api 26.0.0",
  "sp-core 28.0.0",
@@ -13479,6 +13617,7 @@ dependencies = [
 [[package]]
 name = "sp-panic-handler"
 version = "13.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "backtrace",
  "regex",
@@ -13497,6 +13636,7 @@ dependencies = [
 [[package]]
 name = "sp-rpc"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "rustc-hash 1.1.0",
  "serde",
@@ -13528,6 +13668,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime"
 version = "31.0.1"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "binary-merkle-tree",
  "docify",
@@ -13546,7 +13687,7 @@ dependencies = [
  "sp-arithmetic 23.0.0",
  "sp-core 28.0.0",
  "sp-io 30.0.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-trie 29.0.0",
  "sp-weights 27.0.0",
  "tracing",
@@ -13626,6 +13767,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -13633,10 +13775,10 @@ dependencies = [
  "polkavm-derive 0.26.0",
  "sp-externalities 0.25.0",
  "sp-runtime-interface-proc-macro 17.0.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-storage 19.0.0",
- "sp-tracing 16.0.0",
- "sp-wasm-interface 20.0.0",
+ "sp-tracing 16.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
+ "sp-wasm-interface 20.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "static_assertions",
 ]
 
@@ -13695,6 +13837,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "Inflector",
  "expander",
@@ -13721,6 +13864,7 @@ dependencies = [
 [[package]]
 name = "sp-session"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -13748,6 +13892,7 @@ dependencies = [
 [[package]]
 name = "sp-staking"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
@@ -13781,6 +13926,7 @@ dependencies = [
 [[package]]
 name = "sp-state-machine"
 version = "0.35.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "hash-db",
  "log",
@@ -13843,6 +13989,7 @@ dependencies = [
 [[package]]
 name = "sp-statement-store"
 version = "10.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "aes-gcm",
  "curve25519-dalek 4.1.3",
@@ -13854,7 +14001,7 @@ dependencies = [
  "sp-api 26.0.0",
  "sp-application-crypto 30.0.0",
  "sp-core 28.0.0",
- "sp-crypto-hashing 0.1.0",
+ "sp-crypto-hashing 0.1.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-externalities 0.25.0",
  "sp-runtime 31.0.1",
  "sp-runtime-interface 24.0.0",
@@ -13870,12 +14017,13 @@ source = "git+https://github.com/paritytech/polkadot-sdk.git?branch=release-polk
 [[package]]
 name = "sp-std"
 version = "14.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12f8ee986414b0a9ad741776762f4083cd3a5128449b982a3919c4df36874834"
 
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12f8ee986414b0a9ad741776762f4083cd3a5128449b982a3919c4df36874834"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 
 [[package]]
 name = "sp-storage"
@@ -13893,12 +14041,13 @@ dependencies = [
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "impl-serde 0.5.0",
  "parity-scale-codec",
  "ref-cast",
  "serde",
- "sp-debug-derive 14.0.0",
+ "sp-debug-derive 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -13931,6 +14080,7 @@ dependencies = [
 [[package]]
 name = "sp-timestamp"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "parity-scale-codec",
@@ -13954,17 +14104,6 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-dependencies = [
- "parity-scale-codec",
- "regex",
- "tracing",
- "tracing-core",
- "tracing-subscriber 0.3.22",
-]
-
-[[package]]
-name = "sp-tracing"
-version = "16.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0351810b9d074df71c4514c5228ed05c250607cba131c1c9d1526760ab69c05c"
 dependencies = [
@@ -13973,6 +14112,18 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "sp-tracing"
+version = "16.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
+dependencies = [
+ "parity-scale-codec",
+ "regex",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber 0.3.22",
 ]
 
 [[package]]
@@ -13990,6 +14141,7 @@ dependencies = [
 [[package]]
 name = "sp-transaction-pool"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "sp-api 26.0.0",
  "sp-runtime 31.0.1",
@@ -13998,6 +14150,7 @@ dependencies = [
 [[package]]
 name = "sp-transaction-storage-proof"
 version = "26.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "async-trait",
  "parity-scale-codec",
@@ -14034,6 +14187,7 @@ dependencies = [
 [[package]]
 name = "sp-trie"
 version = "29.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "ahash 0.8.12",
  "foldhash 0.1.5",
@@ -14124,6 +14278,7 @@ dependencies = [
 [[package]]
 name = "sp-version"
 version = "29.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "impl-serde 0.5.0",
  "parity-scale-codec",
@@ -14132,7 +14287,7 @@ dependencies = [
  "serde",
  "sp-crypto-hashing-proc-macro",
  "sp-runtime 31.0.1",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-version-proc-macro 13.0.0",
  "thiserror 1.0.69",
 ]
@@ -14151,6 +14306,7 @@ dependencies = [
 [[package]]
 name = "sp-version-proc-macro"
 version = "13.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "parity-scale-codec",
  "proc-macro-warning 1.84.1",
@@ -14175,17 +14331,6 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-dependencies = [
- "anyhow",
- "impl-trait-for-tuples",
- "log",
- "parity-scale-codec",
- "wasmtime",
-]
-
-[[package]]
-name = "sp-wasm-interface"
-version = "20.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ef97172c42eb4c6c26506f325f48463e9bc29b2034a587f1b9e48c751229bee"
 dependencies = [
@@ -14194,6 +14339,18 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "sp-std 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasmtime",
+]
+
+[[package]]
+name = "sp-wasm-interface"
+version = "20.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
+dependencies = [
+ "anyhow",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
  "wasmtime",
 ]
 
@@ -14227,6 +14384,7 @@ dependencies = [
 [[package]]
 name = "sp-weights"
 version = "27.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "bounded-collections 0.3.2",
  "parity-scale-codec",
@@ -14234,7 +14392,7 @@ dependencies = [
  "serde",
  "smallvec",
  "sp-arithmetic 23.0.0",
- "sp-debug-derive 14.0.0",
+ "sp-debug-derive 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
 ]
 
 [[package]]
@@ -14323,6 +14481,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "staging-xcm"
 version = "7.0.1"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "array-bytes",
  "bounded-collections 0.3.2",
@@ -14343,6 +14502,7 @@ dependencies = [
 [[package]]
 name = "staging-xcm-builder"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "environmental",
  "frame-support 28.0.0",
@@ -14366,6 +14526,7 @@ dependencies = [
 [[package]]
 name = "staging-xcm-executor"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "environmental",
  "frame-benchmarking 28.0.0",
@@ -14495,6 +14656,7 @@ dependencies = [
 [[package]]
 name = "substrate-bip39"
 version = "0.4.7"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "hmac 0.12.1",
  "pbkdf2 0.12.2",
@@ -14532,10 +14694,12 @@ dependencies = [
 [[package]]
 name = "substrate-build-script-utils"
 version = "11.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 
 [[package]]
 name = "substrate-frame-rpc-system"
 version = "28.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "docify",
  "frame-system-rpc-runtime-api",
@@ -14555,6 +14719,7 @@ dependencies = [
 [[package]]
 name = "substrate-prometheus-endpoint"
 version = "0.17.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "http-body-util",
  "hyper 1.8.1",
@@ -14588,13 +14753,14 @@ dependencies = [
  "sp-runtime 31.0.1",
  "sp-staking 26.0.0",
  "sp-state-machine 0.35.0",
- "sp-std 14.0.0",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
  "sp-weights 27.0.0",
 ]
 
 [[package]]
 name = "substrate-wasm-builder"
 version = "17.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "build-helper",
  "cargo_metadata",
@@ -15660,6 +15826,7 @@ dependencies = [
 [[package]]
 name = "tracing-gum"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "coarsetime",
  "polkadot-primitives",
@@ -15670,6 +15837,7 @@ dependencies = [
 [[package]]
 name = "tracing-gum-proc-macro"
 version = "5.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "expander",
  "proc-macro-crate 3.4.0",
@@ -15894,7 +16062,7 @@ checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if",
  "digest 0.10.7",
- "rand 0.8.5",
+ "rand 0.7.3",
  "static_assertions",
 ]
 
@@ -17291,6 +17459,7 @@ dependencies = [
 [[package]]
 name = "xcm-procedural"
 version = "7.0.0"
+source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#76082338ec9e0d6e1a2b35098dd1997d3426c0d6"
 dependencies = [
  "Inflector",
  "proc-macro2",
