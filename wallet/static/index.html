@@ -1704,14 +1704,103 @@
         }
 
         // ===========================================
-        // NETWORK MESH VISUALIZATION
+        // NETWORK MESH VISUALIZATION (Dynamic)
         // ===========================================
 
-        const VALIDATOR_NODES = [
-            { name: 'Alice', ip: 'localhost', location: 'Montreal', color: '#ff9966' },
-            { name: 'Bob', ip: 'localhost', location: 'Beauharnois', color: '#66ccff' },
-            { name: 'Charlie', ip: 'localhost', location: 'Frankfurt', color: '#99ff99' }
-        ];
+        // Dynamic peer list - populated from RPC
+        let VALIDATOR_NODES = [];
+        const geoCache = {}; // Cache GeoIP lookups
+
+        // Generate consistent color from peer ID
+        function peerIdToColor(peerId) {
+            let hash = 0;
+            for (let i = 0; i < peerId.length; i++) {
+                hash = peerId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 70%, 60%)`;
+        }
+
+        // Extract IP from multiaddr (e.g., /ip4/51.79.26.168/tcp/30333)
+        function extractIpFromAddr(addr) {
+            const match = addr.match(/\/ip4\/([0-9.]+)/);
+            return match ? match[1] : null;
+        }
+
+        // Fetch location from IP using free GeoIP service
+        async function getLocationFromIp(ip) {
+            if (!ip || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+                return 'Local';
+            }
+            if (geoCache[ip]) return geoCache[ip];
+            try {
+                const resp = await fetch(`http://ip-api.com/json/${ip}?fields=city,country`);
+                const data = await resp.json();
+                const location = data.city ? `${data.city}, ${data.country}` : data.country || 'Unknown';
+                geoCache[ip] = location;
+                return location;
+            } catch (e) {
+                return 'Unknown';
+            }
+        }
+
+        // Fetch connected peers and build dynamic node list
+        async function updateNetworkPeers() {
+            try {
+                // Get local node info
+                const [localName, localPeerId, peers] = await Promise.all([
+                    rpcCall('system_name'),
+                    rpcCall('system_localPeerId'),
+                    rpcCall('system_peers')
+                ]);
+
+                const nodes = [];
+
+                // Add "You" (local node) first
+                nodes.push({
+                    name: localName || 'You',
+                    ip: 'localhost',
+                    location: 'Local',
+                    color: '#ffcc00',
+                    isLocal: true,
+                    peerId: localPeerId
+                });
+
+                // Add connected peers
+                for (const peer of (peers || [])) {
+                    const ip = extractIpFromAddr(peer.bestKnownAddr || '');
+                    const location = await getLocationFromIp(ip);
+
+                    // Use peer's reported name, or truncated peer ID
+                    const name = peer.name || `Node ${peer.peerId.slice(-4)}`;
+
+                    nodes.push({
+                        name: name,
+                        ip: ip || 'unknown',
+                        location: location,
+                        color: peerIdToColor(peer.peerId),
+                        peerId: peer.peerId,
+                        bestBlock: peer.bestNumber
+                    });
+                }
+
+                VALIDATOR_NODES = nodes;
+
+                // Update peer count display
+                const peerCountEl = document.getElementById('peerCount');
+                if (peerCountEl) peerCountEl.textContent = peers?.length || 0;
+
+                // Update the validator node cards
+                updateValidatorNodes();
+
+            } catch (e) {
+                console.error('Failed to fetch peers:', e);
+            }
+        }
+
+        // Update peers every 10 seconds
+        setInterval(updateNetworkPeers, 10000);
+        updateNetworkPeers(); // Initial fetch
 
         function drawNetworkMesh() {
             const canvas = document.getElementById('networkCanvas');
@@ -1794,7 +1883,12 @@
             ctx.fillStyle = '#ff9966';
             ctx.font = '11px Orbitron';
             ctx.textAlign = 'left';
-            ctx.fillText('TOROIDAL MESH', 8, 18);
+            ctx.fillText('NETWORK MESH', 8, 18);
+
+            // Dynamic node count (top-right)
+            ctx.fillStyle = '#66ff99';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${VALIDATOR_NODES.length} NODES`, width - 8, 18);
 
             requestAnimationFrame(drawNetworkMesh);
         }
@@ -1805,9 +1899,14 @@
 
             container.innerHTML = VALIDATOR_NODES.map(node => `
                 <div style="background: rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; border-left: 3px solid ${node.color};">
-                    <div style="color: ${node.color}; font-family: 'Orbitron', monospace; font-size: 12px; margin-bottom: 4px;">${node.name}</div>
-                    <div style="font-size: 10px; color: #888;">${node.location}</div>
-                    <div style="font-size: 9px; color: #666; margin-top: 4px;">${node.ip}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: ${node.color}; font-family: 'Orbitron', monospace; font-size: 12px;">${node.name}</span>
+                        ${node.isLocal ? '<span style="color: #66ff99; font-size: 9px;">● LOCAL</span>' : '<span style="color: #66ff99; font-size: 9px;">●</span>'}
+                    </div>
+                    <div style="font-size: 10px; color: #888; margin-top: 4px;">📍 ${node.location}</div>
+                    <div style="font-size: 9px; color: #666; margin-top: 2px;">🌐 ${node.ip}</div>
+                    ${node.bestBlock ? `<div style="font-size: 9px; color: #666; margin-top: 2px;">📦 Block #${node.bestBlock}</div>` : ''}
+                    ${node.peerId ? `<div style="font-size: 8px; color: #444; margin-top: 2px; word-break: break-all;">ID: ${node.peerId.slice(0, 20)}...</div>` : ''}
                 </div>
             `).join('');
         }
