@@ -17,7 +17,7 @@ members = [
 	"pallets/notarial",
 	"tools/runtime-upgrade",
 	# "wallet", # Temporarily excluded - missing warp dependency
-	# quantum-crypto and proof-of-coherence are in /opt/polkadot-sdk fork
+	# quantum-crypto and proof-of-coherence are in Paraxiom/polkadot-sdk fork
 
 ]
 resolver = "2"
@@ -60,8 +60,8 @@ num_enum = { version = "0.7.2", default-features = false }
 parity-db = { version = "0.4.13", default-features = false }
 parking_lot = { version = "0.12.1", default-features = false }
 rlp = { version = "0.5.2", default-features = false }
-scale-codec = { package = "parity-scale-codec", path = "/opt/parity-scale-codec", default-features = false, features = ["derive"] }
-codec = { package = "parity-scale-codec", path = "/opt/parity-scale-codec", default-features = false, features = ["derive"] }
+scale-codec = { package = "parity-scale-codec", git = "https://github.com/Paraxiom/parity-scale-codec", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", git = "https://github.com/Paraxiom/parity-scale-codec", default-features = false, features = ["derive"] }
 scale-info = { version = "2.11.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1.0", default-features = false }
@@ -84,88 +84,88 @@ lazy_static = "1.4.0"
 
 env_logger = "0.11.3"
 # Substrate Client
-sc-basic-authorship = { path = "/opt/polkadot-sdk/substrate/client/basic-authorship" }
-sc-block-builder = { path = "/opt/polkadot-sdk/substrate/client/block-builder" }
-sc-chain-spec = { path = "/opt/polkadot-sdk/substrate/client/chain-spec" }
-sc-cli = { path = "/opt/polkadot-sdk/substrate/client/cli", default-features = false }
-sc-client-api = { path = "/opt/polkadot-sdk/substrate/client/api" }
-sc-client-db = { path = "/opt/polkadot-sdk/substrate/client/db", default-features = false }
-sc-consensus = { path = "/opt/polkadot-sdk/substrate/client/consensus/common" }
-sc-consensus-aura = { path = "/opt/polkadot-sdk/substrate/client/consensus/aura" }
-sc-consensus-grandpa = { path = "/opt/polkadot-sdk/substrate/client/consensus/grandpa" }
-sc-consensus-manual-seal = { path = "/opt/polkadot-sdk/substrate/client/consensus/manual-seal" }
-sc-executor = { path = "/opt/polkadot-sdk/substrate/client/executor" }
-sc-keystore = { path = "/opt/polkadot-sdk/substrate/client/keystore" }
-sc-network = { path = "/opt/polkadot-sdk/substrate/client/network" }
-sc-network-common = { path = "/opt/polkadot-sdk/substrate/client/network/common" }
-sc-network-gossip = { path = "/opt/polkadot-sdk/substrate/client/network-gossip" }
-sc-network-sync = { path = "/opt/polkadot-sdk/substrate/client/network/sync" }
-sc-offchain = { path = "/opt/polkadot-sdk/substrate/client/offchain" }
-sc-rpc = { path = "/opt/polkadot-sdk/substrate/client/rpc" }
-sc-rpc-api = { path = "/opt/polkadot-sdk/substrate/client/rpc-api" }
-sc-service = { path = "/opt/polkadot-sdk/substrate/client/service", default-features = false }
-sc-telemetry = { path = "/opt/polkadot-sdk/substrate/client/telemetry" }
-sc-transaction-pool = { path = "/opt/polkadot-sdk/substrate/client/transaction-pool" }
-sc-transaction-pool-api = { path = "/opt/polkadot-sdk/substrate/client/transaction-pool/api" }
-sc-utils = { path = "/opt/polkadot-sdk/substrate/client/utils" }
+sc-basic-authorship = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-block-builder = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-chain-spec = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-cli = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sc-client-api = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-client-db = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sc-consensus = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-consensus-aura = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-consensus-grandpa = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-consensus-manual-seal = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-executor = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-keystore = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-network = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-network-common = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-network-gossip = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-network-sync = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-offchain = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-rpc = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-rpc-api = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-service = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sc-telemetry = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-transaction-pool = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-transaction-pool-api = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sc-utils = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
 # Substrate Primitive
-sp-api = { path = "/opt/polkadot-sdk/substrate/primitives/api", default-features = false }
-sp-block-builder = { path = "/opt/polkadot-sdk/substrate/primitives/block-builder", default-features = false }
-sp-blockchain = { path = "/opt/polkadot-sdk/substrate/primitives/blockchain" }
-sp-consensus = { path = "/opt/polkadot-sdk/substrate/primitives/consensus/common" }
-sp-consensus-aura = { path = "/opt/polkadot-sdk/substrate/primitives/consensus/aura", default-features = false }
-sp-consensus-grandpa = { path = "/opt/polkadot-sdk/substrate/primitives/consensus/grandpa", default-features = false }
-sp-core = { path = "/opt/polkadot-sdk/substrate/primitives/core", default-features = false }
-sp-crypto-hashing = { path = "/opt/polkadot-sdk/substrate/primitives/crypto/hashing", default-features = false }
-sp-database = { path = "/opt/polkadot-sdk/substrate/primitives/database" }
-sp-externalities = { path = "/opt/polkadot-sdk/substrate/primitives/externalities", default-features = false }
-sp-genesis-builder = { path = "/opt/polkadot-sdk/substrate/primitives/genesis-builder", default-features = false }
-sp-inherents = { path = "/opt/polkadot-sdk/substrate/primitives/inherents", default-features = false }
-sp-io = { path = "/opt/polkadot-sdk/substrate/primitives/io", default-features = false }
-sp-keyring = { path = "/opt/polkadot-sdk/substrate/primitives/keyring" }
-sp-keystore = { path = "/opt/polkadot-sdk/substrate/primitives/keystore" }
-sp-offchain = { path = "/opt/polkadot-sdk/substrate/primitives/offchain", default-features = false }
-sp-runtime = { path = "/opt/polkadot-sdk/substrate/primitives/runtime", default-features = false }
-sp-runtime-interface = { path = "/opt/polkadot-sdk/substrate/primitives/runtime-interface", default-features = false }
-sp-session = { path = "/opt/polkadot-sdk/substrate/primitives/session", default-features = false }
-sp-staking = { path = "/opt/polkadot-sdk/substrate/primitives/staking", default-features = false }
-sp-state-machine = { path = "/opt/polkadot-sdk/substrate/primitives/state-machine", default-features = false }
-sp-std = { path = "/opt/polkadot-sdk/substrate/primitives/std", default-features = false }
-sp-storage = { path = "/opt/polkadot-sdk/substrate/primitives/storage", default-features = false }
-sp-timestamp = { path = "/opt/polkadot-sdk/substrate/primitives/timestamp", default-features = false }
-sp-transaction-pool = { path = "/opt/polkadot-sdk/substrate/primitives/transaction-pool", default-features = false }
-sp-version = { path = "/opt/polkadot-sdk/substrate/primitives/version", default-features = false }
-sp-weights = { path = "/opt/polkadot-sdk/substrate/primitives/weights", default-features = false }
+sp-api = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-block-builder = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-blockchain = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sp-consensus = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sp-consensus-aura = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-consensus-grandpa = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-core = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-crypto-hashing = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-database = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sp-externalities = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-genesis-builder = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-inherents = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-io = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-keyring = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sp-keystore = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+sp-offchain = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-runtime = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-runtime-interface = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-session = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-staking = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-state-machine = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-std = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-storage = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-timestamp = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-transaction-pool = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-version = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-weights = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 # Substrate FRAME
-frame-benchmarking = { path = "/opt/polkadot-sdk/substrate/frame/benchmarking", default-features = false }
-frame-executive = { path = "/opt/polkadot-sdk/substrate/frame/executive", default-features = false }
-frame-support = { path = "/opt/polkadot-sdk/substrate/frame/support", default-features = false }
-frame-system = { path = "/opt/polkadot-sdk/substrate/frame/system", default-features = false }
-frame-system-benchmarking = { path = "/opt/polkadot-sdk/substrate/frame/system/benchmarking", default-features = false }
-frame-system-rpc-runtime-api = { path = "/opt/polkadot-sdk/substrate/frame/system/rpc/runtime-api", default-features = false }
-pallet-aura = { path = "/opt/polkadot-sdk/substrate/frame/aura", default-features = false }
-pallet-balances = { path = "/opt/polkadot-sdk/substrate/frame/balances", default-features = false }
-pallet-grandpa = { path = "/opt/polkadot-sdk/substrate/frame/grandpa", default-features = false }
-pallet-sudo = { path = "/opt/polkadot-sdk/substrate/frame/sudo", default-features = false }
-pallet-timestamp = { path = "/opt/polkadot-sdk/substrate/frame/timestamp", default-features = false }
-pallet-transaction-payment = { path = "/opt/polkadot-sdk/substrate/frame/transaction-payment", default-features = false }
-pallet-transaction-payment-rpc = { path = "/opt/polkadot-sdk/substrate/frame/transaction-payment/rpc" }
-pallet-transaction-payment-rpc-runtime-api = { path = "/opt/polkadot-sdk/substrate/frame/transaction-payment/rpc/runtime-api", default-features = false }
-pallet-utility = { path = "/opt/polkadot-sdk/substrate/frame/utility", default-features = false }
-pallet-contracts = { path = "/opt/polkadot-sdk/substrate/frame/contracts", default-features = false }
-pallet-parameters = { path = "/opt/polkadot-sdk/substrate/frame/parameters", default-features = false }
-pallet-insecure-randomness-collective-flip = { path = "/opt/polkadot-sdk/substrate/frame/insecure-randomness-collective-flip", default-features = false }
+frame-benchmarking = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+frame-executive = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+frame-support = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+frame-system = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+frame-system-benchmarking = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+frame-system-rpc-runtime-api = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-aura = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-balances = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-grandpa = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-sudo = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-timestamp = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-transaction-payment-rpc = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-utility = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-contracts = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-parameters = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 
-pallet-assets = { path = "/opt/polkadot-sdk/substrate/frame/assets", default-features = false }
-pallet-indices = { path = "/opt/polkadot-sdk/substrate/frame/indices", default-features = false }
-pallet-multisig = { path = "/opt/polkadot-sdk/substrate/frame/multisig", default-features = false }
-pallet-node-authorization = { path = "/opt/polkadot-sdk/substrate/frame/node-authorization", default-features = false }
-pallet-recovery = { path = "/opt/polkadot-sdk/substrate/frame/recovery", default-features = false }
-pallet-session = { path = "/opt/polkadot-sdk/substrate/frame/session", default-features = false, features = ["historical"] }
-pallet-session-benchmarking = { path = "/opt/polkadot-sdk/substrate/frame/session-benchmarking", default-features = false }
-pallet-authorship = { path = "/opt/polkadot-sdk/substrate/frame/authorship", default-features = false }
-pallet-uniques = { path = "/opt/polkadot-sdk/substrate/frame/uniques", default-features = false }
-pallet-im-online = { path = "/opt/polkadot-sdk/substrate/frame/im-online", default-features = false }
+pallet-assets = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-indices = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-multisig = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-node-authorization = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-recovery = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-session = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false, features = ["historical"] }
+pallet-session-benchmarking = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-authorship = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-uniques = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-im-online = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 #validator-set = { package = 'substrate-validator-set', branch = "polkadot-v1.9.0", git = 'https://github.com/gautamdhameja/substrate-validator-set.git', default-features = false }
 substrate-validator-set = { path = "pallets/substrate-validator-set", default-features = false }
 pallet-validator-governance = { path = "pallets/validator-governance", default-features = false }
@@ -174,15 +174,15 @@ pallet-dev-governance = { path = "pallets/dev-governance", default-features = fa
 pallet-academic-vouch = { path = "pallets/academic-vouch", default-features = false }
 pallet-ricardian-contracts = { path = "pallets/ricardian-contracts", default-features = false }
 pallet-notarial = { path = "pallets/notarial", default-features = false }
-pallet-babe = { path = "/opt/polkadot-sdk/substrate/frame/babe", default-features = false }
-sp-consensus-babe = { path = "/opt/polkadot-sdk/substrate/primitives/consensus/babe", default-features = false }
+pallet-babe = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+sp-consensus-babe = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 # Substrate Utility
-frame-benchmarking-cli = { path = "/opt/polkadot-sdk/substrate/utils/frame/benchmarking-cli" }
-prometheus-endpoint = { package = "substrate-prometheus-endpoint", path = "/opt/polkadot-sdk/substrate/utils/prometheus" }
-substrate-build-script-utils = { path = "/opt/polkadot-sdk/substrate/utils/build-script-utils" }
-substrate-frame-rpc-system = { path = "/opt/polkadot-sdk/substrate/utils/frame/rpc/system" }
-substrate-test-runtime-client = { path = "/opt/polkadot-sdk/substrate/test-utils/runtime/client" }
-substrate-wasm-builder = { path = "/opt/polkadot-sdk/substrate/utils/wasm-builder" }
+frame-benchmarking-cli = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+prometheus-endpoint = { package = "substrate-prometheus-endpoint", git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+substrate-build-script-utils = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+substrate-frame-rpc-system = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+substrate-test-runtime-client = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
+substrate-wasm-builder = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys" }
 schnorrkel = { version = "0.11.4", default-features = false }
 
 
@@ -200,19 +200,19 @@ ark-std = { version = "0.4.0", default-features = false }
 # Frontier dependencies removed for governance-only runtime
 
 # Governance pallets
-pallet-democracy = { path = "/opt/polkadot-sdk/substrate/frame/democracy", default-features = false }
-pallet-collective = { path = "/opt/polkadot-sdk/substrate/frame/collective", default-features = false }
-pallet-treasury = { path = "/opt/polkadot-sdk/substrate/frame/treasury", default-features = false }
-pallet-scheduler = { path = "/opt/polkadot-sdk/substrate/frame/scheduler", default-features = false }
-pallet-preimage = { path = "/opt/polkadot-sdk/substrate/frame/preimage", default-features = false }
-pallet-proxy = { path = "/opt/polkadot-sdk/substrate/frame/proxy", default-features = false }
-pallet-identity = { path = "/opt/polkadot-sdk/substrate/frame/identity", default-features = false }
+pallet-democracy = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-collective = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-treasury = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-scheduler = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-preimage = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-proxy = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-identity = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 # Frontier Template
 quantumharmony-runtime = { path = "runtime", default-features = false }
 jsonrpsee-ws-client = { version = '0.22.5' }
 
 trie-db = { git = "https://github.com/paritytech/trie", default-features = false }
-sp-application-crypto = { path = "/opt/polkadot-sdk/substrate/primitives/application-crypto", default-features = false }
+sp-application-crypto = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 
 dashmap = "4.0"
 hashbrown = "0.9.1"
@@ -233,7 +233,7 @@ lto = true
 codegen-units = 1
 
 [patch.crates-io]
-parity-scale-codec = { path = "/opt/parity-scale-codec" }
-parity-scale-codec-derive = { path = "/opt/parity-scale-codec/derive" }
+parity-scale-codec = { git = "https://github.com/Paraxiom/parity-scale-codec" }
+parity-scale-codec-derive = { git = "https://github.com/Paraxiom/parity-scale-codec" }
 
 
