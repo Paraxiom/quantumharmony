@@ -4,7 +4,7 @@
 //!
 //! ## Features
 //!
-//! - **Block Rewards**: Validators earn QHT tokens for producing blocks
+//! - **Block Rewards**: Validators earn QMHY tokens for producing blocks
 //! - **Staking**: Validators must stake tokens to participate
 //! - **Slashing**: Misbehaving validators lose staked tokens
 //! - **Era-based Distribution**: Rewards accumulate and distribute per era
@@ -33,6 +33,9 @@
 
 pub use pallet::*;
 
+/// Runtime API definitions
+pub mod runtime_api;
+
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::{
@@ -54,13 +57,13 @@ pub mod pallet {
     pub const BLOCKS_PER_ERA: u32 = 600;
 
     /// Minimum stake required to be a validator (in smallest unit)
-    pub const MIN_VALIDATOR_STAKE: u128 = 1_000_000_000_000; // 1000 QHT (12 decimals)
+    pub const MIN_VALIDATOR_STAKE: u128 = 1_000_000_000_000_000_000_000; // 1000 QMHY (18 decimals)
 
     /// Block reward per block (in smallest unit)
-    pub const BLOCK_REWARD: u128 = 1_000_000_000; // 1 QHT per block
+    pub const BLOCK_REWARD: u128 = 1_000_000_000_000_000_000; // 1 QMHY per block
 
     /// Quantum entropy bonus (extra reward for valid entropy contribution)
-    pub const ENTROPY_BONUS: u128 = 100_000_000; // 0.1 QHT bonus
+    pub const ENTROPY_BONUS: u128 = 100_000_000_000_000_000; // 0.1 QMHY bonus
 
     /// Slash percentage for offline (10%)
     pub const SLASH_OFFLINE_PERCENT: u32 = 10;
