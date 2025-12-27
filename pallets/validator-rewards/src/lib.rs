@@ -272,8 +272,9 @@ pub mod pallet {
     /// Unstake cooldown period in blocks (default: 100 blocks ~10 min)
     pub const UNSTAKE_COOLDOWN: u32 = 100;
 
-    /// Minimum blocks between reward claims (rate limit)
-    pub const CLAIM_RATE_LIMIT: u32 = 10;
+    /// Minimum blocks between reward claims (1 session = 6 hours)
+    /// This matches the session period defined in runtime (6 * HOURS = 3600 blocks)
+    pub const CLAIM_RATE_LIMIT: u32 = 3600;
 
     /// Reward multiplier for uncertified validators (70%)
     pub const UNCERTIFIED_MULTIPLIER: u32 = 70;
