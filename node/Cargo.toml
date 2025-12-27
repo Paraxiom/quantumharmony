@@ -114,8 +114,8 @@ pallet-runtime-segmentation = { path = "../pallets/runtime-segmentation" }
 pallet-im-online = { workspace = true, features = ["std"] }
 
 # Quantum pallets (for gadget access to types)
-pallet-proof-of-coherence = { path = "/opt/polkadot-sdk/substrate/frame/proof-of-coherence", default-features = false, features = ["std"] }
-pallet-quantum-crypto = { path = "/opt/polkadot-sdk/substrate/frame/quantum-crypto", default-features = false, features = ["std"] }
+pallet-proof-of-coherence = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false, features = ["std"] }
+pallet-quantum-crypto = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false, features = ["std"] }
 pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false, features = ["std"] }
 
 # Frontier dependencies removed for governance-only node

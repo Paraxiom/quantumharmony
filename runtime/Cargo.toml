@@ -81,8 +81,8 @@ environmental = { workspace = true }
 # pallet-babe = { workspace = true }
 
 # Quantum pallets
-pallet-quantum-crypto = { path = "/opt/polkadot-sdk/substrate/frame/quantum-crypto", default-features = false }
-pallet-proof-of-coherence = { path = "/opt/polkadot-sdk/substrate/frame/proof-of-coherence", default-features = false }
+pallet-quantum-crypto = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-proof-of-coherence = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 pallet-runtime-segmentation = { path = "../pallets/runtime-segmentation", default-features = false }
 pallet-validator-entropy = { path = "../pallets/validator-entropy", default-features = false }
 pallet-relay-coordination = { path = "../pallets/relay-coordination", default-features = false }
