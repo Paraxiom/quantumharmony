@@ -2065,7 +2065,7 @@ dependencies = [
  "sp-version 29.0.0",
  "staging-xcm",
  "staging-xcm-builder",
- "trie-db 0.30.0",
+ "trie-db 0.31.0",
 ]
 
 [[package]]
@@ -13794,7 +13794,7 @@ dependencies = [
  "sp-trie 29.0.0",
  "thiserror 1.0.69",
  "tracing",
- "trie-db 0.30.0",
+ "trie-db 0.31.0",
 ]
 
 [[package]]
@@ -14051,7 +14051,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "thiserror 1.0.69",
  "tracing",
- "trie-db 0.30.0",
+ "trie-db 0.31.0",
  "trie-root",
 ]
 
@@ -15792,9 +15792,9 @@ dependencies = [
 
 [[package]]
 name = "trie-db"
-version = "0.30.0"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c0670ab45a6b7002c7df369fee950a27cf29ae0474343fd3a15aa15f691e7a6"
+checksum = "a7795f2df2ef744e4ffb2125f09325e60a21d305cc3ecece0adeef03f7a9e560"
 dependencies = [
  "hash-db",
  "log",
