@@ -19,6 +19,7 @@ pallet-authorship = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 sp-core = { workspace = true, default-features = false }
+sp-api = { workspace = true, default-features = false }
 pallet-balances = { workspace = true, default-features = false }
 log = { workspace = true }
 
@@ -36,6 +37,7 @@ std = [
     "sp-runtime/std",
     "sp-std/std",
     "sp-core/std",
+    "sp-api/std",
     "pallet-balances/std",
 ]
 runtime-benchmarks = ["frame-support/runtime-benchmarks"]
