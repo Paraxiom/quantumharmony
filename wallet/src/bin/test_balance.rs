@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match rpc.get_balance(&alice_ss58).await {
         Ok(balance) => {
-            let tokens = balance as f64 / 1_000_000_000_000.0;
+            let tokens = balance as f64 / 1_000_000_000_000_000_000.0; // 18 decimals
             println!("\n✓ Alice's balance: {} ({} tokens)", balance, tokens);
         }
         Err(e) => {
