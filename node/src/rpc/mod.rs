@@ -46,6 +46,10 @@ use chunked_upgrade_rpc::{ChunkedUpgradeRpc, ChunkedUpgradeApiServer};
 pub mod governance_rpc;
 use governance_rpc::{GovernanceRpc, GovernanceApiServer};
 
+// Notarial RPC for document attestation and verification
+pub mod notarial_rpc;
+use notarial_rpc::{NotarialRpc, NotarialApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -137,6 +141,15 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ Governance & Rewards RPC methods registered (quantumharmony_*)");
+
+    // Create notarial RPC instance for document attestation
+    let notarial_rpc = NotarialRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge notarial RPC into module
+    module.merge(notarial_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Notarial RPC methods registered (notarial_*)");
 
     Ok(module)
 }
