@@ -246,10 +246,49 @@ QuantumHarmony uses SPHINCS+ post-quantum signatures which are computationally e
 - Try both HTTP and WebSocket endpoints
 - Check CORS if using browser
 
+### "DEGRADED" network status / Missing peers
+
+If your node shows fewer peers than expected (e.g., 2 instead of 3), this is usually a **NAT/firewall issue**, not a network problem.
+
+**What's happening:**
+- Your node can connect *outbound* to validators
+- But validators cannot connect *inbound* to your node
+- P2P requires bidirectional connectivity
+
+**How to verify:**
+```bash
+# Check if validators can see your node
+curl -s -X POST http://51.79.26.123:9944 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"system_peers","params":[]}'
+# If your node's peer ID is not listed, inbound connections are blocked
+```
+
+**Solutions:**
+
+1. **Port forward P2P port** (recommended):
+   - Forward port `30333` (TCP) on your router to your machine
+   - For Docker: ensure `-p 30333:30333` is set
+
+2. **Use host networking** (Docker):
+   ```bash
+   docker run --network=host quantumharmony-node ...
+   ```
+
+3. **Run behind a VPN with port forwarding**
+
+4. **Accept degraded status**:
+   - The network still functions correctly
+   - Your node receives blocks via the peers it CAN connect to
+   - This is cosmetic - blocks are still produced and finalized
+
+**Note:** Home networks and most ISPs use NAT, which blocks inbound connections by default. This is normal and doesn't affect block production.
+
 ---
 
 ## Support
 
+- Telegram: https://t.me/paraxiom
 - GitHub Issues: https://github.com/QuantumVerseProtocols/quantumharmony/issues
 - Documentation: https://github.com/QuantumVerseProtocols/quantumharmony/docs
 
