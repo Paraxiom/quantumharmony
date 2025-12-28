@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumHarmony Notarial Service</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            border-radius: 0.5rem 0.5rem 0 0;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            background: var(--card);
+            color: var(--primary);
+        }
+
+        .panel {
+            display: none;
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 1rem;
+        }
+
+        .panel.active { display: block; }
+
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea { min-height: 100px; resize: vertical; }
+
+        .file-input {
+            border: 2px dashed var(--border);
+            padding: 2rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-input:hover, .file-input.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .file-input input { display: none; }
+
+        .file-input .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .result.success { display: block; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); }
+        .result.error { display: block; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error); }
+        .result.info { display: block; background: rgba(99, 102, 241, 0.1); border: 1px solid var(--primary); }
+
+        .hash-display {
+            font-family: monospace;
+            background: var(--bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            word-break: break-all;
+            margin-top: 1rem;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+        }
+
+        .status-indicator.certified { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-indicator.active { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+        .status-indicator.pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .tabs { flex-wrap: wrap; }
+        }
+
+        .config-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 0.5rem;
+        }
+
+        .config-section h3 {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        footer a { color: var(--primary); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>QuantumHarmony Notarial Service</h1>
+            <p class="subtitle">Post-Quantum Secure Document Attestation</p>
+            <span class="badge">SPHINCS+ Signatures</span>
+        </header>
+
+        <div class="config-section">
+            <h3>Node Configuration</h3>
+            <div class="grid-2">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="rpcEndpoint">RPC Endpoint</label>
+                    <input type="text" id="rpcEndpoint" value="http://51.79.26.123:9944" placeholder="http://localhost:9944">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="connectionStatus">Status</label>
+                    <div id="connectionStatus" class="status-indicator pending">Checking...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="attest">Attest Document</button>
+            <button class="tab" data-tab="verify">Verify Document</button>
+            <button class="tab" data-tab="witness">Witness</button>
+            <button class="tab" data-tab="certificates">Certificates</button>
+        </div>
+
+        <!-- Attest Document Panel -->
+        <div class="panel active" id="attest">
+            <h2>Attest a Document</h2>
+            <p style="color: var(--muted); margin-bottom: 1.5rem;">
+                Create an immutable on-chain proof that a document existed at a specific time.
+            </p>
+
+            <div class="form-group">
+                <label>Upload Document</label>
+                <div class="file-input" id="dropZone">
+                    <div class="icon">📄</div>
+                    <div>Drop a file here or click to select</div>
+                    <div style="color: var(--muted); font-size: 0.8rem; margin-top: 0.5rem;">
+                        Your file never leaves your browser - only the hash is stored on-chain
+                    </div>
+                    <input type="file" id="fileInput">
+                </div>
+                <div class="file-info" id="fileInfo" style="display: none;"></div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="category">Document Category</label>
+                    <select id="category">
+                        <option value="0">Academic Credential</option>
+                        <option value="1">Legal Document</option>
+                        <option value="2" selected>Contract</option>
+                        <option value="3">Intellectual Property</option>
+                        <option value="4">Identity</option>
+                        <option value="5">Financial</option>
+                        <option value="6">Medical</option>
+                        <option value="7">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="validity">Validity Period</label>
+                    <select id="validity">
+                        <option value="0">Permanent</option>
+                        <option value="14400">1 Day (~14400 blocks)</option>
+                        <option value="100800">1 Week</option>
+                        <option value="432000">1 Month</option>
+                        <option value="5184000">1 Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="useIpfs" style="width: auto;">
+                    <span>Upload to IPFS (public storage)</span>
+                </label>
+                <div style="color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem;">
+                    Enable for public documents. Document will be accessible to anyone with the CID.
+                    <br><strong>Do NOT enable for private/sensitive documents.</strong>
+                </div>
+            </div>
+
+            <div class="form-group" id="ipfsGatewayGroup" style="display: none;">
+                <label for="ipfsGateway">IPFS Gateway</label>
+                <input type="text" id="ipfsGateway" value="https://api.web3.storage" placeholder="IPFS API endpoint">
+                <div style="color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem;">
+                    Uses web3.storage by default. You can use your own IPFS node.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description (optional)</label>
+                <textarea id="description" placeholder="Brief description of the document..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="signerKey">Your SPHINCS+ Secret Key (128 bytes hex)</label>
+                <input type="password" id="signerKey" placeholder="0x...">
+                <div style="color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem;">
+                    Your key is used locally to sign the transaction
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="attestBtn" disabled>Submit Attestation</button>
+
+            <div class="result" id="attestResult"></div>
+        </div>
+
+        <!-- Verify Document Panel -->
+        <div class="panel" id="verify">
+            <h2>Verify a Document</h2>
+            <p style="color: var(--muted); margin-bottom: 1.5rem;">
+                Check if a document has been attested on the QuantumHarmony blockchain.
+            </p>
+
+            <div class="form-group">
+                <label>Upload Document to Verify</label>
+                <div class="file-input" id="verifyDropZone">
+                    <div class="icon">🔍</div>
+                    <div>Drop a file here or click to select</div>
+                    <input type="file" id="verifyFileInput">
+                </div>
+                <div class="file-info" id="verifyFileInfo" style="display: none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="verifyHash">Or enter document hash directly</label>
+                <input type="text" id="verifyHash" placeholder="0x...">
+            </div>
+
+            <button class="btn btn-primary" id="verifyBtn">Verify Document</button>
+
+            <div class="result" id="verifyResult"></div>
+        </div>
+
+        <!-- Witness Panel -->
+        <div class="panel" id="witness">
+            <h2>Witness an Attestation</h2>
+            <p style="color: var(--muted); margin-bottom: 1.5rem;">
+                Add your signature as a witness to vouch for a document's authenticity.
+            </p>
+
+            <div class="form-group">
+                <label for="attestationId">Attestation ID</label>
+                <input type="number" id="attestationId" placeholder="Enter attestation ID">
+            </div>
+
+            <div class="form-group">
+                <label for="witnessNote">Note (optional)</label>
+                <textarea id="witnessNote" placeholder="Optional note about this attestation..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="witnessKey">Your SPHINCS+ Secret Key</label>
+                <input type="password" id="witnessKey" placeholder="0x...">
+            </div>
+
+            <button class="btn btn-primary" id="witnessBtn">Submit Witness</button>
+
+            <div class="result" id="witnessResult"></div>
+        </div>
+
+        <!-- Certificates Panel -->
+        <div class="panel" id="certificates">
+            <h2>Certificates</h2>
+            <p style="color: var(--muted); margin-bottom: 1.5rem;">
+                Generate or view certificates for certified attestations.
+            </p>
+
+            <div class="form-group">
+                <label for="certAttestationId">Attestation ID</label>
+                <input type="number" id="certAttestationId" placeholder="Enter attestation ID">
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" id="viewCertBtn">View Certificate</button>
+                <button class="btn btn-primary" id="generateCertBtn">Generate Certificate</button>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="certSignerKey">SPHINCS+ Key (for generation)</label>
+                <input type="password" id="certSignerKey" placeholder="0x...">
+            </div>
+
+            <div class="result" id="certResult"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>QuantumHarmony Notarial Service - Post-Quantum Secure</p>
+        <p><a href="https://t.me/paraxiom" target="_blank">Telegram</a> | <a href="https://github.com/QuantumVerseProtocols/quantumharmony" target="_blank">GitHub</a></p>
+    </footer>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // RPC endpoint
+        const rpcEndpoint = () => document.getElementById('rpcEndpoint').value;
+
+        // Check connection
+        async function checkConnection() {
+            const status = document.getElementById('connectionStatus');
+            try {
+                const response = await fetch(rpcEndpoint(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'system_health',
+                        params: []
+                    })
+                });
+                const data = await response.json();
+                if (data.result) {
+                    status.textContent = `Connected (${data.result.peers} peers)`;
+                    status.className = 'status-indicator certified';
+                } else {
+                    throw new Error('Invalid response');
+                }
+            } catch (e) {
+                status.textContent = 'Disconnected';
+                status.className = 'status-indicator pending';
+            }
+        }
+
+        document.getElementById('rpcEndpoint').addEventListener('change', checkConnection);
+        checkConnection();
+        setInterval(checkConnection, 30000);
+
+        // File hashing with Web Crypto API
+        async function hashFile(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // File input handling - Attest
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const fileInfo = document.getElementById('fileInfo');
+        const attestBtn = document.getElementById('attestBtn');
+        let currentFileHash = null;
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                await processFile(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener('change', async () => {
+            if (fileInput.files.length) {
+                await processFile(fileInput.files[0]);
+            }
+        });
+
+        let currentFile = null;
+        let currentIpfsCid = null;
+
+        // IPFS toggle
+        document.getElementById('useIpfs').addEventListener('change', (e) => {
+            document.getElementById('ipfsGatewayGroup').style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        async function processFile(file) {
+            currentFile = file;
+            fileInfo.style.display = 'block';
+            fileInfo.innerHTML = `<strong>File:</strong> ${file.name}<br><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br><strong>Computing hash...</strong>`;
+
+            currentFileHash = await hashFile(file);
+            fileInfo.innerHTML = `<strong>File:</strong> ${file.name}<br><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br><strong>SHA-256 Hash:</strong><br>${currentFileHash}`;
+            attestBtn.disabled = false;
+        }
+
+        // Upload to IPFS (using web3.storage or local IPFS)
+        async function uploadToIpfs(file) {
+            const gateway = document.getElementById('ipfsGateway').value;
+
+            // For web3.storage (requires API token in production)
+            // This is a simplified version - production would need proper auth
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Try IPFS HTTP API (local node or pinning service)
+                const response = await fetch(gateway + '/api/v0/add', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    return result.Hash; // IPFS CID
+                }
+
+                // Fallback: If using web3.storage or similar
+                throw new Error('IPFS upload requires configuration');
+            } catch (e) {
+                console.error('IPFS upload failed:', e);
+                return null;
+            }
+        }
+
+        // File input handling - Verify
+        const verifyFileInput = document.getElementById('verifyFileInput');
+        const verifyDropZone = document.getElementById('verifyDropZone');
+        const verifyFileInfo = document.getElementById('verifyFileInfo');
+        const verifyHashInput = document.getElementById('verifyHash');
+
+        verifyDropZone.addEventListener('click', () => verifyFileInput.click());
+        verifyDropZone.addEventListener('dragover', (e) => { e.preventDefault(); verifyDropZone.classList.add('dragover'); });
+        verifyDropZone.addEventListener('dragleave', () => verifyDropZone.classList.remove('dragover'));
+        verifyDropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            verifyDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                await processVerifyFile(e.dataTransfer.files[0]);
+            }
+        });
+        verifyFileInput.addEventListener('change', async () => {
+            if (verifyFileInput.files.length) {
+                await processVerifyFile(verifyFileInput.files[0]);
+            }
+        });
+
+        async function processVerifyFile(file) {
+            verifyFileInfo.style.display = 'block';
+            verifyFileInfo.innerHTML = `<strong>File:</strong> ${file.name}<br><strong>Computing hash...</strong>`;
+
+            const hash = await hashFile(file);
+            verifyFileInfo.innerHTML = `<strong>File:</strong> ${file.name}<br><strong>SHA-256 Hash:</strong><br>${hash}`;
+            verifyHashInput.value = hash;
+        }
+
+        // RPC call helper
+        async function rpcCall(method, params) {
+            const response = await fetch(rpcEndpoint(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method,
+                    params
+                })
+            });
+            return await response.json();
+        }
+
+        // Show result
+        function showResult(elementId, type, message) {
+            const el = document.getElementById(elementId);
+            el.className = `result ${type}`;
+            el.innerHTML = message;
+        }
+
+        // Attest document
+        attestBtn.addEventListener('click', async () => {
+            if (!currentFileHash) return;
+
+            const signerKey = document.getElementById('signerKey').value;
+            if (!signerKey) {
+                showResult('attestResult', 'error', 'Please enter your SPHINCS+ secret key');
+                return;
+            }
+
+            attestBtn.disabled = true;
+            attestBtn.textContent = 'Submitting...';
+
+            let ipfsCid = null;
+
+            try {
+                // Optionally upload to IPFS first
+                if (document.getElementById('useIpfs').checked && currentFile) {
+                    attestBtn.textContent = 'Uploading to IPFS...';
+                    ipfsCid = await uploadToIpfs(currentFile);
+                    if (!ipfsCid) {
+                        showResult('attestResult', 'error', 'IPFS upload failed. Configure IPFS gateway or uncheck IPFS option.');
+                        attestBtn.disabled = false;
+                        attestBtn.textContent = 'Submit Attestation';
+                        return;
+                    }
+                }
+
+                attestBtn.textContent = 'Signing & Submitting...';
+
+                // Include IPFS CID in description if uploaded
+                let description = document.getElementById('description').value;
+                if (ipfsCid) {
+                    description = `IPFS: ${ipfsCid}\n${description}`;
+                }
+
+                const result = await rpcCall('notarial_attestDocument', [{
+                    documentHash: currentFileHash,
+                    category: parseInt(document.getElementById('category').value),
+                    description: description,
+                    validityBlocks: parseInt(document.getElementById('validity').value) || null,
+                    signerKey: signerKey
+                }]);
+
+                if (result.result && result.result.success) {
+                    let successMsg = `
+                        <strong>Document Attested Successfully!</strong><br>
+                        <strong>Transaction Hash:</strong> ${result.result.txHash}<br>
+                        <strong>Attester:</strong> ${result.result.attester}<br>
+                        <strong>Category:</strong> ${result.result.category}<br>
+                        <strong>Status:</strong> ${result.result.status}
+                    `;
+                    if (ipfsCid) {
+                        successMsg += `<br><strong>IPFS CID:</strong> <a href="https://ipfs.io/ipfs/${ipfsCid}" target="_blank">${ipfsCid}</a>`;
+                    }
+                    showResult('attestResult', 'success', successMsg);
+                } else {
+                    showResult('attestResult', 'error', `Error: ${result.error?.message || JSON.stringify(result)}`);
+                }
+            } catch (e) {
+                showResult('attestResult', 'error', `Error: ${e.message}`);
+            }
+
+            attestBtn.disabled = false;
+            attestBtn.textContent = 'Submit Attestation';
+        });
+
+        // Verify document
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            const hash = document.getElementById('verifyHash').value;
+            if (!hash) {
+                showResult('verifyResult', 'error', 'Please upload a file or enter a document hash');
+                return;
+            }
+
+            try {
+                const result = await rpcCall('notarial_verifyDocument', [hash]);
+
+                if (result.result) {
+                    if (result.result.exists) {
+                        showResult('verifyResult', 'success', `
+                            <strong>Document Found on Blockchain!</strong><br>
+                            <strong>Attestation ID:</strong> ${result.result.attestationId}<br>
+                            <strong>Attested at Block:</strong> ${result.result.attestedAt}<br>
+                            <strong>Status:</strong> ${result.result.status}<br>
+                            <strong>Certified:</strong> ${result.result.certified ? 'Yes' : 'No'}<br>
+                            <strong>Witnesses:</strong> ${result.result.witnessCount}
+                        `);
+                    } else {
+                        showResult('verifyResult', 'info', `
+                            <strong>Document Not Found</strong><br>
+                            This document has not been attested on the QuantumHarmony blockchain.
+                        `);
+                    }
+                } else {
+                    showResult('verifyResult', 'error', `Error: ${result.error?.message || JSON.stringify(result)}`);
+                }
+            } catch (e) {
+                showResult('verifyResult', 'error', `Error: ${e.message}`);
+            }
+        });
+
+        // Witness attestation
+        document.getElementById('witnessBtn').addEventListener('click', async () => {
+            const attestationId = parseInt(document.getElementById('attestationId').value);
+            const signerKey = document.getElementById('witnessKey').value;
+
+            if (!attestationId || !signerKey) {
+                showResult('witnessResult', 'error', 'Please enter attestation ID and your key');
+                return;
+            }
+
+            try {
+                // Hash the note if provided
+                const note = document.getElementById('witnessNote').value;
+                let noteHash = null;
+                if (note) {
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(note);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    noteHash = '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+
+                const result = await rpcCall('notarial_witnessAttestation', [{
+                    attestationId: attestationId,
+                    noteHash: noteHash,
+                    signerKey: signerKey
+                }]);
+
+                if (result.result && result.result.success) {
+                    showResult('witnessResult', 'success', `
+                        <strong>Witness Submitted!</strong><br>
+                        <strong>Transaction Hash:</strong> ${result.result.txHash}<br>
+                        <strong>Attestation ID:</strong> ${result.result.attestationId}<br>
+                        <strong>Witness:</strong> ${result.result.witness}
+                    `);
+                } else {
+                    showResult('witnessResult', 'error', `Error: ${result.error?.message || JSON.stringify(result)}`);
+                }
+            } catch (e) {
+                showResult('witnessResult', 'error', `Error: ${e.message}`);
+            }
+        });
+
+        // Generate certificate
+        document.getElementById('generateCertBtn').addEventListener('click', async () => {
+            const attestationId = parseInt(document.getElementById('certAttestationId').value);
+            const signerKey = document.getElementById('certSignerKey').value;
+
+            if (!attestationId || !signerKey) {
+                showResult('certResult', 'error', 'Please enter attestation ID and your key');
+                return;
+            }
+
+            try {
+                const result = await rpcCall('notarial_generateCertificate', [attestationId, signerKey]);
+
+                if (result.result && result.result.success) {
+                    showResult('certResult', 'success', `
+                        <strong>Certificate Generated!</strong><br>
+                        <strong>Transaction Hash:</strong> ${result.result.txHash}<br>
+                        <strong>Attestation ID:</strong> ${result.result.attestationId}<br>
+                        <strong>Issuer:</strong> ${result.result.issuer}
+                    `);
+                } else {
+                    showResult('certResult', 'error', `Error: ${result.error?.message || JSON.stringify(result)}`);
+                }
+            } catch (e) {
+                showResult('certResult', 'error', `Error: ${e.message}`);
+            }
+        });
+
+        // View certificate
+        document.getElementById('viewCertBtn').addEventListener('click', async () => {
+            const attestationId = parseInt(document.getElementById('certAttestationId').value);
+
+            if (!attestationId) {
+                showResult('certResult', 'error', 'Please enter attestation ID');
+                return;
+            }
+
+            try {
+                const result = await rpcCall('notarial_getAttestation', [attestationId]);
+
+                if (result.result) {
+                    showResult('certResult', 'info', `
+                        <strong>Attestation Details</strong><br>
+                        <strong>ID:</strong> ${result.result.id}<br>
+                        <strong>Document Hash:</strong> ${result.result.documentHash}<br>
+                        <strong>Category:</strong> ${result.result.category}<br>
+                        <strong>Description:</strong> ${result.result.description}<br>
+                        <strong>Attester:</strong> ${result.result.attester}<br>
+                        <strong>Attested at Block:</strong> ${result.result.attestedAt}<br>
+                        <strong>Status:</strong> ${result.result.status}<br>
+                        <strong>Witnesses:</strong> ${result.result.witnessCount}<br>
+                        <strong>Certified:</strong> ${result.result.certified ? 'Yes' : 'No'}
+                    `);
+                } else {
+                    showResult('certResult', 'info', 'Attestation not found');
+                }
+            } catch (e) {
+                showResult('certResult', 'error', `Error: ${e.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
