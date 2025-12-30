@@ -346,11 +346,23 @@
                 <span class="metric-label">WASM Size:</span>
                 <span id="wasm-size" class="metric-value">---</span>
             </div>
+            <div class="metric">
+                <span class="metric-label">Test Result:</span>
+                <span id="test-result" style="color: #888;">Not tested</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Rate Limit:</span>
+                <span id="rate-limit-status" style="color: #888;">1 test/hour</span>
+            </div>
             <div class="node-controls">
                 <button class="btn-secondary" onclick="getRuntimeVersion()">Get Runtime Version</button>
                 <button class="btn-success" onclick="selectWasmFile()">Select Runtime WASM</button>
+                <button id="test-upgrade-btn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);" onclick="testRuntimeUpgrade()">🧪 Test Upgrade (Free)</button>
                 <button id="submit-runtime-btn" class="btn-warning" onclick="submitRuntimeUpgrade()" disabled>Submit Runtime Upgrade</button>
             </div>
+            <p style="color: #666; font-size: 0.8em; margin-top: 10px;">
+                💡 Test Upgrade is FREE and PUBLIC - validates your WASM without applying changes. Rate limited to prevent abuse.
+            </p>
         </div>
 
         <!-- Threshold QRNG Config -->
@@ -752,6 +764,82 @@
 
             } catch (error) {
                 log(`File selection cancelled or failed: ${error}`, 'warning');
+            }
+        }
+
+        // Test Runtime Upgrade - FREE, PUBLIC, RATE LIMITED
+        // No keys required, validates WASM without applying changes
+        window.testRuntimeUpgrade = async function() {
+            if (!selectedWasmPath) {
+                log('No WASM file selected. Please select a WASM file first.', 'error');
+                return;
+            }
+
+            try {
+                log('🧪 Testing runtime upgrade (FREE - no keys required)...', 'info');
+                document.getElementById('test-result').textContent = 'Testing...';
+                document.getElementById('test-result').style.color = '#ffa500';
+
+                // Read the WASM file and convert to hex
+                const wasmBytes = await invoke('read_wasm_file', { path: selectedWasmPath });
+                const wasmHex = '0x' + Array.from(wasmBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+                log(`WASM loaded: ${wasmBytes.length} bytes`, 'info');
+
+                // Generate a unique test identifier (could be session-based)
+                const testId = 'dashboard-' + Date.now();
+
+                // Call the test upgrade RPC
+                const result = await rpcCall('quantumharmony_testRuntimeUpgrade', [wasmHex, testId]);
+
+                if (result.success) {
+                    document.getElementById('test-result').textContent = '✅ PASSED - Ready for upgrade';
+                    document.getElementById('test-result').style.color = '#50c878';
+                    log(`✅ Test PASSED! WASM is valid.`, 'success');
+                    log(`   Size: ${result.validation.size_kb.toFixed(1)} KB`, 'info');
+                    log(`   Chunks needed: ${result.validation.chunks_needed}`, 'info');
+                    log(`   Hash: ${result.validation.wasm_hash}`, 'info');
+
+                    if (result.warnings && result.warnings.length > 0) {
+                        result.warnings.forEach(w => log(`⚠️  ${w}`, 'warning'));
+                    }
+
+                    // Update rate limit display
+                    document.getElementById('rate-limit-status').textContent =
+                        `Next test in ${Math.floor(result.rate_limit.seconds_until_next / 60)} min`;
+                } else {
+                    document.getElementById('test-result').textContent = '❌ FAILED - ' + result.message;
+                    document.getElementById('test-result').style.color = '#ff6b6b';
+                    log(`❌ Test FAILED: ${result.message}`, 'error');
+
+                    if (result.rate_limit && result.rate_limit.limited) {
+                        const mins = Math.floor(result.rate_limit.seconds_until_next / 60);
+                        document.getElementById('rate-limit-status').textContent = `Rate limited: ${mins} min remaining`;
+                        document.getElementById('rate-limit-status').style.color = '#ff6b6b';
+                    }
+                }
+
+            } catch (error) {
+                document.getElementById('test-result').textContent = '❌ Error: ' + error.message;
+                document.getElementById('test-result').style.color = '#ff6b6b';
+                log(`Test error: ${error}`, 'error');
+            }
+        }
+
+        // Check rate limit status on load
+        window.checkTestRateLimit = async function() {
+            try {
+                const result = await rpcCall('quantumharmony_testUpgradeRateLimit', [null]);
+                if (result.limited) {
+                    const mins = Math.floor(result.seconds_until_next / 60);
+                    document.getElementById('rate-limit-status').textContent = `Rate limited: ${mins} min remaining`;
+                    document.getElementById('rate-limit-status').style.color = '#ffa500';
+                } else {
+                    document.getElementById('rate-limit-status').textContent = '✅ Ready (1 test/hour)';
+                    document.getElementById('rate-limit-status').style.color = '#50c878';
+                }
+            } catch (error) {
+                // Silently fail - RPC might not be available yet
             }
         }
 
