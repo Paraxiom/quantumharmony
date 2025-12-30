@@ -454,10 +454,8 @@ fn testnet_genesis(
                 .map(|(account, _)| account.clone())
                 .collect::<Vec<_>>()
         }
-        // NOTE: ConsensusLevel pallet uses defaults (genesis config not registered)
-        // FRONTIER REMOVED: governance-only node
-        // "evmChainId": { "chainId": chain_id },
-        // "evm": { "accounts": evm_accounts },
-        // "manualSeal": { "enable": enable_manual_seal }
+        // NOTE: Council and TechnicalCommittee removed - not in runtime
+        // ConsensusLevel pallet uses defaults (genesis config not registered)
+        // Democracy, Scheduler, and Preimage use defaults
     })
 }

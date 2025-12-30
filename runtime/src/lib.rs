@@ -465,98 +465,188 @@ impl pallet_notarial::Config for Runtime {
     type DefaultValidityPeriod = DefaultValidityPeriod;
 }
 
+// Fideicommis (civil law trust) pallet configuration
+parameter_types! {
+    // Minimum 1 day before trigger (at 3s blocks = 28,800 blocks)
+    pub const MinTrustDuration: BlockNumber = 28_800;
+    // Maximum 10 years (at 3s blocks = ~105,120,000 blocks)
+    pub const MaxTrustDuration: BlockNumber = 105_120_000;
+    // Minimum 1 QMHY deposit (18 decimals)
+    pub const MinTrustDeposit: Balance = 1_000_000_000_000_000_000;
+}
+
+impl pallet_fideicommis::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type MinTrustDuration = MinTrustDuration;
+    type MaxTrustDuration = MaxTrustDuration;
+    type MinDeposit = MinTrustDeposit;
+    type ForceOrigin = EnsureRoot<AccountId>;
+}
+
+// QCAD Stablecoin pallet configuration
+parameter_types! {
+    // 150% minimum collateral ratio (1_500_000 = 150%)
+    pub const MinCollateralRatio: u32 = 1_500_000;
+    // 120% liquidation threshold
+    pub const LiquidationRatio: u32 = 1_200_000;
+    // 13% liquidation penalty
+    pub const LiquidationPenalty: u32 = 130_000;
+    // 2% annual stability fee
+    pub const StabilityFeeRate: u32 = 20_000;
+    // Minimum 100 QCAD debt per vault (18 decimals)
+    pub const MinVaultDebt: Balance = 100_000_000_000_000_000_000;
+    // Oracle price valid for 1 hour (at 3s blocks = 1200 blocks)
+    pub const OracleValidityPeriod: BlockNumber = 1200;
+}
+
+impl pallet_stablecoin::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type MinCollateralRatio = MinCollateralRatio;
+    type LiquidationRatio = LiquidationRatio;
+    type LiquidationPenalty = LiquidationPenalty;
+    type StabilityFeeRate = StabilityFeeRate;
+    type MinVaultDebt = MinVaultDebt;
+    type OracleValidityPeriod = OracleValidityPeriod;
+    type OracleOrigin = EnsureRoot<AccountId>;
+    type ForceOrigin = EnsureRoot<AccountId>;
+}
+
 // Consensus Level pallet configuration
 impl pallet_consensus_level::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
 // Governance parameters
-// parameter_types! {
-//     pub const LaunchPeriod: BlockNumber = 7 * DAYS;
-//     pub const VotingPeriod: BlockNumber = 7 * DAYS;
-//     pub const FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
-//     pub const MinimumDeposit: Balance = 100 * EXISTENTIAL_DEPOSIT;
-//     pub const EnactmentPeriod: BlockNumber = 1 * DAYS;
-//     pub const CooloffPeriod: BlockNumber = 7 * DAYS;
-//     pub const InstantAllowed: bool = true;
-//     pub const MaxVotes: u32 = 100;
-//     pub const MaxProposals: u32 = 100;
-// }
-// 
-// impl pallet_democracy::Config for Runtime {
-//     type RuntimeEvent = RuntimeEvent;
-//     type Currency = Balances;
-//     type EnactmentPeriod = EnactmentPeriod;
-//     type LaunchPeriod = LaunchPeriod;
-//     type VotingPeriod = VotingPeriod;
-//     type VoteLockingPeriod = EnactmentPeriod;
-//     type MinimumDeposit = MinimumDeposit;
-//     type ExternalOrigin = EnsureRoot<AccountId>;
-//     type ExternalMajorityOrigin = EnsureRoot<AccountId>;
-//     type ExternalDefaultOrigin = EnsureRoot<AccountId>;
-//     type FastTrackOrigin = EnsureRoot<AccountId>;
-//     type InstantOrigin = EnsureRoot<AccountId>;
-//     type InstantAllowed = InstantAllowed;
-//     type FastTrackVotingPeriod = FastTrackVotingPeriod;
-//     type CancellationOrigin = EnsureRoot<AccountId>;
-//     type BlacklistOrigin = EnsureRoot<AccountId>;
-//     type CancelProposalOrigin = EnsureRoot<AccountId>;
-//     type VetoOrigin = pallet_collective::EnsureMember<AccountId, CouncilCollective>;
-//     type CooloffPeriod = CooloffPeriod;
-//     type Slash = ();
-//     type Scheduler = Scheduler;
-//     type PalletsOrigin = OriginCaller;
-//     type MaxVotes = MaxVotes;
-//     type WeightInfo = pallet_democracy::weights::SubstrateWeight<Runtime>;
-//     type MaxProposals = MaxProposals;
-//     type Preimages = Preimage;
-//     type MaxDeposits = ConstU32<100>;
-//     type MaxBlacklisted = ConstU32<100>;
-//     type SubmitOrigin = frame_system::EnsureSigned<AccountId>;
-// }
-// 
-// // Council collective instance
-// type CouncilCollective = pallet_collective::Instance1;
-// impl pallet_collective::Config<CouncilCollective> for Runtime {
-//     type RuntimeOrigin = RuntimeOrigin;
-//     type Proposal = RuntimeCall;
-//     type RuntimeEvent = RuntimeEvent;
-//     type MotionDuration = CouncilMotionDuration;
-//     type MaxProposals = CouncilMaxProposals;
-//     type MaxMembers = CouncilMaxMembers;
-//     type DefaultVote = pallet_collective::PrimeDefaultVote;
-//     type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
-//     type SetMembersOrigin = EnsureRoot<Self::AccountId>;
-//     type MaxProposalWeight = MaxCollectivesProposalWeight;
-// }
-// 
-// parameter_types! {
-//     pub const CouncilMotionDuration: BlockNumber = 3 * DAYS;
-//     pub const CouncilMaxProposals: u32 = 100;
-//     pub const CouncilMaxMembers: u32 = 100;
-//     pub const TechnicalMotionDuration: BlockNumber = 3 * DAYS;
-//     pub const TechnicalMaxProposals: u32 = 100;
-//     pub const TechnicalMaxMembers: u32 = 100;
-//     pub MaxCollectivesProposalWeight: Weight = Perbill::from_percent(50) *
-//         BlockWeights::get().max_block;
-// }
-// 
-// // Technical collective instance
-// type TechnicalCollective = pallet_collective::Instance2;
-// impl pallet_collective::Config<TechnicalCollective> for Runtime {
-//     type RuntimeOrigin = RuntimeOrigin;
-//     type Proposal = RuntimeCall;
-//     type RuntimeEvent = RuntimeEvent;
-//     type MotionDuration = TechnicalMotionDuration;
-//     type MaxProposals = TechnicalMaxProposals;
-//     type MaxMembers = TechnicalMaxMembers;
-//     type DefaultVote = pallet_collective::PrimeDefaultVote;
-//     type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
-//     type SetMembersOrigin = EnsureRoot<Self::AccountId>;
-//     type MaxProposalWeight = MaxCollectivesProposalWeight;
-// }
-// 
-// // Treasury configuration
+parameter_types! {
+    pub const LaunchPeriod: BlockNumber = 7 * DAYS;
+    pub const VotingPeriod: BlockNumber = 7 * DAYS;
+    pub const FastTrackVotingPeriod: BlockNumber = 3 * HOURS;
+    pub const MinimumDeposit: Balance = 100 * EXISTENTIAL_DEPOSIT;
+    pub const EnactmentPeriod: BlockNumber = 1 * DAYS;
+    pub const CooloffPeriod: BlockNumber = 7 * DAYS;
+    pub const InstantAllowed: bool = true;
+    pub const MaxVotes: u32 = 100;
+    pub const MaxProposals: u32 = 100;
+}
+
+// Council collective instance (must be defined before democracy config)
+type CouncilCollective = pallet_collective::Instance1;
+
+parameter_types! {
+    pub const CouncilMotionDuration: BlockNumber = 3 * DAYS;
+    pub const CouncilMaxProposals: u32 = 100;
+    pub const CouncilMaxMembers: u32 = 100;
+    pub const TechnicalMotionDuration: BlockNumber = 3 * DAYS;
+    pub const TechnicalMaxProposals: u32 = 100;
+    pub const TechnicalMaxMembers: u32 = 100;
+    pub MaxCollectivesProposalWeight: Weight = Perbill::from_percent(50) *
+        BlockWeights::get().max_block;
+}
+
+impl pallet_collective::Config<CouncilCollective> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = CouncilMotionDuration;
+    type MaxProposals = CouncilMaxProposals;
+    type MaxMembers = CouncilMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+    type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+    type MaxProposalWeight = MaxCollectivesProposalWeight;
+    type DisapproveOrigin = EnsureRoot<AccountId>;
+    type KillOrigin = EnsureRoot<AccountId>;
+    type Consideration = ();
+}
+
+// Technical collective instance
+type TechnicalCollective = pallet_collective::Instance2;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+    type RuntimeOrigin = RuntimeOrigin;
+    type Proposal = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type MotionDuration = TechnicalMotionDuration;
+    type MaxProposals = TechnicalMaxProposals;
+    type MaxMembers = TechnicalMaxMembers;
+    type DefaultVote = pallet_collective::PrimeDefaultVote;
+    type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+    type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+    type MaxProposalWeight = MaxCollectivesProposalWeight;
+    type DisapproveOrigin = EnsureRoot<AccountId>;
+    type KillOrigin = EnsureRoot<AccountId>;
+    type Consideration = ();
+}
+
+// Scheduler configuration (must be before democracy)
+parameter_types! {
+    pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) *
+        BlockWeights::get().max_block;
+}
+
+impl pallet_scheduler::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeOrigin = RuntimeOrigin;
+    type PalletsOrigin = OriginCaller;
+    type RuntimeCall = RuntimeCall;
+    type MaximumWeight = MaximumSchedulerWeight;
+    type ScheduleOrigin = EnsureRoot<AccountId>;
+    type MaxScheduledPerBlock = ConstU32<50>;
+    type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+    type OriginPrivilegeCmp = EqualPrivilegeOnly;
+    type Preimages = Preimage;
+    type BlockNumberProvider = frame_system::Pallet<Runtime>;
+}
+
+// Preimage configuration (must be before democracy)
+parameter_types! {
+    pub const PreimageBaseDeposit: Balance = EXISTENTIAL_DEPOSIT;
+    pub const PreimageByteDeposit: Balance = EXISTENTIAL_DEPOSIT / 100;
+}
+
+impl pallet_preimage::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_preimage::weights::SubstrateWeight<Runtime>;
+    type Currency = Balances;
+    type ManagerOrigin = EnsureRoot<AccountId>;
+    type Consideration = ();
+}
+
+impl pallet_democracy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type EnactmentPeriod = EnactmentPeriod;
+    type LaunchPeriod = LaunchPeriod;
+    type VotingPeriod = VotingPeriod;
+    type VoteLockingPeriod = EnactmentPeriod;
+    type MinimumDeposit = MinimumDeposit;
+    type ExternalOrigin = EnsureRoot<AccountId>;
+    type ExternalMajorityOrigin = EnsureRoot<AccountId>;
+    type ExternalDefaultOrigin = EnsureRoot<AccountId>;
+    type FastTrackOrigin = EnsureRoot<AccountId>;
+    type InstantOrigin = EnsureRoot<AccountId>;
+    type InstantAllowed = InstantAllowed;
+    type FastTrackVotingPeriod = FastTrackVotingPeriod;
+    type CancellationOrigin = EnsureRoot<AccountId>;
+    type BlacklistOrigin = EnsureRoot<AccountId>;
+    type CancelProposalOrigin = EnsureRoot<AccountId>;
+    type VetoOrigin = pallet_collective::EnsureMember<AccountId, CouncilCollective>;
+    type CooloffPeriod = CooloffPeriod;
+    type Slash = ();
+    type Scheduler = Scheduler;
+    type PalletsOrigin = OriginCaller;
+    type MaxVotes = MaxVotes;
+    type WeightInfo = pallet_democracy::weights::SubstrateWeight<Runtime>;
+    type MaxProposals = MaxProposals;
+    type Preimages = Preimage;
+    type MaxDeposits = ConstU32<100>;
+    type MaxBlacklisted = ConstU32<100>;
+    type SubmitOrigin = frame_system::EnsureSigned<AccountId>;
+}
+
+// Treasury configuration - temporarily disabled due to Pay trait API changes in fork
+// TODO: Re-enable after implementing proper Pay trait for treasury payouts
 // parameter_types! {
 //     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 //     pub const ProposalBond: Permill = Permill::from_percent(5);
@@ -564,73 +654,8 @@ impl pallet_consensus_level::Config for Runtime {
 //     pub const ProposalBondMaximum: Balance = 500 * EXISTENTIAL_DEPOSIT;
 //     pub const SpendPeriod: BlockNumber = 24 * DAYS;
 //     pub const Burn: Permill = Permill::from_percent(1);
-//     pub const MaxApprovals: u32 = 100;
 //     pub const TreasuryMaxApprovals: u32 = 100;
 //     pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
-// }
-// 
-// impl pallet_treasury::Config for Runtime {
-//     type PalletId = TreasuryPalletId;
-//     type Currency = Balances;
-//     type RuntimeEvent = RuntimeEvent;
-//     type ApproveOrigin = EitherOfDiverse<
-//         EnsureRoot<AccountId>,
-//         pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 3, 5>,
-//     >;
-//     type RejectOrigin = EitherOfDiverse<
-//         EnsureRoot<AccountId>,
-//         pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
-//     >;
-//     type OnSlash = Treasury;
-//     type ProposalBond = ProposalBond;
-//     type ProposalBondMinimum = ProposalBondMinimum;
-//     type ProposalBondMaximum = ProposalBondMaximum;
-//     type SpendPeriod = SpendPeriod;
-//     type Burn = Burn;
-//     type BurnDestination = ();
-//     type SpendFunds = ();
-//     type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
-//     type MaxApprovals = TreasuryMaxApprovals;
-//     type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
-//     type AssetKind = ();
-//     type Beneficiary = AccountId;
-//     type BeneficiaryLookup = AccountIdLookup<AccountId, ()>;
-//     type Paymaster = ();
-//     type BalanceConverter = ();
-//     type PayoutPeriod = PayoutSpendPeriod;
-// }
-// 
-// // Scheduler configuration
-// impl pallet_scheduler::Config for Runtime {
-//     type RuntimeEvent = RuntimeEvent;
-//     type RuntimeOrigin = RuntimeOrigin;
-//     type PalletsOrigin = OriginCaller;
-//     type RuntimeCall = RuntimeCall;
-//     type MaximumWeight = MaximumSchedulerWeight;
-//     type ScheduleOrigin = EnsureRoot<AccountId>;
-//     type MaxScheduledPerBlock = ConstU32<50>;
-//     type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
-//     type OriginPrivilegeCmp = EqualPrivilegeOnly;
-//     type Preimages = Preimage;
-// }
-// 
-// parameter_types! {
-//     pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) *
-//         BlockWeights::get().max_block;
-// }
-// 
-// // Preimage configuration
-// parameter_types! {
-//     pub const PreimageBaseDeposit: Balance = EXISTENTIAL_DEPOSIT;
-//     pub const PreimageByteDeposit: Balance = EXISTENTIAL_DEPOSIT / 100;
-// }
-// 
-// impl pallet_preimage::Config for Runtime {
-//     type RuntimeEvent = RuntimeEvent;
-//     type WeightInfo = pallet_preimage::weights::SubstrateWeight<Runtime>;
-//     type Currency = Balances;
-//     type ManagerOrigin = EnsureRoot<AccountId>;
-//     type Consideration = ();
 // }
 
 // Off-chain worker unsigned transaction support
@@ -669,14 +694,13 @@ construct_runtime!(
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
 
-        // Governance pallets - temporarily disabled due to fork API breaking changes
-        // TODO: Re-enable incrementally after fixing Treasury Config (Pay, DisapproveOrigin, etc.)
-        // Democracy: pallet_democracy,
-        // Council: pallet_collective::<Instance1>,
-        // TechnicalCommittee: pallet_collective::<Instance2>,
-        // Treasury: pallet_treasury,
-        // Scheduler: pallet_scheduler,
-        // Preimage: pallet_preimage,
+        // Governance pallets - enabled for decentralized runtime upgrades
+        Scheduler: pallet_scheduler,
+        Preimage: pallet_preimage,
+        Democracy: pallet_democracy,
+        Council: pallet_collective::<Instance1>,
+        TechnicalCommittee: pallet_collective::<Instance2>,
+        // Treasury: pallet_treasury, // Temporarily disabled - Pay trait API changes
 
         // Quantum pallets - providing quantum-safe consensus and entropy
         QuantumCrypto: pallet_quantum_crypto,
@@ -703,6 +727,8 @@ construct_runtime!(
         AcademicVouch: pallet_academic_vouch,
         RicardianContracts: pallet_ricardian_contracts,
         Notarial: pallet_notarial,
+        Fideicommis: pallet_fideicommis,
+        Stablecoin: pallet_stablecoin,
 
         // Adaptive consensus level tracking
         ConsensusLevel: pallet_consensus_level,
