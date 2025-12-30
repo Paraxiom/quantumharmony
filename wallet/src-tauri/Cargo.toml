@@ -32,6 +32,22 @@ scale-codec = { package = "parity-scale-codec", git = "https://github.com/Paraxi
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2.0"
 
+[dev-dependencies]
+tokio-test = "0.4"
+
+[[test]]
+name = "node_management"
+path = "tests/node_management.rs"
+
+[[test]]
+name = "rpc_integration"
+path = "tests/rpc_integration.rs"
+
+[[test]]
+name = "runtime_upgrade"
+path = "tests/runtime_upgrade.rs"
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+integration = []
