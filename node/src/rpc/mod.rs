@@ -50,6 +50,11 @@ use governance_rpc::{GovernanceRpc, GovernanceApiServer};
 pub mod notarial_rpc;
 use notarial_rpc::{NotarialRpc, NotarialApiServer};
 
+// Test Upgrade RPC - public endpoint for testing runtime upgrades
+// Rate limited, no keys required, dry-run only
+pub mod test_upgrade_rpc;
+use test_upgrade_rpc::{TestUpgradeRpc, TestUpgradeApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -150,6 +155,15 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ Notarial RPC methods registered (notarial_*)");
+
+    // Create test upgrade RPC instance (public, rate-limited, no keys required)
+    let test_upgrade_rpc = TestUpgradeRpc::<_, Block>::new(deps.client.clone());
+
+    // Merge test upgrade RPC into module
+    module.merge(test_upgrade_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Test Upgrade RPC registered (quantumharmony_testRuntimeUpgrade - PUBLIC, rate-limited)");
 
     Ok(module)
 }

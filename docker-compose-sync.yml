@@ -1,0 +1,62 @@
+services:
+  node:
+    image: sylvaincormier/quantumharmony-node:latest
+    container_name: quantumharmony-node
+    ports:
+      - "9944:9944"
+      - "30333:30333"
+      - "9615:9615"
+    volumes:
+      - node-data:/data
+      - ./chainspec-production.json:/chainspec.json:ro
+    command: >
+      --chain=/chainspec.json
+      --name="Local Sync Node"
+      --base-path=/data
+      --rpc-external
+      --rpc-cors=all
+      --rpc-methods=unsafe
+      --port=30333
+      --rpc-port=9944
+      --prometheus-port=9615
+      --prometheus-external
+      --sync=full
+      --bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W
+      --bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9944/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dashboard:
+    image: nginx:alpine
+    container_name: quantumharmony-dashboard
+    ports:
+      - "8080:80"
+    volumes:
+      - ./wallet/static:/usr/share/nginx/html:ro
+      - ./docker/nginx-dashboard.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - node
+    restart: unless-stopped
+
+  proxy:
+    image: nginx:alpine
+    container_name: quantumharmony-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - node
+    restart: unless-stopped
+
+volumes:
+  node-data:
+
+networks:
+  default:
+    name: quantumharmony-net
