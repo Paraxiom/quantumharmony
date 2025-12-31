@@ -1,0 +1,84 @@
+# QuantumHarmony Node Operator
+# One-command deployment for node operators
+
+services:
+  # =====================================================
+  # CORE: QuantumHarmony Blockchain Node
+  # =====================================================
+  node:
+    image: sylvaincormier/quantumharmony-node:latest
+    platform: linux/amd64
+    container_name: quantumharmony-node
+    restart: unless-stopped
+    ports:
+      - "9944:9944"   # RPC/WebSocket
+      - "30333:30333" # P2P
+      - "9615:9615"   # Prometheus metrics
+    volumes:
+      - node-data:/data
+      - ./configs/chain-spec.json:/config/chainspec.json:ro
+    command:
+      - "--chain=/config/chainspec.json"
+      - "--base-path=/data"
+      - "--name=${NODE_NAME:-Operator}"
+      - "--rpc-external"
+      - "--rpc-cors=all"
+      - "--rpc-methods=Unsafe"
+      - "--network-backend=libp2p"
+      - "--pool-type=single-state"
+      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWH93miqFA3KPsSjgFpwJdGw4WgnPxaLrmShPB6bbUFfWQ"
+      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWCcC6Qqjzoe34tGkFSMkSvef27FkdFjd7krzgvqAa78jV"
+      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWJJiAaXrKFufa6FcUmCWT7eihdBRPsiQXCEDVg8yf3ZwH"
+    environment:
+      - NODE_NAME=${NODE_NAME:-Operator}
+    networks:
+      - quantum-net
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9944/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =====================================================
+  # DASHBOARD: Operator Web UI
+  # =====================================================
+  dashboard:
+    image: nginx:alpine
+    container_name: quantumharmony-dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html:ro
+      - ./configs/nginx-dashboard.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - quantum-net
+    depends_on:
+      - node
+
+  # =====================================================
+  # PROXY: Nginx Reverse Proxy
+  # =====================================================
+  nginx:
+    image: nginx:alpine
+    container_name: quantumharmony-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - quantum-net
+    depends_on:
+      - node
+      - dashboard
+
+networks:
+  quantum-net:
+    driver: bridge
+
+volumes:
+  node-data:
