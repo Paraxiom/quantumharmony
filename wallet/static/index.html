@@ -847,6 +847,11 @@
             <button class="lcars-nav-btn" onclick="showPanel('wallet')">WALLET</button>
             <button class="lcars-nav-btn" onclick="showPanel('send')">TRANSFER</button>
             <button class="lcars-nav-btn" onclick="showPanel('faucet')">FAUCET</button>
+            <button class="lcars-nav-btn" onclick="showPanel('govern')">GOVERN</button>
+            <button class="lcars-nav-btn" onclick="showPanel('rewards')">REWARDS</button>
+            <button class="lcars-nav-btn" onclick="showPanel('runtime')">RUNTIME</button>
+            <button class="lcars-nav-btn" onclick="showPanel('keys')">KEYS</button>
+            <button class="lcars-nav-btn" onclick="showPanel('quantum')">QUANTUM</button>
             <div class="lcars-nav-spacer"></div>
             <button class="lcars-nav-btn" onclick="showPanel('network')">NETWORK</button>
             <div class="lcars-sidebar-bottom"></div>
@@ -972,6 +977,185 @@
                     </div>
                     <button class="lcars-btn cyan" onclick="requestFaucet()">Request Tokens</button>
                     <div id="faucetResult" style="margin-top: 15px;"></div>
+                </div>
+
+                <!-- Govern Panel -->
+                <div id="panel-govern" class="panel">
+                    <h2 class="panel-header">On-Chain Governance</h2>
+
+                    <div class="section-title">Active Proposals</div>
+                    <div id="activeProposals" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-label">Loading proposals...</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Create Proposal</div>
+                    <div class="input-group">
+                        <label class="input-label">Proposal Title</label>
+                        <input type="text" class="lcars-input" id="proposalTitle" placeholder="Enter proposal title">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Description</label>
+                        <textarea class="lcars-input" id="proposalDesc" rows="3" placeholder="Describe your proposal"></textarea>
+                    </div>
+                    <button class="lcars-btn cyan" onclick="submitProposal()">Submit Proposal</button>
+
+                    <div class="section-divider"></div>
+                    <div class="section-title">Voting Power</div>
+                    <div class="info-row">
+                        <span class="info-label">Your Voting Power</span>
+                        <span class="info-value" id="votingPower">---</span>
+                    </div>
+                </div>
+
+                <!-- Rewards Panel -->
+                <div id="panel-rewards" class="panel">
+                    <h2 class="panel-header">Staking Rewards</h2>
+
+                    <div class="stat-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Staked</div>
+                            <div class="stat-value" id="totalStaked">---</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Claimable Rewards</div>
+                            <div class="stat-value" id="claimableRewards">---</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">APY</div>
+                            <div class="stat-value" id="stakingApy">---</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Era Progress</div>
+                            <div class="stat-value" id="eraProgress">---</div>
+                        </div>
+                    </div>
+
+                    <button class="lcars-btn green" onclick="claimRewards()">Claim Rewards</button>
+
+                    <div class="section-divider"></div>
+                    <div class="section-title">Reward History</div>
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Era</th><th>Amount</th><th>Status</th></tr>
+                        </thead>
+                        <tbody id="rewardHistory">
+                            <tr><td colspan="3" style="text-align: center;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Runtime Panel -->
+                <div id="panel-runtime" class="panel">
+                    <h2 class="panel-header">Runtime Upgrades</h2>
+
+                    <div class="section-title">Current Runtime</div>
+                    <div class="info-row">
+                        <span class="info-label">Spec Version</span>
+                        <span class="info-value" id="specVersion">---</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Impl Version</span>
+                        <span class="info-value" id="implVersion">---</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Runtime Name</span>
+                        <span class="info-value" id="runtimeName">---</span>
+                    </div>
+
+                    <div class="section-divider"></div>
+                    <div class="section-title">Pending Upgrades</div>
+                    <div id="pendingUpgrades">
+                        <div class="alert info">No pending runtime upgrades</div>
+                    </div>
+
+                    <div class="section-divider"></div>
+                    <div class="section-title">Test Runtime Upgrade</div>
+                    <div class="input-group">
+                        <label class="input-label">WASM File</label>
+                        <input type="file" class="lcars-input" id="wasmFile" accept=".wasm">
+                    </div>
+                    <button class="lcars-btn cyan" onclick="testRuntimeUpgrade()">Test Upgrade (Dry Run)</button>
+                </div>
+
+                <!-- Keys Panel -->
+                <div id="panel-keys" class="panel">
+                    <h2 class="panel-header">Key Management</h2>
+
+                    <div class="section-title">Session Keys</div>
+                    <div class="info-row">
+                        <span class="info-label">GRANDPA</span>
+                        <span class="info-value" id="grandpaKey" style="font-size: 11px;">---</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">BABE</span>
+                        <span class="info-value" id="babeKey" style="font-size: 11px;">---</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">IM Online</span>
+                        <span class="info-value" id="imonlineKey" style="font-size: 11px;">---</span>
+                    </div>
+
+                    <div class="section-divider"></div>
+                    <button class="lcars-btn green" onclick="rotateSessionKeys()">Rotate Session Keys</button>
+                    <button class="lcars-btn cyan" onclick="exportKeys()">Export Keys</button>
+
+                    <div class="section-divider"></div>
+                    <div class="section-title">Inject Keys</div>
+                    <div class="input-group">
+                        <label class="input-label">Key Type</label>
+                        <select class="lcars-input" id="keyType">
+                            <option value="gran">GRANDPA (gran)</option>
+                            <option value="babe">BABE (babe)</option>
+                            <option value="imon">IM Online (imon)</option>
+                            <option value="aura">AURA (aura)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Seed Phrase</label>
+                        <input type="password" class="lcars-input" id="keySeed" placeholder="Enter seed phrase">
+                    </div>
+                    <button class="lcars-btn orange" onclick="injectKey()">Inject Key</button>
+                </div>
+
+                <!-- Quantum Panel -->
+                <div id="panel-quantum" class="panel">
+                    <h2 class="panel-header">Quantum Devices</h2>
+
+                    <div class="section-title">Connected QRNG Devices</div>
+                    <div id="qrngDevices" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-label">Loading devices...</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Entropy Pool</div>
+                            <div class="stat-value" id="entropyPool">---</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Avg QBER</div>
+                            <div class="stat-value" id="avgQber">---</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">QKD Channels</div>
+                            <div class="stat-value" id="qkdChannels">---</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">SPHINCS+ Status</div>
+                            <div class="stat-value" id="sphincsStatus">---</div>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+                    <div class="section-title">PQC Security Level</div>
+                    <div class="alert info">NIST Level 3 - Post-Quantum Secure</div>
+
+                    <div class="section-divider"></div>
+                    <button class="lcars-btn green" onclick="refreshQuantumStatus()">Refresh Status</button>
+                    <button class="lcars-btn cyan" onclick="getQuantumRandom()">Get Random Bytes</button>
                 </div>
 
                 <!-- Network Panel -->
