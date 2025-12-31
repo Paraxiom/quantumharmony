@@ -518,6 +518,29 @@ impl pallet_consensus_level::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+// Oracle pallet configuration (decentralized CAD price feeds)
+parameter_types! {
+    // Minimum 1000 QMHY stake to become a reporter
+    pub const MinReporterStake: Balance = 1_000_000_000_000_000_000_000;
+    // Max 5% price deviation from median
+    pub const MaxPriceDeviation: u32 = 50_000;
+    // Aggregate prices every 100 blocks (~5 minutes at 3s blocks)
+    pub const AggregationPeriod: BlockNumber = 100;
+    // 10% slash for malicious reporters
+    pub const SlashPercent: u32 = 100_000;
+}
+
+impl pallet_oracle::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type MinReporterStake = MinReporterStake;
+    type MaxPriceDeviation = MaxPriceDeviation;
+    type AggregationPeriod = AggregationPeriod;
+    type SlashPercent = SlashPercent;
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type AdminOrigin = EnsureRoot<AccountId>;
+}
+
 // Governance parameters
 parameter_types! {
     pub const LaunchPeriod: BlockNumber = 7 * DAYS;
@@ -729,6 +752,7 @@ construct_runtime!(
         Notarial: pallet_notarial,
         Fideicommis: pallet_fideicommis,
         Stablecoin: pallet_stablecoin,
+        Oracle: pallet_oracle,
 
         // Adaptive consensus level tracking
         ConsensusLevel: pallet_consensus_level,

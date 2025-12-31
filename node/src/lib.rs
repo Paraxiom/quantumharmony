@@ -18,6 +18,8 @@ mod falcon_crypto;
 mod pqtg_client;
 mod priority_queue_rpc;
 mod qpp;
+pub mod quantum_manager;
+pub mod pqc_oracle;
 mod qpp_integration;
 mod qssh_queue_manager;
 mod quantum_entropy;

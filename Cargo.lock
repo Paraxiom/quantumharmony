@@ -7780,6 +7780,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-oracle"
+version = "1.0.0"
+dependencies = [
+ "frame-support 28.0.0",
+ "frame-system 28.0.0",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core 28.0.0",
+ "sp-io 30.0.0",
+ "sp-runtime 31.0.1",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
+]
+
+[[package]]
 name = "pallet-pedersen-commitment"
 version = "0.1.0"
 dependencies = [
@@ -8158,8 +8174,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e69bf016dc406eff7d53a7d3f7cf1c2e72c82b9088aac1118591e36dd2cd3e9"
 dependencies = [
  "bitcoin_hashes 0.13.0",
- "rand 0.7.3",
- "rand_core 0.5.1",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
  "serde",
  "unicode-normalization",
 ]
@@ -9574,6 +9590,7 @@ dependencies = [
  "pallet-fideicommis",
  "pallet-identity",
  "pallet-notarial",
+ "pallet-oracle",
  "pallet-preimage",
  "pallet-proof-of-coherence",
  "pallet-proxy",
@@ -16097,7 +16114,7 @@ checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if",
  "digest 0.10.7",
- "rand 0.7.3",
+ "rand 0.8.5",
  "static_assertions",
 ]
 

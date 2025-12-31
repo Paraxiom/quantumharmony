@@ -38,6 +38,8 @@ mod software_entropy_vault;
 mod sphincs_keygen;
 mod unified_vault;
 mod rpc;
+mod pqc_oracle;
+mod quantum_manager;
 mod segmented_pool;
 mod parallel_proposer;
 mod high_perf_verify;
