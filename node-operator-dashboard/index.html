@@ -828,12 +828,8 @@
                             <input type="text" class="form-input" id="proposeValidatorAccount" placeholder="0x...">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label class="form-label">Sign As</label>
-                            <select class="form-input" id="proposeSigner">
-                                <option value="alice">Alice (Dev)</option>
-                                <option value="bob">Bob (Dev)</option>
-                                <option value="charlie">Charlie (Dev)</option>
-                            </select>
+                            <label class="form-label">Your SPHINCS+ Secret Key</label>
+                            <input type="password" class="form-input" id="proposeSigner" placeholder="0x... (your signing key)">
                         </div>
                         <button class="btn btn-success" onclick="proposeValidator()">SUBMIT PROPOSAL</button>
                     </div>
@@ -2681,16 +2677,16 @@
 
                 if (result) {
                     const nextId = parseInt(result.slice(2), 16);
-                    document.getElementById('totalProposals').textContent = nextId;
-                    document.getElementById('activeProposals').textContent = nextId; // Simplified
+                    const activeEl = document.getElementById('activeProposals');
+                    if (activeEl) activeEl.textContent = nextId;
                     govLog(`Found ${nextId} proposal(s)`, 'info');
 
                     if (nextId > 0) {
                         displayProposals(nextId);
                     }
                 } else {
-                    document.getElementById('totalProposals').textContent = '0';
-                    document.getElementById('activeProposals').textContent = '0';
+                    const activeEl = document.getElementById('activeProposals');
+                    if (activeEl) activeEl.textContent = '0';
                     govLog('No proposals found', 'info');
                 }
             } catch (e) {
