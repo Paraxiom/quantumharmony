@@ -55,6 +55,14 @@ use notarial_rpc::{NotarialRpc, NotarialApiServer};
 pub mod test_upgrade_rpc;
 use test_upgrade_rpc::{TestUpgradeRpc, TestUpgradeApiServer};
 
+// Oracle RPC - decentralized CAD price oracle system
+pub mod oracle_rpc;
+use oracle_rpc::{OracleRpc, OracleApiServer};
+
+// PQC Oracle RPC - Post-Quantum Cryptography oracle with SPHINCS+, QRNG, QKD
+pub mod pqc_rpc;
+use pqc_rpc::{PqcOracleRpc, PqcOracleApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -164,6 +172,24 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ Test Upgrade RPC registered (quantumharmony_testRuntimeUpgrade - PUBLIC, rate-limited)");
+
+    // Create oracle RPC instance for decentralized CAD price feeds
+    let oracle_rpc = OracleRpc::<_, Block>::new(deps.client.clone());
+
+    // Merge oracle RPC into module
+    module.merge(oracle_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Oracle RPC registered (oracle_* - decentralized CAD price feeds)");
+
+    // Create PQC oracle RPC instance for SPHINCS+, QRNG, QKD operations
+    let pqc_oracle_rpc = PqcOracleRpc::<_, Block>::new(deps.client.clone());
+
+    // Merge PQC oracle RPC into module
+    module.merge(pqc_oracle_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ PQC Oracle RPC registered (pqc_* - SPHINCS+/QRNG/QKD)");
 
     Ok(module)
 }

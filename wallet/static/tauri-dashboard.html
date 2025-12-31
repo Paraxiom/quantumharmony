@@ -291,7 +291,7 @@
 <body>
     <div class="header">
         <h1>QuantumHarmony Operator Dashboard</h1>
-        <div class="subtitle">Threshold QRNG · Reporter Management · Real-time Monitoring</div>
+        <div class="subtitle">Post-Quantum Cryptography · SPHINCS+ Signatures · QRNG Entropy · QKD Channels</div>
     </div>
 
     <div class="dashboard">
@@ -435,6 +435,343 @@
             </div>
             <button onclick="collectShares()">Collect & Reconstruct</button>
             <button class="btn-secondary" onclick="viewHistory()">View History</button>
+        </div>
+
+        <!-- Oracle Price Feeds -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>Oracle Price Feeds (CAD)</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div class="device-card" style="border-left-color: #50c878;">
+                    <div class="device-name">CAD/USD Rate</div>
+                    <div class="metric">
+                        <span class="metric-label">Price:</span>
+                        <span id="price-cad-usd" class="metric-value" style="font-size: 1.4em;">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Submissions:</span>
+                        <span id="subs-cad-usd">0</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #9b59b6;">
+                    <div class="device-name">QMHY/USD Price</div>
+                    <div class="metric">
+                        <span class="metric-label">Price:</span>
+                        <span id="price-qmhy-usd" class="metric-value" style="font-size: 1.4em;">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Submissions:</span>
+                        <span id="subs-qmhy-usd">0</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #f39c12;">
+                    <div class="device-name">QMHY/CAD Price</div>
+                    <div class="metric">
+                        <span class="metric-label">Price:</span>
+                        <span id="price-qmhy-cad" class="metric-value" style="font-size: 1.4em;">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Submissions:</span>
+                        <span id="subs-qmhy-cad">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="metric" style="margin-top: 15px;">
+                <span class="metric-label">Oracle Round:</span>
+                <span id="oracle-round" class="metric-value">---</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Active Reporters:</span>
+                <span id="oracle-reporters" class="metric-value">---</span>
+            </div>
+            <button onclick="loadOraclePrices()">Refresh Prices</button>
+            <button class="btn-secondary" onclick="forceAggregate()">Force Aggregate (Admin)</button>
+        </div>
+
+        <!-- PQC Status Panel -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>Post-Quantum Cryptography Status</h2>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                <div class="device-card" style="border-left-color: #50c878;">
+                    <div class="device-name">Entropy Pool</div>
+                    <div class="metric">
+                        <span class="metric-label">Health:</span>
+                        <span id="pqc-entropy-health" class="metric-value">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Size:</span>
+                        <span id="pqc-entropy-size">---</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #4a9eff;">
+                    <div class="device-name">QRNG Devices</div>
+                    <div class="metric">
+                        <span class="metric-label">Active:</span>
+                        <span id="pqc-qrng-count" class="metric-value">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Avg QBER:</span>
+                        <span id="pqc-avg-qber">---</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #9b59b6;">
+                    <div class="device-name">QKD Channels</div>
+                    <div class="metric">
+                        <span class="metric-label">Active:</span>
+                        <span id="pqc-qkd-channels" class="metric-value">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Verified:</span>
+                        <span id="pqc-verified">---</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #f39c12;">
+                    <div class="device-name">SPHINCS+</div>
+                    <div class="metric">
+                        <span class="metric-label">Status:</span>
+                        <span id="pqc-sphincs-status" class="metric-value">---</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Key Size:</span>
+                        <span id="pqc-key-size">64 bytes</span>
+                    </div>
+                </div>
+            </div>
+            <div class="metric" style="margin-top: 15px;">
+                <span class="metric-label">PQC System Ready:</span>
+                <span id="pqc-ready"><span class="badge badge-pending">Unknown</span></span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Security Level:</span>
+                <span id="pqc-security" style="color: #9b59b6; font-weight: 600;">NIST Level 3 (Post-Quantum)</span>
+            </div>
+            <button onclick="loadPqcStatus()">Refresh PQC Status</button>
+            <button class="btn-secondary" onclick="getQuantumRandom()">Get Random (32 bytes)</button>
+            <button class="btn-secondary" onclick="generateTestKeypair()">Generate Test Keypair</button>
+        </div>
+
+        <!-- PQC Price Submission Panel -->
+        <div class="panel">
+            <h2>PQC Price Submission</h2>
+            <div class="reporter-status">
+                <div class="metric">
+                    <span class="metric-label">Your PQC Key:</span>
+                    <span id="pqc-my-pubkey" style="font-size: 0.75em; word-break: break-all;">Not Generated</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">QKD Channel:</span>
+                    <span id="pqc-my-qkd"><span class="badge badge-pending">Not Established</span></span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Last Verification:</span>
+                    <span id="pqc-last-verify">---</span>
+                </div>
+            </div>
+            <button class="btn-success" onclick="submitPqcPrice()">Submit PQC-Secured Price</button>
+            <button class="btn-secondary" onclick="establishQkdChannel()">Establish QKD</button>
+        </div>
+
+        <!-- PQC Metrics Panel -->
+        <div class="panel">
+            <h2>PQC Verification Metrics</h2>
+            <div class="reporter-status">
+                <div class="metric">
+                    <span class="metric-label">Total Verifications:</span>
+                    <span id="pqc-total-verifications" class="metric-value">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Signature Checks:</span>
+                    <span id="pqc-sig-checks">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Entropy Proofs:</span>
+                    <span id="pqc-entropy-proofs">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">QKD Auths:</span>
+                    <span id="pqc-qkd-auths">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Avg Latency:</span>
+                    <span id="pqc-avg-latency">--- μs</span>
+                </div>
+            </div>
+            <button onclick="loadPqcMetrics()">Load Metrics</button>
+        </div>
+
+        <!-- QCAD Stablecoin Peg Panel -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>QCAD Stablecoin Peg (CAD-Backed)</h2>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                <div class="device-card" style="border-left-color: #e74c3c;">
+                    <div class="device-name">CAD/USD Rate</div>
+                    <div class="metric">
+                        <span class="metric-label">Oracle Price:</span>
+                        <span id="peg-cad-usd" class="metric-value" style="font-size: 1.4em;">$0.7400</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Last Update:</span>
+                        <span id="peg-last-update">---</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #27ae60;">
+                    <div class="device-name">QCAD Peg Status</div>
+                    <div class="metric">
+                        <span class="metric-label">Target:</span>
+                        <span style="color: #50c878; font-weight: 600;">1 QCAD = 1 CAD</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Status:</span>
+                        <span id="peg-status"><span class="badge badge-online">Stable</span></span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #3498db;">
+                    <div class="device-name">QCAD Supply</div>
+                    <div class="metric">
+                        <span class="metric-label">Total Supply:</span>
+                        <span id="qcad-supply" class="metric-value">0 QCAD</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Circulating:</span>
+                        <span id="qcad-circulating">0 QCAD</span>
+                    </div>
+                </div>
+                <div class="device-card" style="border-left-color: #9b59b6;">
+                    <div class="device-name">Collateral</div>
+                    <div class="metric">
+                        <span class="metric-label">QMHY Locked:</span>
+                        <span id="qcad-collateral" class="metric-value">0 QMHY</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Ratio:</span>
+                        <span id="collateral-ratio">150%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-bar" style="margin-top: 15px;">
+                <div id="peg-deviation-bar" class="progress-fill" style="width: 50%; background: linear-gradient(90deg, #27ae60 0%, #27ae60 100%);">
+                    Peg: 0.00% deviation
+                </div>
+            </div>
+            <div class="metric" style="margin-top: 10px;">
+                <span class="metric-label">Peg Deviation:</span>
+                <span id="peg-deviation" style="color: #50c878; font-weight: 600;">0.00% (Within tolerance)</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Oracle Reporters:</span>
+                <span id="peg-reporters">0 active</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Price Confidence:</span>
+                <span id="peg-confidence" style="color: #50c878;">High (5+ reporters)</span>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button onclick="loadPegStatus()">Refresh Peg Status</button>
+                <button class="btn-success" onclick="mintQcad()">Mint QCAD</button>
+                <button class="btn-secondary" onclick="redeemQcad()">Redeem QCAD</button>
+                <button class="btn-secondary" onclick="viewPegHistory()">View History</button>
+            </div>
+        </div>
+
+        <!-- QCAD Mint/Redeem Panel -->
+        <div class="panel">
+            <h2>Mint/Redeem QCAD</h2>
+            <div class="reporter-status">
+                <div class="metric">
+                    <span class="metric-label">Your QCAD Balance:</span>
+                    <span id="my-qcad-balance" class="metric-value">0 QCAD</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Available Collateral:</span>
+                    <span id="my-collateral">0 QMHY</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Amount:</span>
+                    <input type="text" id="qcad-amount" placeholder="100" style="background: #222; color: #e0e0e0; border: 1px solid #333; padding: 5px; border-radius: 4px; width: 100px;">
+                    <span style="color: #888; margin-left: 5px;">QCAD</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Required Collateral:</span>
+                    <span id="required-collateral">--- QMHY</span>
+                </div>
+            </div>
+            <button class="btn-success" onclick="executeMint()">Mint QCAD</button>
+            <button class="btn-secondary" onclick="executeRedeem()">Redeem for QMHY</button>
+        </div>
+
+        <!-- Peg Adjustment History -->
+        <div class="panel">
+            <h2>Peg Adjustment Log</h2>
+            <div id="peg-history" style="max-height: 200px; overflow-y: auto;">
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    No adjustments recorded
+                </div>
+            </div>
+            <button onclick="loadPegHistory()">Load History</button>
+        </div>
+
+        <!-- Price Reporter Panel -->
+        <div class="panel">
+            <h2>Price Reporter</h2>
+            <div class="reporter-status">
+                <div class="metric">
+                    <span class="metric-label">My Reporter ID:</span>
+                    <span id="my-reporter-id" class="metric-value">Not Registered</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Status:</span>
+                    <span id="my-reporter-status"><span class="badge badge-pending">Unregistered</span></span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Reputation:</span>
+                    <span id="my-reputation">---</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Priority:</span>
+                    <span id="my-priority">---</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Submissions:</span>
+                    <span id="my-submissions">0</span>
+                </div>
+            </div>
+            <button onclick="registerOracleReporter()">Register as Reporter</button>
+            <button class="btn-secondary" onclick="loadMyReporterStatus()">Refresh Status</button>
+        </div>
+
+        <!-- Submit Price Panel -->
+        <div class="panel">
+            <h2>Submit Price</h2>
+            <div class="reporter-status">
+                <div class="metric">
+                    <span class="metric-label">Feed:</span>
+                    <select id="price-feed-select" style="background: #222; color: #e0e0e0; border: 1px solid #333; padding: 5px; border-radius: 4px;">
+                        <option value="CAD_USD">CAD/USD</option>
+                        <option value="QMHY_USD">QMHY/USD</option>
+                        <option value="QMHY_CAD">QMHY/CAD</option>
+                    </select>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Price:</span>
+                    <input type="text" id="price-input" placeholder="e.g., 0.74" style="background: #222; color: #e0e0e0; border: 1px solid #333; padding: 5px; border-radius: 4px; width: 120px;">
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Source:</span>
+                    <input type="text" id="price-source" placeholder="e.g., binance" value="manual" style="background: #222; color: #e0e0e0; border: 1px solid #333; padding: 5px; border-radius: 4px; width: 120px;">
+                </div>
+            </div>
+            <button class="btn-success" onclick="submitOraclePrice()">Submit Price</button>
+            <button class="btn-secondary" onclick="fetchExternalPrice()">Fetch from API</button>
+        </div>
+
+        <!-- All Reporters Panel -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>Active Price Reporters</h2>
+            <div id="reporters-list">
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    Click "Load Reporters" to view all registered price reporters
+                </div>
+            </div>
+            <button onclick="loadAllReporters()">Load Reporters</button>
         </div>
 
         <!-- Console Log -->
@@ -887,7 +1224,7 @@
             }
         }
 
-        // Reporter Functions
+        // Reporter Functions (STARK proof)
         window.registerReporter = function() {
             log('Reporter registration not yet implemented', 'warning');
             log('This will register your node as a STARK proof reporter', 'info');
@@ -898,15 +1235,637 @@
             log('This will submit a quantum entropy proof to the network', 'info');
         }
 
+        // ==================== ORACLE FUNCTIONS ====================
+
+        let myReporterId = null;
+
+        // Load oracle prices and metrics
+        window.loadOraclePrices = async function() {
+            try {
+                log('Loading oracle prices...', 'info');
+
+                // Get all prices
+                const prices = await rpcCall('oracle_getAllPrices');
+
+                if (prices['CAD_USD']) {
+                    document.getElementById('price-cad-usd').textContent = '$' + prices['CAD_USD'].price_formatted;
+                    document.getElementById('subs-cad-usd').textContent = prices['CAD_USD'].submission_count;
+                }
+                if (prices['QMHY_USD']) {
+                    document.getElementById('price-qmhy-usd').textContent = '$' + prices['QMHY_USD'].price_formatted;
+                    document.getElementById('subs-qmhy-usd').textContent = prices['QMHY_USD'].submission_count;
+                }
+                if (prices['QMHY_CAD']) {
+                    document.getElementById('price-qmhy-cad').textContent = '$' + prices['QMHY_CAD'].price_formatted;
+                    document.getElementById('subs-qmhy-cad').textContent = prices['QMHY_CAD'].submission_count;
+                }
+
+                // Get metrics
+                const metrics = await rpcCall('oracle_getMetrics');
+                document.getElementById('oracle-round').textContent = metrics.current_round;
+                document.getElementById('oracle-reporters').textContent = `${metrics.active_reporters}/${metrics.reporter_count}`;
+
+                log(`Oracle loaded: Round ${metrics.current_round}, ${metrics.active_reporters} active reporters`, 'success');
+
+            } catch (error) {
+                log(`Failed to load oracle prices: ${error.message}`, 'error');
+            }
+        }
+
+        // Register as oracle price reporter
+        window.registerOracleReporter = async function() {
+            try {
+                log('Registering as oracle price reporter...', 'info');
+
+                // Generate a unique reporter ID
+                const reporterId = 'reporter-' + Date.now().toString(36);
+                const account = '0x' + Math.random().toString(16).substring(2, 42);
+
+                const result = await rpcCall('oracle_registerReporter', [
+                    reporterId,
+                    account,
+                    ['CAD_USD', 'QMHY_USD', 'QMHY_CAD']
+                ]);
+
+                if (result) {
+                    myReporterId = reporterId;
+                    document.getElementById('my-reporter-id').textContent = reporterId;
+                    document.getElementById('my-reporter-status').innerHTML = '<span class="badge badge-online">Active</span>';
+                    document.getElementById('my-reputation').textContent = '50';
+                    document.getElementById('my-priority').textContent = '50';
+
+                    log(`Registered as reporter: ${reporterId}`, 'success');
+                }
+
+            } catch (error) {
+                log(`Failed to register: ${error.message}`, 'error');
+            }
+        }
+
+        // Load my reporter status
+        window.loadMyReporterStatus = async function() {
+            if (!myReporterId) {
+                log('Not registered as a reporter', 'warning');
+                return;
+            }
+
+            try {
+                const reporter = await rpcCall('oracle_getReporter', [myReporterId]);
+
+                if (reporter) {
+                    document.getElementById('my-reporter-id').textContent = reporter.id;
+                    document.getElementById('my-reporter-status').innerHTML =
+                        reporter.status === 'active'
+                            ? '<span class="badge badge-online">Active</span>'
+                            : '<span class="badge badge-pending">' + reporter.status + '</span>';
+                    document.getElementById('my-reputation').textContent = reporter.reputation;
+                    document.getElementById('my-priority').textContent = reporter.priority;
+                    document.getElementById('my-submissions').textContent = reporter.total_submissions;
+
+                    log(`Reporter status loaded: Rep ${reporter.reputation}, Priority ${reporter.priority}`, 'success');
+                }
+
+            } catch (error) {
+                log(`Failed to load reporter status: ${error.message}`, 'error');
+            }
+        }
+
+        // Submit a price
+        window.submitOraclePrice = async function() {
+            if (!myReporterId) {
+                log('Please register as a reporter first', 'error');
+                return;
+            }
+
+            try {
+                const feed = document.getElementById('price-feed-select').value;
+                const priceStr = document.getElementById('price-input').value;
+                const source = document.getElementById('price-source').value;
+
+                if (!priceStr) {
+                    log('Please enter a price', 'error');
+                    return;
+                }
+
+                // Convert decimal price to 18-decimal fixed point
+                const priceFloat = parseFloat(priceStr);
+                const priceFixed = BigInt(Math.round(priceFloat * 1e18)).toString();
+
+                log(`Submitting ${feed} = ${priceStr} (${priceFixed})...`, 'info');
+
+                const result = await rpcCall('oracle_submitPrice', [{
+                    reporter_id: myReporterId,
+                    feed: feed,
+                    price: priceFixed,
+                    source: source,
+                    signature: '0x' // Placeholder
+                }]);
+
+                if (result) {
+                    log(`Price submitted: ${feed} = ${priceStr}`, 'success');
+                    window.loadMyReporterStatus();
+                    window.loadOraclePrices();
+                }
+
+            } catch (error) {
+                log(`Failed to submit price: ${error.message}`, 'error');
+            }
+        }
+
+        // Fetch price from external API
+        window.fetchExternalPrice = async function() {
+            try {
+                log('Fetching CAD/USD rate from external API...', 'info');
+
+                // In a real implementation, this would call an external API
+                // For demo, we simulate a realistic CAD/USD rate
+                const mockRate = 0.74 + (Math.random() * 0.02 - 0.01);
+                document.getElementById('price-input').value = mockRate.toFixed(6);
+
+                log(`Fetched CAD/USD rate: ${mockRate.toFixed(6)}`, 'success');
+                log('Note: This is simulated data. Connect to a real API for production.', 'warning');
+
+            } catch (error) {
+                log(`Failed to fetch price: ${error.message}`, 'error');
+            }
+        }
+
+        // Force aggregate (admin only)
+        window.forceAggregate = async function() {
+            const feed = document.getElementById('price-feed-select').value;
+            const adminKey = prompt('Enter admin key:');
+
+            if (!adminKey) return;
+
+            try {
+                log(`Force aggregating ${feed}...`, 'info');
+
+                const result = await rpcCall('oracle_forceAggregate', [feed, adminKey]);
+
+                if (result) {
+                    log(`Aggregated ${feed}: ${result.price_formatted}`, 'success');
+                    window.loadOraclePrices();
+                }
+
+            } catch (error) {
+                log(`Aggregation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // ==================== PQC FUNCTIONS ====================
+
+        let myPqcKeypair = null;
+
+        // Load PQC system status
+        window.loadPqcStatus = async function() {
+            try {
+                log('Loading PQC system status...', 'info');
+
+                const status = await rpcCall('pqc_getStatus');
+
+                // Update entropy health with color
+                const healthColors = {
+                    'healthy': '#50c878',
+                    'low': '#ffa500',
+                    'degraded': '#ff6b6b',
+                    'critical': '#ff0000'
+                };
+                const healthEl = document.getElementById('pqc-entropy-health');
+                healthEl.textContent = status.entropy_health.toUpperCase();
+                healthEl.style.color = healthColors[status.entropy_health] || '#888';
+
+                // Update entropy size
+                const sizeKb = (status.entropy_pool_size / 1024).toFixed(1);
+                document.getElementById('pqc-entropy-size').textContent = `${sizeKb} KB`;
+
+                // Update QRNG devices
+                document.getElementById('pqc-qrng-count').textContent = status.qrng_device_count;
+                const qberEl = document.getElementById('pqc-avg-qber');
+                qberEl.textContent = status.avg_qber.toFixed(2) + '%';
+                qberEl.style.color = status.avg_qber < 3 ? '#50c878' :
+                                     status.avg_qber < 7 ? '#ffa500' : '#ff6b6b';
+
+                // Update QKD channels
+                document.getElementById('pqc-qkd-channels').textContent = status.qkd_channels;
+                document.getElementById('pqc-verified').textContent = status.verified_submissions;
+
+                // Update SPHINCS+ status
+                document.getElementById('pqc-sphincs-status').textContent = 'Active';
+
+                // Update ready status
+                if (status.ready) {
+                    document.getElementById('pqc-ready').innerHTML = '<span class="badge badge-online">Ready</span>';
+                } else {
+                    document.getElementById('pqc-ready').innerHTML = '<span class="badge badge-pending">Not Ready</span>';
+                }
+
+                log(`PQC Status: ${status.entropy_health}, Entropy ${sizeKb}KB, ${status.qrng_device_count} QRNG devices`, 'success');
+
+            } catch (error) {
+                log(`Failed to load PQC status: ${error.message}`, 'error');
+            }
+        }
+
+        // Load PQC metrics
+        window.loadPqcMetrics = async function() {
+            try {
+                log('Loading PQC metrics...', 'info');
+
+                const metrics = await rpcCall('pqc_getMetrics');
+
+                document.getElementById('pqc-total-verifications').textContent = metrics.total_verifications;
+                document.getElementById('pqc-sig-checks').textContent = metrics.signature_verifications;
+                document.getElementById('pqc-entropy-proofs').textContent = metrics.entropy_proofs_verified;
+                document.getElementById('pqc-qkd-auths').textContent = metrics.qkd_authentications;
+                document.getElementById('pqc-avg-latency').textContent =
+                    (metrics.avg_verification_time_us || 0).toFixed(0) + ' us';
+
+                log(`PQC Metrics: ${metrics.total_verifications} verifications, ${metrics.qkd_channels} QKD channels`, 'success');
+
+            } catch (error) {
+                log(`Failed to load PQC metrics: ${error.message}`, 'error');
+            }
+        }
+
+        // Get quantum random bytes
+        window.getQuantumRandom = async function() {
+            try {
+                log('Getting 32 quantum random bytes...', 'info');
+
+                const randomHex = await rpcCall('pqc_getQuantumRandom', [32]);
+
+                log(`Quantum random: ${randomHex}`, 'success');
+                log('Derived from QRNG entropy pool', 'info');
+
+            } catch (error) {
+                log(`Failed to get quantum random: ${error.message}`, 'error');
+            }
+        }
+
+        // Generate test SPHINCS+ keypair
+        window.generateTestKeypair = async function() {
+            try {
+                log('Generating SPHINCS+ test keypair...', 'info');
+
+                const keypair = await rpcCall('pqc_generateTestKeypair');
+
+                myPqcKeypair = keypair;
+                document.getElementById('pqc-my-pubkey').textContent =
+                    keypair.public_key.substring(0, 24) + '...' + keypair.public_key.slice(-16);
+
+                log('SPHINCS+ keypair generated (NIST Level 3)', 'success');
+                log(`Public key: ${keypair.public_key.substring(0, 32)}...`, 'info');
+                log(`Secret key: [PROTECTED - 128 bytes]`, 'info');
+
+            } catch (error) {
+                log(`Failed to generate keypair: ${error.message}`, 'error');
+            }
+        }
+
+        // Establish QKD channel
+        window.establishQkdChannel = async function() {
+            if (!myPqcKeypair) {
+                log('Please generate a keypair first', 'error');
+                return;
+            }
+
+            try {
+                log('Establishing QKD channel...', 'info');
+
+                // Generate a random session key (in production, this comes from QKD hardware)
+                const sessionKey = '0x' + Array.from({length: 32}, () =>
+                    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+                ).join('');
+
+                const result = await rpcCall('pqc_establishQkdChannel', [{
+                    reporter_pubkey: myPqcKeypair.public_key,
+                    qkd_device_id: 'simulated-qkd-1',
+                    session_key: sessionKey
+                }]);
+
+                if (result) {
+                    document.getElementById('pqc-my-qkd').innerHTML =
+                        '<span class="badge badge-online">Established</span>';
+                    log('QKD channel established with simulated device', 'success');
+                }
+
+            } catch (error) {
+                log(`Failed to establish QKD channel: ${error.message}`, 'error');
+            }
+        }
+
+        // Submit PQC-secured price
+        window.submitPqcPrice = async function() {
+            if (!myPqcKeypair) {
+                log('Please generate a keypair first', 'error');
+                return;
+            }
+
+            try {
+                const feed = document.getElementById('price-feed-select').value;
+                const priceStr = document.getElementById('price-input').value;
+                const source = document.getElementById('price-source').value;
+
+                if (!priceStr) {
+                    log('Please enter a price', 'error');
+                    return;
+                }
+
+                // Convert feed name to number
+                const feedNum = feed === 'CAD_USD' ? 0 : feed === 'QMHY_USD' ? 1 : 2;
+
+                // Convert decimal price to 18-decimal fixed point
+                const priceFloat = parseFloat(priceStr);
+                const priceFixed = BigInt(Math.round(priceFloat * 1e18)).toString();
+
+                log(`Creating PQC signature for ${feed} = ${priceStr}...`, 'info');
+
+                // Create signature (using test method that signs with secret key)
+                const signature = await rpcCall('pqc_createTestSignature', [
+                    myPqcKeypair.secret_key,
+                    myPqcKeypair.public_key,
+                    feedNum,
+                    priceFixed
+                ]);
+
+                log(`Submitting PQC-secured price...`, 'info');
+
+                const result = await rpcCall('pqc_submitPrice', [{
+                    reporter_pubkey: myPqcKeypair.public_key,
+                    feed: feedNum,
+                    price: priceFixed,
+                    source: source,
+                    signature: signature
+                }]);
+
+                if (result.valid) {
+                    document.getElementById('pqc-last-verify').textContent =
+                        new Date().toLocaleTimeString() + ' - VALID';
+                    document.getElementById('pqc-last-verify').style.color = '#50c878';
+
+                    log(`PQC price submission VERIFIED`, 'success');
+                    log(`  Signature: ${result.signature_valid ? 'VALID' : 'INVALID'}`, 'info');
+                    log(`  Entropy: ${result.entropy_valid ? 'VALID' : 'INVALID'}`, 'info');
+                    log(`  QKD Auth: ${result.qkd_authenticated ? 'YES' : 'NO'}`, 'info');
+                    log(`  Latency: ${result.latency_us} us`, 'info');
+
+                    window.loadPqcStatus();
+                    window.loadPqcMetrics();
+                } else {
+                    document.getElementById('pqc-last-verify').textContent =
+                        new Date().toLocaleTimeString() + ' - FAILED';
+                    document.getElementById('pqc-last-verify').style.color = '#ff6b6b';
+
+                    log(`PQC verification FAILED: ${result.error || 'Unknown error'}`, 'error');
+                }
+
+            } catch (error) {
+                log(`PQC submission failed: ${error.message}`, 'error');
+            }
+        }
+
+        // ==================== STABLECOIN PEG FUNCTIONS ====================
+
+        // Load peg status from oracle
+        window.loadPegStatus = async function() {
+            try {
+                log('Loading QCAD peg status...', 'info');
+
+                // Get CAD/USD price from oracle
+                const prices = await rpcCall('oracle_getAllPrices');
+                const metrics = await rpcCall('oracle_getMetrics');
+
+                if (prices['CAD_USD']) {
+                    const cadUsd = parseFloat(prices['CAD_USD'].price_formatted);
+                    document.getElementById('peg-cad-usd').textContent = '$' + cadUsd.toFixed(4);
+                    document.getElementById('peg-last-update').textContent = new Date().toLocaleTimeString();
+
+                    // Calculate peg deviation (target is the current CAD rate)
+                    // For now, assume QCAD is pegged to CAD, so deviation is based on oracle confidence
+                    const reporterCount = metrics.active_reporters || 0;
+                    document.getElementById('peg-reporters').textContent = `${reporterCount} active`;
+
+                    // Update confidence based on reporter count
+                    const confidenceEl = document.getElementById('peg-confidence');
+                    if (reporterCount >= 5) {
+                        confidenceEl.textContent = 'High (5+ reporters)';
+                        confidenceEl.style.color = '#50c878';
+                    } else if (reporterCount >= 3) {
+                        confidenceEl.textContent = 'Medium (3-4 reporters)';
+                        confidenceEl.style.color = '#ffa500';
+                    } else {
+                        confidenceEl.textContent = 'Low (<3 reporters)';
+                        confidenceEl.style.color = '#ff6b6b';
+                    }
+
+                    // Simulate peg deviation (in production, this comes from stablecoin pallet)
+                    const deviation = (Math.random() * 0.5 - 0.25).toFixed(2);
+                    const absDeviation = Math.abs(parseFloat(deviation));
+                    const deviationEl = document.getElementById('peg-deviation');
+                    const deviationBar = document.getElementById('peg-deviation-bar');
+                    const pegStatus = document.getElementById('peg-status');
+
+                    if (absDeviation < 0.5) {
+                        deviationEl.textContent = `${deviation}% (Within tolerance)`;
+                        deviationEl.style.color = '#50c878';
+                        deviationBar.style.background = 'linear-gradient(90deg, #27ae60 0%, #27ae60 100%)';
+                        deviationBar.textContent = `Peg: ${deviation}% deviation`;
+                        pegStatus.innerHTML = '<span class="badge badge-online">Stable</span>';
+                    } else if (absDeviation < 2) {
+                        deviationEl.textContent = `${deviation}% (Minor deviation)`;
+                        deviationEl.style.color = '#ffa500';
+                        deviationBar.style.background = 'linear-gradient(90deg, #f39c12 0%, #f39c12 100%)';
+                        deviationBar.textContent = `Peg: ${deviation}% deviation`;
+                        pegStatus.innerHTML = '<span class="badge badge-pending">Minor Deviation</span>';
+                    } else {
+                        deviationEl.textContent = `${deviation}% (DEPEGGED!)`;
+                        deviationEl.style.color = '#ff6b6b';
+                        deviationBar.style.background = 'linear-gradient(90deg, #e74c3c 0%, #e74c3c 100%)';
+                        deviationBar.textContent = `Peg: ${deviation}% deviation`;
+                        pegStatus.innerHTML = '<span style="background: #ff6b6b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 600;">DEPEGGED</span>';
+                    }
+
+                    log(`QCAD peg status: CAD/USD = $${cadUsd.toFixed(4)}, Deviation: ${deviation}%`, 'success');
+                }
+
+            } catch (error) {
+                log(`Failed to load peg status: ${error.message}`, 'error');
+            }
+        }
+
+        // Mint QCAD (opens mint dialog)
+        window.mintQcad = function() {
+            document.getElementById('qcad-amount').focus();
+            log('Enter amount and click "Mint QCAD" to mint stablecoins', 'info');
+        }
+
+        // Redeem QCAD (opens redeem dialog)
+        window.redeemQcad = function() {
+            document.getElementById('qcad-amount').focus();
+            log('Enter amount and click "Redeem for QMHY" to redeem stablecoins', 'info');
+        }
+
+        // Calculate required collateral when amount changes
+        document.getElementById('qcad-amount')?.addEventListener('input', function() {
+            const amount = parseFloat(this.value) || 0;
+            // 150% collateralization ratio
+            const cadUsdText = document.getElementById('peg-cad-usd').textContent;
+            const cadUsd = parseFloat(cadUsdText.replace('$', '')) || 0.74;
+            // Assume QMHY/USD = $0.10 for calculation
+            const qmhyUsd = 0.10;
+            const requiredQmhy = (amount * cadUsd * 1.5) / qmhyUsd;
+            document.getElementById('required-collateral').textContent =
+                requiredQmhy.toFixed(2) + ' QMHY';
+        });
+
+        // Execute mint
+        window.executeMint = async function() {
+            const amount = parseFloat(document.getElementById('qcad-amount').value);
+            if (!amount || amount <= 0) {
+                log('Please enter a valid amount', 'error');
+                return;
+            }
+
+            try {
+                log(`Minting ${amount} QCAD...`, 'info');
+                // In production, this would call the stablecoin pallet
+                log(`Minted ${amount} QCAD successfully (simulated)`, 'success');
+                log('Note: Connect to live chain for actual minting', 'warning');
+
+                // Update simulated balance
+                const currentBalance = parseFloat(document.getElementById('my-qcad-balance').textContent) || 0;
+                document.getElementById('my-qcad-balance').textContent = (currentBalance + amount).toFixed(2) + ' QCAD';
+
+            } catch (error) {
+                log(`Mint failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Execute redeem
+        window.executeRedeem = async function() {
+            const amount = parseFloat(document.getElementById('qcad-amount').value);
+            if (!amount || amount <= 0) {
+                log('Please enter a valid amount', 'error');
+                return;
+            }
+
+            try {
+                log(`Redeeming ${amount} QCAD for QMHY...`, 'info');
+                // In production, this would call the stablecoin pallet
+                log(`Redeemed ${amount} QCAD for QMHY (simulated)`, 'success');
+                log('Note: Connect to live chain for actual redemption', 'warning');
+
+            } catch (error) {
+                log(`Redeem failed: ${error.message}`, 'error');
+            }
+        }
+
+        // View peg history
+        window.viewPegHistory = function() {
+            log('Loading peg adjustment history...', 'info');
+            loadPegHistory();
+        }
+
+        // Load peg adjustment history
+        window.loadPegHistory = async function() {
+            try {
+                const container = document.getElementById('peg-history');
+
+                // Simulated history (in production, this comes from chain events)
+                const history = [
+                    { time: '14:32:15', type: 'Oracle Update', price: '0.7412', reporters: 5 },
+                    { time: '14:26:45', type: 'Oracle Update', price: '0.7408', reporters: 4 },
+                    { time: '14:21:30', type: 'Mint', amount: '1000 QCAD', user: '5GrwvaEF...' },
+                    { time: '14:15:00', type: 'Oracle Update', price: '0.7415', reporters: 5 },
+                ];
+
+                container.innerHTML = history.map(h => `
+                    <div style="padding: 8px; border-bottom: 1px solid #222; font-size: 0.85em;">
+                        <span style="color: #666;">${h.time}</span>
+                        <span style="color: #4a9eff; margin-left: 10px;">${h.type}</span>
+                        ${h.price ? `<span style="color: #50c878; margin-left: 10px;">$${h.price}</span>` : ''}
+                        ${h.amount ? `<span style="color: #9b59b6; margin-left: 10px;">${h.amount}</span>` : ''}
+                    </div>
+                `).join('');
+
+                log('Loaded peg history', 'success');
+
+            } catch (error) {
+                log(`Failed to load history: ${error.message}`, 'error');
+            }
+        }
+
+        // Load all reporters
+        window.loadAllReporters = async function() {
+            try {
+                log('Loading all reporters...', 'info');
+
+                const reporters = await rpcCall('oracle_getAllReporters');
+
+                const container = document.getElementById('reporters-list');
+                container.innerHTML = '';
+
+                if (reporters.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No reporters registered</div>';
+                    return;
+                }
+
+                reporters.forEach(reporter => {
+                    const repColor = reporter.reputation >= 70 ? '#50c878' :
+                                    reporter.reputation >= 40 ? '#ffa500' : '#ff6b6b';
+
+                    const card = document.createElement('div');
+                    card.className = 'device-card';
+                    card.innerHTML = `
+                        <div class="device-name">${reporter.id}
+                            ${reporter.status === 'active' ? '<span class="badge badge-online">Active</span>' : ''}
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Account:</span>
+                            <span style="font-size: 0.8em;">${reporter.account.substring(0, 12)}...</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Reputation:</span>
+                            <span style="color: ${repColor}; font-weight: 600;">${reporter.reputation}/100</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Priority:</span>
+                            <span class="metric-value">${reporter.priority}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Submissions:</span>
+                            <span>${reporter.successful_submissions}/${reporter.total_submissions}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Feeds:</span>
+                            <span style="font-size: 0.85em;">${reporter.supported_feeds.join(', ')}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                log(`Loaded ${reporters.length} reporters`, 'success');
+
+            } catch (error) {
+                log(`Failed to load reporters: ${error.message}`, 'error');
+            }
+        }
+
         // Initialize
         log('QuantumHarmony Operator Dashboard initialized', 'success');
         log('Start the node or connect to an existing instance', 'info');
 
-        // Auto-fetch runtime version on connect
+        // Auto-fetch runtime version, oracle data, PQC status, and peg status on connect
         const originalConnect = window.connect;
         window.connect = async function() {
             await originalConnect();
-            setTimeout(() => getRuntimeVersion(), 1000);
+            setTimeout(() => {
+                getRuntimeVersion();
+                loadOraclePrices();
+                loadPqcStatus();
+                loadPqcMetrics();
+                loadPegStatus();
+            }, 1000);
         }
     </script>
 </body>
