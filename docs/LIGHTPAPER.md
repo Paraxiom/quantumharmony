@@ -1,6 +1,8 @@
 # QuantumHarmony Light Paper
 
-**Version 1.0 - December 2024**
+**Version 1.1 - January 2025**
+
+> **Changelog v1.1**: Corrected finality description. QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality. Added Proof of Coherence (PoC) documentation.
 
 ## Abstract
 
@@ -25,7 +27,7 @@ Current blockchains rely on cryptographic primitives that quantum computers can 
 |-----------|-------------------|----------------|
 | Signatures | Ed25519/ECDSA | SPHINCS+ (NIST PQC standard) |
 | Block Hashing | Blake2b | Keccak-256 (SHA-3) |
-| Finality Gadget | GRANDPA (BLS) | Removed (Aura-only consensus) |
+| Finality Gadget | GRANDPA (BLS) | Coherence Gadget (Falcon1024) |
 | Randomness | VRF | Quantum-enhanced VRF (QKD optional) |
 
 ## 2. Technical Implementation
@@ -54,21 +56,102 @@ Current blockchains rely on cryptographic primitives that quantum computers can 
 
 **Implementation**: Custom `QuantumHasher` in `runtime/src/quantum_hasher.rs` replaces Blake2 throughout the runtime.
 
-### 2.3 Consensus
+### 2.3 Consensus & Finality
 
-**Current model**: Aura (Authority Round) block production without GRANDPA finality.
+**Block Production**: Aura (Authority Round) - validators take turns producing blocks.
 
-**Finality**: Probabilistic finality through block depth (similar to Bitcoin). A block is considered final after sufficient confirmations.
+**Finality**: Deterministic BFT finality via the **Coherence Gadget** - a post-quantum replacement for GRANDPA.
 
-**Why no GRANDPA**: GRANDPA uses BLS aggregate signatures, which rely on elliptic curve pairings vulnerable to quantum attacks.
+**Why not GRANDPA**: GRANDPA uses BLS aggregate signatures, which rely on elliptic curve pairings vulnerable to quantum attacks.
 
-### 2.4 QKD Integration (Optional)
+#### Coherence Gadget
 
-**What it is**: Interface for Quantum Key Distribution hardware to provide true quantum randomness.
+The Coherence Gadget provides GRANDPA-equivalent deterministic finality using post-quantum cryptography:
 
-**Current state**: Pallet exists (`pallet-qkd-client`); hardware integration requires physical QKD devices.
+| GRANDPA | Coherence Gadget |
+|---------|------------------|
+| BLS signatures | Falcon1024 signatures |
+| Voter set | ValidatorSet with PQ keys |
+| Prevote/Precommit | STARK proof verification + coherence scoring |
+| 2/3 supermajority | 2/3 supermajority (same BFT guarantee) |
+| Finality proof | FinalityCertificate |
 
-**Use case**: When connected to QKD hardware (e.g., Nokia QKD systems), provides entropy for validator selection that is theoretically unpredictable.
+**Protocol flow**:
+1. Wait for new block from Aura
+2. Collect STARK proofs from reporters (quantum entropy measurements)
+3. Verify proofs, calculate coherence score based on QBER
+4. Sign vote with Falcon1024
+5. Broadcast vote to validators (encrypted with Triple Ratchet)
+6. Collect votes, check for 2/3+ supermajority
+7. Generate finality certificate
+8. Block is **final** (irreversible)
+
+### 2.4 Proof of Coherence (PoC)
+
+**With QKD/QRNG hardware**:
+- Real quantum entropy from devices (Toshiba QKD, Crypto4A QRNG, IdQuantique)
+- STARK proofs verified with Winterfell
+- QBER (Quantum Bit Error Rate) measurements for coherence scoring
+- Information-theoretic security from quantum physics
+
+**Without quantum hardware (fallback)**:
+- Mock entropy sources
+- BFT consensus still runs with 2/3 supermajority
+- Falcon1024 signatures provide post-quantum security
+- Deterministic finality still guaranteed
+
+**Key insight**: Quantum hardware is an optimization, not a requirement. The BFT layer always provides deterministic finality. QKD/QRNG adds additional security guarantees when available.
+
+### 2.5 MEV Protection
+
+QuantumHarmony implements native Maximal Extractable Value (MEV) protection through a leader-based mempool validation mechanism.
+
+#### The MEV Problem
+
+In traditional blockchains, validators can:
+- Reorder transactions for profit (frontrunning)
+- Insert their own transactions (sandwich attacks)
+- Censor specific transactions
+
+#### QuantumHarmony's Solution
+
+The elected leader maintains a qVRF-ordered priority queue that serves as the canonical transaction ordering:
+
+1. **Leader Election**: `substrate-validator-set` elects a leader using quantum-seeded randomness
+2. **Queue Comparison**: Leader compares their priority queue against the public mempool
+3. **Discrepancy Detection**: Any transaction in wrong position or that shouldn't exist is flagged
+4. **Deletion**: Discrepant transactions are removed from the mempool
+
+```rust
+// Leader validates mempool integrity
+for tx in mempool {
+    if tx.position != priority_queue.position(tx) {
+        mempool.delete(tx);  // Discrepancy detected
+    }
+}
+```
+
+#### Reporter Random Numbers
+
+Every report submitted to the network must include a randomly generated number:
+
+```
+tx_hash = Hash(payload || random_nonce)
+```
+
+This ensures:
+- **Unique transaction hashes**: No two reports can have the same hash
+- **Replay protection**: Cannot resubmit old reports
+- **Ordering integrity**: Position in queue is deterministic based on qVRF
+
+#### Security Guarantees
+
+| Attack | Mitigation |
+|--------|------------|
+| Frontrunning | qVRF ordering is unpredictable |
+| Sandwich attacks | Discrepancy detection removes injected txs |
+| Transaction censorship | Multiple leaders, rotation |
+| Replay attacks | Random nonce in each report |
 
 ## 3. Governance System
 
@@ -162,8 +245,8 @@ QuantumHarmony includes standard Substrate governance pallets:
 - A replacement for proper security audits
 
 ### Known Trade-offs
-1. **Larger signatures**: SPHINCS+ signatures are 8-50KB vs 64 bytes for Ed25519
-2. **No instant finality**: Without GRANDPA, finality is probabilistic
+1. **Larger signatures**: SPHINCS+ signatures are 8-50KB vs 64 bytes for Ed25519; Falcon1024 ~1.3KB
+2. **Finality vote size**: Coherence Gadget uses Falcon1024 (~1.3KB per vote vs BLS aggregation)
 3. **Compatibility**: Not compatible with standard Substrate tooling that expects Ed25519/Sr25519
 
 ### Open Questions
@@ -175,11 +258,12 @@ QuantumHarmony includes standard Substrate governance pallets:
 
 | Feature | QuantumHarmony | Standard Substrate | QRL |
 |---------|----------------|-------------------|-----|
-| Signature Scheme | SPHINCS+ | Ed25519/Sr25519 | XMSS |
+| Signature Scheme | SPHINCS+ / Falcon1024 | Ed25519/Sr25519 | XMSS |
 | Hash Function | Keccak-256 | Blake2b | SHA-256 |
-| Finality | Probabilistic | GRANDPA (instant) | PoW |
+| Finality | Deterministic (Coherence Gadget) | GRANDPA (BFT) | PoW |
 | Stateless Signatures | Yes | N/A | No (stateful) |
 | Substrate-based | Yes | Yes | No |
+| Quantum Hardware Support | Yes (Toshiba QKD, QRNG) | No | No |
 
 ## 8. References
 

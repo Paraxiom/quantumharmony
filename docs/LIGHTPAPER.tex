@@ -1,0 +1,275 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{setspace}
+\usepackage{titlesec}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\setstretch{1.15}
+
+\title{\textbf{QuantumHarmony Light Paper}\\
+\vspace{0.3em}
+\large Version 1.2 — January 2025}
+
+\author{QuantumVerse Protocols}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{quote}
+\textbf{Changelog v1.2}: Added MEV protection documentation. Corrected finality description—QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality.
+\end{quote}
+
+\section*{Abstract}
+
+QuantumHarmony is a Layer 1 blockchain built on Substrate that replaces quantum-vulnerable cryptographic components with post-quantum alternatives. This document describes what the system does, how it works, and its current state.
+
+\section{Problem Statement}
+
+\subsection{Quantum Computing Threat}
+
+Current blockchains rely on cryptographic primitives that quantum computers can break:
+
+\begin{center}
+\begin{longtable}{@{}lll@{}}
+\toprule
+\textbf{Primitive} & \textbf{Algorithm} & \textbf{Quantum Attack} \\
+\midrule
+Signatures & ECDSA, Ed25519 & Shor's Algorithm \\
+Finality & BLS (GRANDPA) & Shor's Algorithm \\
+Hashing & Blake2b & Grover's Algorithm \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\noindent
+\textbf{Fact}: NIST estimates cryptographically relevant quantum computers could exist within 10–15 years. Blockchain addresses and signed transactions recorded today become vulnerable once such computers exist.
+
+\subsection{What QuantumHarmony Changes}
+
+\begin{center}
+\begin{longtable}{@{}lll@{}}
+\toprule
+\textbf{Component} & \textbf{Standard Substrate} & \textbf{QuantumHarmony} \\
+\midrule
+Signatures & Ed25519 / ECDSA & SPHINCS+ (NIST PQC) \\
+Block Hashing & Blake2b & Keccak-256 (SHA-3) \\
+Finality Gadget & GRANDPA (BLS) & Coherence Gadget (Falcon1024) \\
+Randomness & VRF & Quantum-enhanced VRF (optional QKD) \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Technical Implementation}
+
+\subsection{SPHINCS+ Signatures}
+
+SPHINCS+ is a stateless hash-based signature scheme standardized by NIST in 2024. Its security relies solely on hash function properties, not discrete logarithms or elliptic curves.
+
+\textbf{Trade-offs}:
+\begin{itemize}
+  \item Signature size: approximately 8–50 KB
+  \item Slower signing compared to Ed25519
+  \item Verification time comparable to classical schemes
+\end{itemize}
+
+Implementation is provided via \texttt{pallet-sphincs-keystore}.
+
+\subsection{Keccak-256 Hashing}
+
+Keccak-256 (SHA-3) replaces Blake2 throughout the runtime.
+
+\begin{itemize}
+  \item 256-bit output provides 128-bit post-Grover security
+  \item 1600-bit sponge state
+  \item Standardized and widely audited
+\end{itemize}
+
+\subsection{Consensus and Finality}
+
+\textbf{Block production}: Aura (Authority Round).
+
+\textbf{Finality}: Deterministic BFT finality via the \textbf{Coherence Gadget}, a post-quantum replacement for GRANDPA.
+
+\subsection{Coherence Gadget}
+
+The Coherence Gadget provides GRANDPA-equivalent deterministic finality:
+
+\begin{center}
+\begin{longtable}{@{}ll@{}}
+\toprule
+\textbf{GRANDPA} & \textbf{Coherence Gadget} \\
+\midrule
+BLS signatures & Falcon1024 signatures \\
+Prevote / Precommit & STARK verification + coherence scoring \\
+2/3 supermajority & 2/3 supermajority \\
+Finality proof & Finality Certificate \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\textbf{Protocol flow}:
+\begin{enumerate}
+  \item New block produced by Aura
+  \item Proof collection (entropy / coherence inputs)
+  \item Proof verification and scoring
+  \item Falcon1024 signing
+  \item Vote broadcast (encrypted)
+  \item Supermajority aggregation
+  \item Finality certificate generation
+\end{enumerate}
+
+\subsection{Proof of Coherence (PoC)}
+
+\textbf{With quantum hardware}:
+\begin{itemize}
+  \item QRNG / QKD entropy sources (Toshiba, Crypto4A, IdQuantique)
+  \item STARK proofs verified with Winterfell
+  \item QBER-based coherence scoring (threshold: 11\%)
+\end{itemize}
+
+\textbf{Without hardware (fallback)}:
+\begin{itemize}
+  \item Mock entropy sources
+  \item Full BFT execution preserved
+  \item Falcon1024 signatures
+  \item Deterministic finality still guaranteed
+\end{itemize}
+
+Quantum hardware improves security guarantees but is not required for correctness or finality.
+
+\subsection{MEV Protection}
+
+QuantumHarmony provides native Maximal Extractable Value (MEV) protection at the protocol level.
+
+\textbf{The problem}: In traditional blockchains, validators can reorder transactions (frontrunning), insert their own transactions (sandwich attacks), or censor specific transactions.
+
+\textbf{Solution}:
+\begin{enumerate}
+  \item Leader elected via quantum-seeded VRF (unpredictable)
+  \item Leader maintains qVRF-ordered priority queue
+  \item Leader compares priority queue against public mempool
+  \item Discrepant transactions are deleted
+\end{enumerate}
+
+\textbf{Reporter requirements}: Every report must include a randomly generated nonce:
+\[
+\texttt{tx\_hash} = \texttt{Hash}(\texttt{payload} \| \texttt{random\_nonce})
+\]
+
+This ensures unique transaction hashes, prevents replay attacks, and enforces deterministic ordering.
+
+\begin{center}
+\begin{longtable}{@{}ll@{}}
+\toprule
+\textbf{Attack} & \textbf{Mitigation} \\
+\midrule
+Frontrunning & qVRF ordering is unpredictable \\
+Sandwich attacks & Discrepancy detection removes injected txs \\
+Transaction censorship & Leader rotation \\
+Replay attacks & Random nonce per report \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Governance System}
+
+QuantumHarmony includes standard Substrate governance pallets:
+\begin{itemize}
+  \item Democracy
+  \item Collective
+  \item Treasury
+  \item Scheduler
+\end{itemize}
+
+\subsection{Academic Vouching}
+
+Allows verified academics to vouch for applicants using on-chain voting and thresholds.
+
+\subsection{Ricardian Contracts}
+
+Human-readable legal contracts stored on-chain with lifecycle management and signatures.
+
+\subsection{Notarial Services}
+
+Document timestamping and attestation with revocation support.
+
+\section{Current State}
+
+\textbf{Testnet}: Operational (3 validators) \\
+\textbf{Block time}: 6 seconds \\
+\textbf{Consensus}: Aura + Coherence Gadget
+
+\textbf{What works}:
+\begin{itemize}
+  \item Block production with Aura + SPHINCS+
+  \item Deterministic BFT finality via Coherence Gadget
+  \item All governance and legal pallets
+  \item STARK proof verification path
+  \item Docker deployment
+\end{itemize}
+
+\textbf{In progress}:
+\begin{itemize}
+  \item Production QKD hardware integration
+  \item Multi-region validator expansion
+\end{itemize}
+
+\textbf{Not done}:
+\begin{itemize}
+  \item Security audit
+  \item Mainnet launch
+\end{itemize}
+
+\section{Limitations}
+
+\begin{itemize}
+  \item Large post-quantum signatures (~29 KB for SPHINCS+, ~1.3 KB for Falcon1024)
+  \item No BLS-style signature aggregation
+  \item Non-standard Substrate tooling compatibility
+\end{itemize}
+
+\section{Comparison}
+
+\begin{center}
+\begin{longtable}{@{}llll@{}}
+\toprule
+ & \textbf{QuantumHarmony} & \textbf{Substrate} & \textbf{QRL} \\
+\midrule
+Signatures & SPHINCS+ / Falcon & Ed25519 / BLS & XMSS \\
+Finality & Deterministic BFT & GRANDPA (BFT) & PoW \\
+MEV Protection & Native (qVRF) & No & No \\
+Quantum HW & Optional & No & No \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{References}
+
+\begin{enumerate}
+  \item NIST Post-Quantum Cryptography Standardization (2024)
+  \item NIST FIPS 205: SPHINCS+
+  \item NIST FIPS 206: Falcon
+  \item Substrate Developer Documentation
+  \item Grover, L. ``A Fast Quantum Mechanical Algorithm for Database Search'' (1996)
+  \item Shor, P. ``Algorithms for Quantum Computation'' (1994)
+\end{enumerate}
+
+\section*{Contact}
+
+\textbf{Project}: QuantumHarmony (QuantumVerse Protocols) \\
+\textbf{Technical Lead}: Sylvain Cormier \\
+\textbf{Repository}: \url{https://github.com/QuantumVerseProtocols/quantumharmony}
+
+\vfill
+\noindent
+\textit{This document describes the system as implemented. No forward-looking claims are made.}
+
+\end{document}

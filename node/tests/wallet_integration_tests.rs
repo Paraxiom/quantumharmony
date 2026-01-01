@@ -71,6 +71,7 @@ async fn is_live_chain(client: &HttpClient) -> bool {
 }
 
 #[tokio::test]
+#[ignore = "requires running node with gateway RPC"]
 async fn test_transaction_gateway_balance() {
     let client = wait_for_node().await;
 
@@ -144,6 +145,7 @@ async fn test_transaction_gateway_genesis_hash() {
 }
 
 #[tokio::test]
+#[ignore = "requires running node with SPHINCS+ keypairs"]
 async fn test_transaction_submission() {
     let client = wait_for_node().await;
 
@@ -193,6 +195,7 @@ async fn test_transaction_submission() {
 }
 
 #[tokio::test]
+#[ignore = "requires running node with SPHINCS+ keypairs"]
 async fn test_balance_transfer_end_to_end() {
     let client = wait_for_node().await;
 
@@ -307,6 +310,7 @@ async fn test_account_creation() {
 }
 
 #[tokio::test]
+#[ignore = "requires running node with SPHINCS+ keypairs"]
 async fn test_multiple_transactions_nonce_increment() {
     let client = wait_for_node().await;
 

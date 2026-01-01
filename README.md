@@ -93,7 +93,16 @@ cargo build --release
 ```
 
 ### Run a Node
+
+> **Security Warning:** The flags below are for local testing only. For production deployments, see `docs/SECURITY_HARDENING.md`. Never expose `--rpc-external --rpc-cors=all` on public networks without a hardened reverse proxy.
+
 ```bash
+# Local development (default: RPC binds to 127.0.0.1 only)
+./target/release/quantumharmony-node \
+    --chain=production \
+    --name="MyNode"
+
+# Testnet with external RPC (NOT for production validators)
 ./target/release/quantumharmony-node \
     --chain=production \
     --name="MyNode" \

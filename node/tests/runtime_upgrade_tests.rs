@@ -164,6 +164,7 @@ async fn test_block_production_continues() {
 }
 
 #[tokio::test]
+#[ignore = "requires running node with SPHINCS+ keypairs configured"]
 async fn test_storage_query_before_and_after_transaction() {
     let client = wait_for_node().await;
 

@@ -11,7 +11,7 @@
 use crate::{self as pallet_fideicommis, *};
 use frame_support::{
     assert_noop, assert_ok,
-    traits::{ConstU16, ConstU32, ConstU64, ConstU128},
+    traits::{ConstU16, ConstU32, ConstU64, ConstU128, Hooks},
     parameter_types,
 };
 use sp_core::H256;
@@ -114,6 +114,7 @@ fn new_test_ext() -> sp_io::TestExternalities {
             (CHARLIE, 10_000),
             (DAVE, 10_000),
         ],
+        dev_accounts: None,
     }
     .assimilate_storage(&mut t)
     .unwrap();
@@ -338,10 +339,10 @@ fn test_greve_cannot_claim_after_trigger() {
         // Advance past trigger block
         run_to_block(51);
 
-        // Grevé tries to claim
+        // Grevé tries to claim - trust status changes after trigger, so InvalidStatus is returned
         assert_noop!(
             Fideicommis::claim_as_greve(RuntimeOrigin::signed(BOB), 0, 500),
-            Error::<Test>::ClaimPeriodInvalid
+            Error::<Test>::InvalidStatus
         );
     });
 }
