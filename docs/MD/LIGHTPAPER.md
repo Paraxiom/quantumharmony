@@ -2,6 +2,10 @@
 
 **Version 1.5 - January 2025**
 
+**DOI**: [Pending Zenodo Publication]
+
+**Repository**: https://github.com/Paraxiom/quantumharmony
+
 > **Changelog v1.5**: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
 >
 > **v1.4**: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
