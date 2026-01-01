@@ -62,6 +62,208 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        /* ===========================================
+           TOAST NOTIFICATIONS
+           =========================================== */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--lcars-blue);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 450px;
+            animation: slideIn 0.3s ease-out;
+            pointer-events: auto;
+        }
+
+        .toast.success { border-left-color: var(--accent-success); }
+        .toast.error { border-left-color: var(--accent-danger); }
+        .toast.warning { border-left-color: var(--accent-warning); }
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .toast.success .toast-icon { background: var(--accent-success); }
+        .toast.error .toast-icon { background: var(--accent-danger); }
+        .toast.warning .toast-icon { background: var(--accent-warning); }
+        .toast.info .toast-icon { background: var(--lcars-blue); }
+
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; font-size: 14px; }
+        .toast-message { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .toast-close:hover { color: var(--text-primary); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .toast.hiding { animation: slideOut 0.3s ease-in forwards; }
+
+        /* ===========================================
+           LOADING STATES
+           =========================================== */
+        .btn.loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            border: 2px solid var(--text-on-color);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ===========================================
+           OFFLINE BANNER
+           =========================================== */
+        .offline-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--accent-danger);
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-weight: 600;
+            z-index: 10001;
+            display: none;
+        }
+
+        .offline-banner.visible { display: block; }
+
+        body.offline .lcars-frame { margin-top: 36px; }
+
+        /* ===========================================
+           FORM VALIDATION
+           =========================================== */
+        .form-input.invalid {
+            border-color: var(--accent-danger) !important;
+            box-shadow: 0 0 0 2px rgba(239, 83, 80, 0.2);
+        }
+
+        .form-input.valid {
+            border-color: var(--accent-success) !important;
+        }
+
+        .form-error {
+            color: var(--accent-danger);
+            font-size: 11px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-input.invalid + .form-error { display: block; }
+
+        /* ===========================================
+           RESPONSIVE IMPROVEMENTS
+           =========================================== */
+        @media (max-width: 768px) {
+            .lcars-frame {
+                grid-template-columns: 1fr;
+            }
+
+            .lcars-sidebar {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 200px;
+                z-index: 1000;
+                border-radius: 0;
+            }
+
+            .lcars-sidebar.open { display: flex; }
+
+            .header-cap { width: 60px; }
+            .header-cap img { height: 32px; }
+
+            .mobile-menu-btn {
+                display: flex !important;
+                background: var(--lcars-gold-dark);
+                border: none;
+                color: var(--text-on-color);
+                padding: 8px 12px;
+                margin-right: 8px;
+                border-radius: var(--radius-sm);
+                cursor: pointer;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+
+            .toast { min-width: 280px; max-width: calc(100vw - 40px); }
+        }
+
+        .mobile-menu-btn { display: none; }
+
         body {
             background: var(--bg-void);
             color: var(--text-primary);
@@ -642,6 +844,14 @@
     <script src="js/governance-manager.js"></script>
 </head>
 <body>
+    <!-- Offline Banner -->
+    <div class="offline-banner" id="offlineBanner">
+        Connection lost. Attempting to reconnect...
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="lcars-frame">
         <!-- Header -->
         <div class="lcars-header">
@@ -693,6 +903,7 @@
             <button class="nav-btn" onclick="showPanel('keys')">KEYS</button>
             <button class="nav-btn" onclick="showPanel('quantum')">QUANTUM</button>
             <button class="nav-btn" onclick="showPanel('network')">NETWORK</button>
+            <button class="nav-btn" onclick="showPanel('reporter')">REPORTER</button>
             <div class="nav-spacer"></div>
             <button class="nav-btn" onclick="showPanel('settings')">SETTINGS</button>
         </div>
@@ -1280,6 +1491,165 @@
                     </div>
                 </div>
 
+                <!-- REPORTER PANEL -->
+                <div id="panel-reporter" class="panel">
+                    <h2 class="panel-title">Price Oracle Reporter</h2>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Reporter Status</div>
+                            <div class="stat-value" id="reporterStatus" style="color: var(--text-muted);">Not Registered</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Reputation</div>
+                            <div class="stat-value blue" id="reporterReputation">--</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Submissions</div>
+                            <div class="stat-value green" id="reporterSubmissions">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-value gold" id="reporterSuccessRate">--%</div>
+                        </div>
+                    </div>
+
+                    <!-- Register as Reporter -->
+                    <div class="section-title">
+                        <span>Register as Reporter</span>
+                    </div>
+                    <div class="info-box" id="registerReporterBox">
+                        <div class="form-group">
+                            <label class="form-label">Reporter ID</label>
+                            <input type="text" class="form-input" id="reporterId" placeholder="e.g., paraxiom-oracle-1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Address</label>
+                            <input type="text" class="form-input" id="reporterAccount" placeholder="5xxxxx... (SS58 address)">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Supported Feeds</label>
+                            <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2);">
+                                <label style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
+                                    <input type="checkbox" id="feedQmhyCad" checked> QMHY/CAD
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
+                                    <input type="checkbox" id="feedCadUsd" checked> CAD/USD
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
+                                    <input type="checkbox" id="feedQmhyUsd"> QMHY/USD
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="registerAsReporter()">REGISTER</button>
+                    </div>
+
+                    <!-- Submit Price -->
+                    <div class="section-title" style="margin-top: var(--space-4);">
+                        <span>Submit Price</span>
+                    </div>
+                    <div class="info-box">
+                        <div class="form-group">
+                            <label class="form-label">Price Feed</label>
+                            <select class="form-input" id="submitFeed">
+                                <option value="QMHY_CAD">QMHY/CAD</option>
+                                <option value="CAD_USD">CAD/USD</option>
+                                <option value="QMHY_USD">QMHY/USD</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Price</label>
+                            <input type="text" class="form-input" id="submitPrice" placeholder="e.g., 1.0001">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Source</label>
+                            <input type="text" class="form-input" id="submitSource" placeholder="e.g., binance, manual">
+                        </div>
+                        <button class="btn btn-success" onclick="submitPrice()">SUBMIT PRICE</button>
+                    </div>
+
+                    <!-- Configure External Adapters -->
+                    <div class="section-title" style="margin-top: var(--space-4);">
+                        <span>External Price Adapters</span>
+                        <button class="btn btn-secondary btn-sm" onclick="addAdapter()">+ ADD</button>
+                    </div>
+                    <div class="info-box" id="adaptersContainer">
+                        <div class="info-row" style="border-bottom: 1px solid var(--bg-surface); padding-bottom: var(--space-2); margin-bottom: var(--space-2);">
+                            <span class="info-label" style="font-weight: 600;">Adapter</span>
+                            <span class="info-value" style="display: flex; gap: var(--space-3);">
+                                <span style="width: 80px;">Status</span>
+                                <span style="width: 100px;">Last Price</span>
+                                <span>Actions</span>
+                            </span>
+                        </div>
+                        <div class="info-row" id="adapterBinance">
+                            <span class="info-label">Binance API</span>
+                            <span class="info-value" style="display: flex; gap: var(--space-3); align-items: center;">
+                                <span style="width: 80px; color: var(--text-muted);">Disabled</span>
+                                <span style="width: 100px;">--</span>
+                                <button class="btn btn-secondary btn-sm" onclick="configureAdapter('binance')">Configure</button>
+                            </span>
+                        </div>
+                        <div class="info-row" id="adapterKraken">
+                            <span class="info-label">Kraken API</span>
+                            <span class="info-value" style="display: flex; gap: var(--space-3); align-items: center;">
+                                <span style="width: 80px; color: var(--text-muted);">Disabled</span>
+                                <span style="width: 100px;">--</span>
+                                <button class="btn btn-secondary btn-sm" onclick="configureAdapter('kraken')">Configure</button>
+                            </span>
+                        </div>
+                        <div class="info-row" id="adapterChainlink">
+                            <span class="info-label">Chainlink (Bridge)</span>
+                            <span class="info-value" style="display: flex; gap: var(--space-3); align-items: center;">
+                                <span style="width: 80px; color: var(--text-muted);">Disabled</span>
+                                <span style="width: 100px;">--</span>
+                                <button class="btn btn-secondary btn-sm" onclick="configureAdapter('chainlink')">Configure</button>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Current Prices -->
+                    <div class="section-title" style="margin-top: var(--space-4);">
+                        <span>Current Oracle Prices</span>
+                        <button class="btn btn-secondary btn-sm" onclick="refreshOraclePrices()">REFRESH</button>
+                    </div>
+                    <div class="info-box" id="oraclePricesContainer">
+                        <div class="info-row">
+                            <span class="info-label">QMHY/CAD</span>
+                            <span class="info-value" id="priceQmhyCad">Loading...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">CAD/USD</span>
+                            <span class="info-value" id="priceCadUsd">Loading...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">QMHY/USD</span>
+                            <span class="info-value" id="priceQmhyUsd">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- All Reporters -->
+                    <div class="section-title" style="margin-top: var(--space-4);">
+                        <span>Active Reporters</span>
+                        <button class="btn btn-secondary btn-sm" onclick="refreshReporters()">REFRESH</button>
+                    </div>
+                    <div class="info-box" id="reportersListContainer" style="max-height: 250px; overflow-y: auto;">
+                        <div class="info-row" style="border-bottom: 1px solid var(--bg-surface); padding-bottom: var(--space-2); margin-bottom: var(--space-2);">
+                            <span class="info-label" style="font-weight: 600; width: 150px;">Reporter</span>
+                            <span class="info-value" style="display: flex; gap: var(--space-3);">
+                                <span style="width: 80px;">Status</span>
+                                <span style="width: 60px;">Rep.</span>
+                                <span style="width: 80px;">Submissions</span>
+                            </span>
+                        </div>
+                        <div id="reportersList">
+                            <div class="info-row">
+                                <span class="info-label" style="color: var(--text-muted);">Loading reporters...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- SETTINGS PANEL -->
                 <div id="panel-settings" class="panel">
                     <h2 class="panel-title">Settings</h2>
@@ -1351,6 +1721,146 @@
         let selectedWasm = null;
         let sudoAccount = null;
         let agentModeEnabled = localStorage.getItem('agentMode') === 'true';
+
+        // ===========================================
+        // TOAST NOTIFICATION SYSTEM
+        // ===========================================
+        function showToast(type, title, message = '', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || 'ℹ'}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    ${message ? `<div class="toast-message">${message}</div>` : ''}
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto-remove after duration
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+
+            return toast;
+        }
+
+        // ===========================================
+        // LOADING STATE UTILITIES
+        // ===========================================
+        function setButtonLoading(btn, loading) {
+            if (loading) {
+                btn.classList.add('loading');
+                btn.dataset.originalText = btn.textContent;
+            } else {
+                btn.classList.remove('loading');
+                if (btn.dataset.originalText) {
+                    btn.textContent = btn.dataset.originalText;
+                }
+            }
+        }
+
+        async function withLoading(btn, asyncFn) {
+            const button = typeof btn === 'string' ? document.querySelector(btn) : btn;
+            if (button) setButtonLoading(button, true);
+            try {
+                return await asyncFn();
+            } finally {
+                if (button) setButtonLoading(button, false);
+            }
+        }
+
+        // ===========================================
+        // OFFLINE DETECTION
+        // ===========================================
+        let isOnline = navigator.onLine;
+        let reconnectAttempts = 0;
+
+        function updateOnlineStatus() {
+            const banner = document.getElementById('offlineBanner');
+            if (navigator.onLine) {
+                banner.classList.remove('visible');
+                document.body.classList.remove('offline');
+                if (!isOnline) {
+                    showToast('success', 'Connection restored', 'You are back online');
+                    reconnectAttempts = 0;
+                    // Refresh data
+                    fetchNodeInfo();
+                }
+                isOnline = true;
+            } else {
+                banner.classList.add('visible');
+                document.body.classList.add('offline');
+                if (isOnline) {
+                    showToast('error', 'Connection lost', 'Check your network connection');
+                }
+                isOnline = false;
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // ===========================================
+        // FORM VALIDATION UTILITIES
+        // ===========================================
+        function validateInput(input, validator, errorMsg) {
+            const isValid = validator(input.value);
+            input.classList.toggle('invalid', !isValid);
+            input.classList.toggle('valid', isValid && input.value.length > 0);
+
+            // Find or create error element
+            let errorEl = input.nextElementSibling;
+            if (!errorEl || !errorEl.classList.contains('form-error')) {
+                errorEl = document.createElement('div');
+                errorEl.className = 'form-error';
+                input.parentNode.insertBefore(errorEl, input.nextSibling);
+            }
+            errorEl.textContent = errorMsg;
+
+            return isValid;
+        }
+
+        function validateSS58Address(address) {
+            return /^5[a-zA-Z0-9]{47}$/.test(address);
+        }
+
+        function validatePrice(price) {
+            return !isNaN(parseFloat(price)) && parseFloat(price) > 0;
+        }
+
+        function validateNotEmpty(value) {
+            return value.trim().length > 0;
+        }
+
+        // ===========================================
+        // ENHANCED RPC CALL WITH RETRY
+        // ===========================================
+        async function rpcCallWithRetry(method, params = [], maxRetries = 2) {
+            let lastError;
+            for (let i = 0; i <= maxRetries; i++) {
+                try {
+                    return await rpcCall(method, params);
+                } catch (e) {
+                    lastError = e;
+                    if (i < maxRetries) {
+                        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                    }
+                }
+            }
+            throw lastError;
+        }
 
         // ===========================================
         // USER MENU & AVATAR FUNCTIONS
@@ -3567,6 +4077,221 @@
                 refreshQcadData();
             }
         }, 60000);
+
+        // ===========================================
+        // REPORTER FUNCTIONS
+        // ===========================================
+
+        let currentReporterId = localStorage.getItem('reporterId') || null;
+
+        async function registerAsReporter() {
+            const reporterIdInput = document.getElementById('reporterId');
+            const accountInput = document.getElementById('reporterAccount');
+            const reporterId = reporterIdInput.value.trim();
+            const account = accountInput.value.trim();
+
+            // Validate inputs
+            let valid = true;
+            if (!validateInput(reporterIdInput, validateNotEmpty, 'Reporter ID is required')) valid = false;
+            if (!validateInput(accountInput, validateSS58Address, 'Valid SS58 address required (starts with 5)')) valid = false;
+
+            if (!valid) {
+                showToast('error', 'Validation Error', 'Please fix the errors above');
+                return;
+            }
+
+            const feeds = [];
+            if (document.getElementById('feedQmhyCad').checked) feeds.push('QMHY_CAD');
+            if (document.getElementById('feedCadUsd').checked) feeds.push('CAD_USD');
+            if (document.getElementById('feedQmhyUsd').checked) feeds.push('QMHY_USD');
+
+            if (feeds.length === 0) {
+                showToast('warning', 'No Feeds Selected', 'Select at least one price feed');
+                return;
+            }
+
+            const btn = event.target;
+            await withLoading(btn, async () => {
+                try {
+                    log(`Registering as reporter: ${reporterId}...`, 'info');
+
+                    const result = await rpcCallWithRetry('oracle_registerReporter', [reporterId, account, feeds]);
+
+                    if (result) {
+                        currentReporterId = reporterId;
+                        localStorage.setItem('reporterId', reporterId);
+                        showToast('success', 'Registration Successful', `Registered as ${reporterId}`);
+                        log(`Successfully registered as reporter: ${reporterId}`, 'success');
+                        await refreshReporterStatus();
+                    } else {
+                        showToast('error', 'Registration Failed', 'Server returned false');
+                    }
+                } catch (e) {
+                    showToast('error', 'Registration Error', e.message);
+                    log(`Registration error: ${e.message}`, 'error');
+                }
+            });
+        }
+
+        async function submitPrice() {
+            if (!currentReporterId) {
+                showToast('warning', 'Not Registered', 'Register as a reporter first');
+                return;
+            }
+
+            const feed = document.getElementById('submitFeed').value;
+            const priceInput = document.getElementById('submitPrice');
+            const price = priceInput.value.trim();
+            const source = document.getElementById('submitSource').value.trim() || 'manual';
+
+            if (!validateInput(priceInput, validatePrice, 'Enter a valid positive number')) {
+                showToast('error', 'Invalid Price', 'Please enter a valid price');
+                return;
+            }
+
+            const btn = event.target;
+            await withLoading(btn, async () => {
+                try {
+                    log(`Submitting price ${price} for ${feed}...`, 'info');
+
+                    const request = {
+                        reporter_id: currentReporterId,
+                        feed: feed,
+                        price: price,
+                        source: source,
+                        signature: ''
+                    };
+
+                    const result = await rpcCallWithRetry('oracle_submitPrice', [request]);
+
+                    if (result) {
+                        showToast('success', 'Price Submitted', `${price} for ${feed}`);
+                        log(`Price submitted: ${price} for ${feed}`, 'success');
+                        priceInput.value = '';
+                        priceInput.classList.remove('valid');
+                        await refreshOraclePrices();
+                        await refreshReporterStatus();
+                    } else {
+                        showToast('error', 'Submission Failed', 'Server rejected the price');
+                    }
+                } catch (e) {
+                    showToast('error', 'Submission Error', e.message);
+                    log(`Submission error: ${e.message}`, 'error');
+                }
+            });
+        }
+
+        async function refreshReporterStatus() {
+            if (!currentReporterId) {
+                document.getElementById('reporterStatus').textContent = 'Not Registered';
+                document.getElementById('reporterStatus').style.color = 'var(--text-muted)';
+                document.getElementById('reporterReputation').textContent = '--';
+                document.getElementById('reporterSubmissions').textContent = '0';
+                document.getElementById('reporterSuccessRate').textContent = '--%';
+                return;
+            }
+
+            try {
+                const info = await rpcCall('oracle_getReporter', [currentReporterId]);
+
+                if (info) {
+                    document.getElementById('reporterStatus').textContent = info.status || 'Active';
+                    document.getElementById('reporterStatus').style.color =
+                        info.status === 'Active' ? 'var(--accent-success)' : 'var(--accent-warning)';
+                    document.getElementById('reporterReputation').textContent = `${info.reputation || 0}%`;
+                    document.getElementById('reporterSubmissions').textContent = info.total_submissions || 0;
+
+                    const rate = info.total_submissions > 0
+                        ? ((info.successful_submissions / info.total_submissions) * 100).toFixed(1)
+                        : 0;
+                    document.getElementById('reporterSuccessRate').textContent = `${rate}%`;
+                }
+            } catch (e) {
+                console.error('Error fetching reporter status:', e);
+            }
+        }
+
+        async function refreshOraclePrices() {
+            try {
+                const prices = await rpcCall('oracle_getAllPrices', []);
+
+                if (prices) {
+                    document.getElementById('priceQmhyCad').textContent =
+                        prices.QMHY_CAD?.price_formatted || 'No data';
+                    document.getElementById('priceCadUsd').textContent =
+                        prices.CAD_USD?.price_formatted || 'No data';
+                    document.getElementById('priceQmhyUsd').textContent =
+                        prices.QMHY_USD?.price_formatted || 'No data';
+                }
+            } catch (e) {
+                console.error('Error fetching oracle prices:', e);
+                document.getElementById('priceQmhyCad').textContent = 'Error';
+                document.getElementById('priceCadUsd').textContent = 'Error';
+                document.getElementById('priceQmhyUsd').textContent = 'Error';
+            }
+        }
+
+        async function refreshReporters() {
+            try {
+                const reporters = await rpcCall('oracle_getAllReporters', []);
+                const container = document.getElementById('reportersList');
+
+                if (!reporters || reporters.length === 0) {
+                    container.innerHTML = `
+                        <div class="info-row">
+                            <span class="info-label" style="color: var(--text-muted);">No reporters registered</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = reporters.map(r => `
+                    <div class="info-row">
+                        <span class="info-label" style="width: 150px;">${r.id}</span>
+                        <span class="info-value" style="display: flex; gap: var(--space-3);">
+                            <span style="width: 80px; color: ${r.status === 'Active' ? 'var(--accent-success)' : 'var(--text-muted)'};">
+                                ${r.status || 'Active'}
+                            </span>
+                            <span style="width: 60px;">${r.reputation}%</span>
+                            <span style="width: 80px;">${r.total_submissions}</span>
+                        </span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error fetching reporters:', e);
+            }
+        }
+
+        function configureAdapter(adapter) {
+            // Placeholder for adapter configuration modal
+            log(`Configuring ${adapter} adapter... (not yet implemented)`, 'info');
+            alert(`Configure ${adapter.toUpperCase()} adapter:\n\nThis feature will allow you to:\n- Enter API credentials\n- Set update interval\n- Configure price feeds\n\nComing in next release!`);
+        }
+
+        function addAdapter() {
+            // Placeholder for adding custom adapter
+            log('Adding custom adapter... (not yet implemented)', 'info');
+            alert('Add Custom Adapter:\n\nSupported types:\n- REST API (JSON)\n- WebSocket feed\n- Chainlink bridge\n- Custom script\n\nComing in next release!');
+        }
+
+        // Auto-refresh reporter panel every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('panel-reporter')?.classList.contains('active')) {
+                refreshReporterStatus();
+                refreshOraclePrices();
+            }
+        }, 30000);
+
+        // Initialize reporter panel when shown
+        const originalShowPanel = showPanel;
+        showPanel = function(name) {
+            originalShowPanel(name);
+            if (name === 'reporter') {
+                refreshReporterStatus();
+                refreshOraclePrices();
+                refreshReporters();
+            }
+        };
 
         document.addEventListener('DOMContentLoaded', init);
     </script>
