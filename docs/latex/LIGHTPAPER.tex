@@ -15,7 +15,7 @@
 
 \title{\textbf{QuantumHarmony Light Paper}\\
 \vspace{0.3em}
-\large Version 1.3 — January 2025}
+\large Version 1.4 — January 2025}
 
 \author{QuantumVerse Protocols}
 \date{}
@@ -24,7 +24,9 @@
 \maketitle
 
 \begin{quote}
-\textbf{Changelog v1.3}: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
+\textbf{Changelog v1.4}: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
+
+\textbf{v1.3}: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
 
 \textbf{v1.2}: Added MEV protection documentation. Corrected finality description—QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality.
 \end{quote}
@@ -120,6 +122,28 @@ Runtime execution is parallelized across an 8×8×8 toroidal mesh (512 segments)
 
 Implementation: \texttt{pallet-runtime-segmentation}
 
+\subsection{Quantum-Secured P2P Networking}
+
+Validator-to-validator communication uses a fully post-quantum secured P2P layer:
+
+\textbf{Identity \& Key Exchange}:
+\begin{itemize}
+  \item \textbf{Falcon-1024}: Node identity and message signing (NIST PQC)
+  \item \textbf{ML-KEM-1024} (Kyber): Key encapsulation for session establishment (NIST PQC)
+  \item \textbf{AES-256-GCM}: Authenticated encryption for message confidentiality
+\end{itemize}
+
+\textbf{Protocol flow}:
+\begin{enumerate}
+  \item Node generates Falcon-1024 signing keypair + ML-KEM-1024 KEM keypair
+  \item Session initiation: ML-KEM encapsulation creates shared secret
+  \item Shared secret derives AES-256 session key
+  \item All messages signed with Falcon-1024, encrypted with AES-256-GCM
+  \item Automatic key rotation (default: 1 hour)
+\end{enumerate}
+
+\textbf{QKD Hardware Integration}: When QKD hardware is available, session keys can be derived from QKD-generated entropy instead of ML-KEM. Supported vendors (stubs ready): Toshiba, ID Quantique, QuantumCTek, SK Telecom, NTT. Interface follows ETSI GS QKD 014.
+
 \subsection{Consensus and Finality}
 
 \textbf{Block production}: Aura (Authority Round).
@@ -156,22 +180,33 @@ Finality proof & Finality Certificate \\
 
 \subsection{Proof of Coherence (PoC)}
 
+PoC is the consensus mechanism that combines quantum entropy with BFT finality.
+
 \textbf{With quantum hardware}:
 \begin{itemize}
   \item QRNG / QKD entropy sources (Toshiba, Crypto4A, IdQuantique)
   \item STARK proofs verified with Winterfell
   \item QBER-based coherence scoring (threshold: 11\%)
+  \item QKD-derived session keys for validator P2P
 \end{itemize}
 
 \textbf{Without hardware (fallback)}:
 \begin{itemize}
-  \item Mock entropy sources
+  \item Mock entropy sources for testing
+  \item ML-KEM-1024 session keys for validator P2P
   \item Full BFT execution preserved
-  \item Falcon1024 signatures
+  \item Falcon1024 signatures provide post-quantum security
   \item Deterministic finality still guaranteed
 \end{itemize}
 
-Quantum hardware improves security guarantees but is not required for correctness or finality.
+\textbf{Integration with P2P Layer}:
+\begin{itemize}
+  \item Coherence votes broadcast via quantum-secured P2P channels
+  \item Vote encryption uses QKD-derived keys when available, ML-KEM otherwise
+  \item Triple Ratchet provides forward secrecy for vote messages
+\end{itemize}
+
+Quantum hardware improves entropy quality but is not required for correctness or finality.
 
 \subsection{MEV Protection}
 
