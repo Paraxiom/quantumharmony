@@ -1,8 +1,10 @@
 # QuantumHarmony Light Paper
 
-**Version 1.1 - January 2025**
+**Version 1.2 - January 2025**
 
-> **Changelog v1.1**: Corrected finality description. QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality. Added Proof of Coherence (PoC) documentation.
+> **Changelog v1.2**: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh.
+>
+> **v1.1**: Corrected finality description. QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality. Added Proof of Coherence (PoC) documentation.
 
 ## Abstract
 
@@ -56,7 +58,31 @@ Current blockchains rely on cryptographic primitives that quantum computers can 
 
 **Implementation**: Custom `QuantumHasher` in `runtime/src/quantum_hasher.rs` replaces Blake2 throughout the runtime.
 
-### 2.3 Consensus & Finality
+### 2.3 Triple Ratchet Encryption
+
+Validator-to-validator communication uses a **Triple Ratchet** protocol combining three key rotation mechanisms:
+
+1. **Falcon Ratchet**: Long-term post-quantum signatures (slow rotation)
+2. **Merkle Ratchet**: Hierarchical key derivation (periodic rotation)
+3. **Symmetric Ratchet**: Ephemeral session keys (per-message rotation)
+
+This provides forward secrecy: compromise of current keys does not reveal past messages.
+
+Implementation: `node/src/qpp.rs`
+
+### 2.4 512-Segment Toroidal Mesh
+
+Runtime execution is parallelized across an 8×8×8 toroidal mesh (512 segments):
+
+- Each segment handles a subset of accounts
+- Parallel transaction execution within segments
+- Cross-segment communication via 6 neighbors (3D torus)
+- Load balancing with automatic rebalancing
+- Maximum 3 hops between any two segments
+
+Implementation: `pallet-runtime-segmentation`
+
+### 2.5 Consensus & Finality
 
 **Block Production**: Aura (Authority Round) - validators take turns producing blocks.
 
@@ -86,7 +112,7 @@ The Coherence Gadget provides GRANDPA-equivalent deterministic finality using po
 7. Generate finality certificate
 8. Block is **final** (irreversible)
 
-### 2.4 Proof of Coherence (PoC)
+### 2.6 Proof of Coherence (PoC)
 
 **With QKD/QRNG hardware**:
 - Real quantum entropy from devices (Toshiba QKD, Crypto4A QRNG, IdQuantique)
@@ -102,7 +128,7 @@ The Coherence Gadget provides GRANDPA-equivalent deterministic finality using po
 
 **Key insight**: Quantum hardware is an optimization, not a requirement. The BFT layer always provides deterministic finality. QKD/QRNG adds additional security guarantees when available.
 
-### 2.5 MEV Protection
+### 2.7 MEV Protection
 
 QuantumHarmony implements native Maximal Extractable Value (MEV) protection through a leader-based mempool validation mechanism.
 
@@ -153,16 +179,41 @@ This ensures:
 | Transaction censorship | Multiple leaders, rotation |
 | Replay attacks | Random nonce in each report |
 
-## 3. Governance System
+## 3. Use Cases
 
-### 3.1 Standard Substrate Governance
+### 3.1 QCAD Stablecoin
+
+Canadian dollar stablecoin (`pallet-stablecoin`):
+- 1:1 CAD peg via oracle price feeds
+- Collateralized vaults (150% minimum ratio)
+- Liquidation engine for undercollateralized positions
+- Stability fees paid in native token
+
+### 3.2 Fideicommis Trusts
+
+Quebec Civil Code compatible trust administration (`pallet-fideicommis`):
+- Trust creation with grantor, trustee, beneficiaries
+- Asset registration (on-chain and off-chain references)
+- Distribution rules: time-locked, conditional, discretionary
+- Trustee succession with multi-sig handoff
+
+### 3.3 Pedersen Commitments
+
+Zero-knowledge proofs on BLS12-381 (`pallet-pedersen-commitment`):
+- Commit-reveal for MEV protection
+- Range proofs for private amounts
+- Binding + hiding properties
+
+## 4. Governance System
+
+### 4.1 Standard Substrate Governance
 QuantumHarmony includes standard Substrate governance pallets:
 - Democracy (referenda voting)
 - Collective (council/committee management)
 - Treasury (on-chain funds management)
 - Scheduler (timed governance actions)
 
-### 3.2 Academic Vouching (`pallet-academic-vouch`)
+### 4.2 Academic Vouching (`pallet-academic-vouch`)
 
 **Purpose**: Allow verified academics to vouch for applicants to specialized programs.
 
@@ -174,7 +225,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 
 **Use case**: Architecture Program applicant needs vouches from registered architects/academics.
 
-### 3.3 Ricardian Contracts (`pallet-ricardian-contracts`)
+### 4.3 Ricardian Contracts (`pallet-ricardian-contracts`)
 
 **What it is**: On-chain storage and management of human-readable legal contracts with machine-executable terms.
 
@@ -186,7 +237,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 
 **Contract types supported**: Academic Program, Partnership, Service Agreement, Employment, Licensing, Custom.
 
-### 3.4 Notarial Services (`pallet-notarial`)
+### 4.4 Notarial Services (`pallet-notarial`)
 
 **What it is**: Document timestamping and attestation system.
 
@@ -198,7 +249,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 
 **What it proves**: A document with a specific hash existed at a specific block/time.
 
-## 4. Current State
+## 5. Current State
 
 ### Network Status
 - **Testnet**: Operational with 3 validators
@@ -222,7 +273,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 - Full security audit
 - Hardware QKD production deployment
 
-## 5. Token Economics
+## 6. Token Economics
 
 **Token**: QHY
 **Decimals**: 18
@@ -232,7 +283,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 
 **Transaction fees**: Standard Substrate weight-based fees.
 
-## 6. Limitations and Honest Assessment
+## 7. Limitations and Honest Assessment
 
 ### What This Is
 - A post-quantum secure blockchain framework
@@ -254,7 +305,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 - Performance at scale with larger signatures
 - Bridge compatibility with other chains
 
-## 7. Comparison with Alternatives
+## 8. Comparison with Alternatives
 
 | Feature | QuantumHarmony | Standard Substrate | QRL |
 |---------|----------------|-------------------|-----|
@@ -265,7 +316,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 | Substrate-based | Yes | Yes | No |
 | Quantum Hardware Support | Yes (Toshiba QKD, QRNG) | No | No |
 
-## 8. References
+## 9. References
 
 1. NIST Post-Quantum Cryptography Standardization (2024)
 2. SPHINCS+ Specification (NIST FIPS 205)
@@ -273,7 +324,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 4. Grover's Algorithm - Quantum Search (1996)
 5. Shor's Algorithm - Quantum Factoring (1994)
 
-## 9. Contact
+## 10. Contact
 
 **Project**: QuantumHarmony by QuantumVerse Protocols
 **Technical Lead**: Sylvain Cormier (Paraxiom)
