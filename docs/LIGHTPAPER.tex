@@ -15,7 +15,7 @@
 
 \title{\textbf{QuantumHarmony Light Paper}\\
 \vspace{0.3em}
-\large Version 1.2 — January 2025}
+\large Version 1.3 — January 2025}
 
 \author{QuantumVerse Protocols}
 \date{}
@@ -24,7 +24,9 @@
 \maketitle
 
 \begin{quote}
-\textbf{Changelog v1.2}: Added MEV protection documentation. Corrected finality description—QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality.
+\textbf{Changelog v1.3}: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
+
+\textbf{v1.2}: Added MEV protection documentation. Corrected finality description—QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality.
 \end{quote}
 
 \section*{Abstract}
@@ -91,6 +93,32 @@ Keccak-256 (SHA-3) replaces Blake2 throughout the runtime.
   \item 1600-bit sponge state
   \item Standardized and widely audited
 \end{itemize}
+
+\subsection{Triple Ratchet Encryption}
+
+Validator-to-validator communication uses a \textbf{Triple Ratchet} protocol combining three key rotation mechanisms:
+
+\begin{enumerate}
+  \item \textbf{Falcon Ratchet}: Long-term post-quantum signatures (slow rotation)
+  \item \textbf{Merkle Ratchet}: Hierarchical key derivation (periodic rotation)
+  \item \textbf{Symmetric Ratchet}: Ephemeral session keys (per-message rotation)
+\end{enumerate}
+
+This provides forward secrecy: compromise of current keys does not reveal past messages.
+
+\subsection{512-Segment Toroidal Mesh}
+
+Runtime execution is parallelized across an 8×8×8 toroidal mesh (512 segments):
+
+\begin{itemize}
+  \item Each segment handles a subset of accounts
+  \item Parallel transaction execution within segments
+  \item Cross-segment communication via 6 neighbors (3D torus)
+  \item Load balancing with automatic rebalancing
+  \item Maximum 3 hops between any two segments
+\end{itemize}
+
+Implementation: \texttt{pallet-runtime-segmentation}
 
 \subsection{Consensus and Finality}
 
@@ -179,6 +207,37 @@ Replay attacks & Random nonce per report \\
 \end{longtable}
 \end{center}
 
+\section{Use Cases}
+
+\subsection{QCAD Stablecoin}
+
+Canadian dollar stablecoin (\texttt{pallet-stablecoin}):
+\begin{itemize}
+  \item 1:1 CAD peg via oracle price feeds
+  \item Collateralized vaults (150\% minimum ratio)
+  \item Liquidation engine for undercollateralized positions
+  \item Stability fees paid in native token
+\end{itemize}
+
+\subsection{Fideicommis Trusts}
+
+Quebec Civil Code compatible trust administration (\texttt{pallet-fideicommis}):
+\begin{itemize}
+  \item Trust creation with grantor, trustee, beneficiaries
+  \item Asset registration (on-chain and off-chain references)
+  \item Distribution rules: time-locked, conditional, discretionary
+  \item Trustee succession with multi-sig handoff
+\end{itemize}
+
+\subsection{Pedersen Commitments}
+
+Zero-knowledge proofs on BLS12-381 (\texttt{pallet-pedersen-commitment}):
+\begin{itemize}
+  \item Commit-reveal for MEV protection
+  \item Range proofs for private amounts
+  \item Binding + hiding properties
+\end{itemize}
+
 \section{Governance System}
 
 QuantumHarmony includes standard Substrate governance pallets:
@@ -191,15 +250,33 @@ QuantumHarmony includes standard Substrate governance pallets:
 
 \subsection{Academic Vouching}
 
-Allows verified academics to vouch for applicants using on-chain voting and thresholds.
+Credential verification system (\texttt{pallet-academic-vouch}):
+\begin{itemize}
+  \item Institution registration (universities, certification bodies)
+  \item Credential issuance with expiry
+  \item On-chain voting for academic registration
+  \item Vouch threshold for program acceptance
+\end{itemize}
 
 \subsection{Ricardian Contracts}
 
-Human-readable legal contracts stored on-chain with lifecycle management and signatures.
+Human + machine readable legal contracts (\texttt{pallet-ricardian-contracts}):
+\begin{itemize}
+  \item Dual format: legal prose + executable code
+  \item Multi-party signing workflow
+  \item Amendment tracking with version history
+  \item State transitions: Draft $\rightarrow$ Active $\rightarrow$ Executed/Terminated
+\end{itemize}
 
 \subsection{Notarial Services}
 
-Document timestamping and attestation with revocation support.
+Document attestation system (\texttt{pallet-notarial}):
+\begin{itemize}
+  \item Hash attestation with timestamp proof
+  \item Witness certification system
+  \item Certificate generation
+  \item Revocation with reason codes
+\end{itemize}
 
 \section{Current State}
 
