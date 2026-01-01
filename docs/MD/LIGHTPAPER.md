@@ -1,8 +1,10 @@
 # QuantumHarmony Light Paper
 
-**Version 1.3 - January 2025**
+**Version 1.4 - January 2025**
 
-> **Changelog v1.3**: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
+> **Changelog v1.4**: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
+>
+> **v1.3**: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
 >
 > **v1.2**: Added MEV protection documentation. Corrected finality description—QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality.
 
@@ -82,7 +84,37 @@ Runtime execution is parallelized across an 8×8×8 toroidal mesh (512 segments)
 
 Implementation: `pallet-runtime-segmentation`
 
-### 2.5 Consensus & Finality
+### 2.5 Quantum-Secured P2P Networking
+
+Validator-to-validator communication uses a fully post-quantum secured P2P layer (`node/src/quantum_p2p/`):
+
+**Identity & Key Exchange:**
+- **Falcon-1024**: Node identity and message signing (NIST PQC)
+- **ML-KEM-1024** (Kyber): Key encapsulation for session establishment (NIST PQC)
+- **AES-256-GCM**: Authenticated encryption for message confidentiality
+
+**Protocol Flow:**
+1. Node generates Falcon-1024 signing keypair + ML-KEM-1024 KEM keypair
+2. Session initiation: ML-KEM encapsulation creates shared secret
+3. Shared secret derives AES-256 session key
+4. All messages signed with Falcon-1024, encrypted with AES-256-GCM
+5. Automatic key rotation (default: 1 hour)
+
+**QKD Hardware Integration:**
+When QKD hardware is available, session keys can be derived from QKD-generated entropy instead of ML-KEM:
+
+| Vendor | Interface | Status |
+|--------|-----------|--------|
+| Toshiba QKD | ETSI GS QKD 014 | Stub ready |
+| ID Quantique (Cerberis) | ETSI GS QKD 014 | Stub ready |
+| QuantumCTek | Vendor API | Stub ready |
+| SK Telecom IDQ | ETSI GS QKD 014 | Stub ready |
+| NTT QKD | ETSI GS QKD 014 | Stub ready |
+
+**VRF Peer Selection:**
+Peer connections use verifiable random selection to prevent eclipse attacks.
+
+### 2.6 Consensus & Finality
 
 **Block Production**: Aura (Authority Round) - validators take turns producing blocks.
 
@@ -112,23 +144,32 @@ The Coherence Gadget provides GRANDPA-equivalent deterministic finality using po
 7. Generate finality certificate
 8. Block is **final** (irreversible)
 
-### 2.6 Proof of Coherence (PoC)
+### 2.7 Proof of Coherence (PoC)
+
+PoC is the consensus mechanism that combines quantum entropy with BFT finality.
 
 **With QKD/QRNG hardware**:
 - Real quantum entropy from devices (Toshiba QKD, Crypto4A QRNG, IdQuantique)
 - STARK proofs verified with Winterfell
-- QBER (Quantum Bit Error Rate) measurements for coherence scoring
+- QBER (Quantum Bit Error Rate) measurements for coherence scoring (threshold: 11%)
 - Information-theoretic security from quantum physics
+- QKD-derived session keys for validator P2P (via `quantum_p2p/qkd_interface.rs`)
 
 **Without quantum hardware (fallback)**:
-- Mock entropy sources
+- Mock entropy sources for testing
+- ML-KEM-1024 session keys for validator P2P
 - BFT consensus still runs with 2/3 supermajority
 - Falcon1024 signatures provide post-quantum security
 - Deterministic finality still guaranteed
 
-**Key insight**: Quantum hardware is an optimization, not a requirement. The BFT layer always provides deterministic finality. QKD/QRNG adds additional security guarantees when available.
+**Integration with P2P Layer:**
+- Coherence votes broadcast via quantum-secured P2P channels
+- Vote encryption uses QKD-derived keys when available, ML-KEM otherwise
+- Triple Ratchet provides forward secrecy for vote messages
 
-### 2.7 MEV Protection
+**Key insight**: Quantum hardware is an optimization, not a requirement. The BFT layer always provides deterministic finality. QKD/QRNG adds additional entropy quality guarantees when available.
+
+### 2.8 MEV Protection
 
 QuantumHarmony implements native Maximal Extractable Value (MEV) protection through a leader-based mempool validation mechanism.
 
