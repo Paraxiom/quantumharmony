@@ -86,8 +86,9 @@ impl IdentifyAccount for SphincsPublic {
     type AccountId = AccountId32;
 
     fn into_account(self) -> Self::AccountId {
-        // Hash the public key to create AccountId32
-        let hash = sp_core::hashing::blake2_256(&self.0);
+        // Hash the public key to create AccountId32 using Keccak-256 (SHA3)
+        // This matches QuantumHasher for PQC consistency
+        let hash = sp_core::hashing::keccak_256(&self.0);
         AccountId32::new(hash)
     }
 }
@@ -187,17 +188,20 @@ impl IdentifyAccount for MultiSigner {
         match self {
             MultiSigner::Ed25519(pubkey) => {
                 // In this fork, ed25519 is sphincs (64 bytes), hash to 32
-                let hash = sp_core::hashing::blake2_256(&pubkey.0);
+                // Using Keccak-256 (SHA3) for PQC consistency with QuantumHasher
+                let hash = sp_core::hashing::keccak_256(&pubkey.0);
                 AccountId32::new(hash)
             }
             MultiSigner::Sr25519(pubkey) => {
                 // In this fork, sr25519 is sphincs (64 bytes), hash to 32
-                let hash = sp_core::hashing::blake2_256(&pubkey.0);
+                // Using Keccak-256 (SHA3) for PQC consistency with QuantumHasher
+                let hash = sp_core::hashing::keccak_256(&pubkey.0);
                 AccountId32::new(hash)
             }
             MultiSigner::Ecdsa(pubkey) => {
+                // ECDSA uses Keccak-256 for Ethereum compatibility and PQC consistency
                 let compressed = pubkey.0;
-                let hash = sp_core::hashing::blake2_256(&compressed);
+                let hash = sp_core::hashing::keccak_256(&compressed);
                 AccountId32::new(hash)
             }
             MultiSigner::Sphincs(pubkey) => {
