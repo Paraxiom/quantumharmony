@@ -1,10 +1,10 @@
 # QuantumHarmony Light Paper
 
-**Version 1.2 - January 2025**
+**Version 1.3 - January 2025**
 
-> **Changelog v1.2**: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh.
+> **Changelog v1.3**: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
 >
-> **v1.1**: Corrected finality description. QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality. Added Proof of Coherence (PoC) documentation.
+> **v1.2**: Added MEV protection documentation. Corrected finality description—QuantumHarmony provides deterministic BFT finality via the Coherence Gadget, not probabilistic finality.
 
 ## Abstract
 
