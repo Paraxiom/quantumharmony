@@ -15,7 +15,7 @@
 
 \title{\textbf{QuantumHarmony Light Paper}\\
 \vspace{0.3em}
-\large Version 1.4 — January 2025}
+\large Version 1.5 — January 2025}
 
 \author{QuantumVerse Protocols}
 \date{}
@@ -24,7 +24,9 @@
 \maketitle
 
 \begin{quote}
-\textbf{Changelog v1.4}: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
+\textbf{Changelog v1.5}: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
+
+\textbf{v1.4}: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
 
 \textbf{v1.3}: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
 
@@ -363,13 +365,48 @@ Quantum HW & Optional & No & No \\
 \end{longtable}
 \end{center}
 
+\section{Web Interface}
+
+A web-based notarial interface is available for end users:
+
+\begin{itemize}
+  \item Document attestation with SPHINCS+ signatures
+  \item Contract creation and multi-party signing
+  \item QCAD stablecoin transactions
+  \item Fideicommis trust management
+  \item Account creation with local key storage
+\end{itemize}
+
+\textbf{Technical stack}: SHA-256 document hashing, SPHINCS+-256s post-quantum signatures, real-time blockchain connection.
+
+\section{Research Publications}
+
+Theoretical foundations published on Zenodo with DOIs:
+
+\begin{center}
+\begin{longtable}{@{}lll@{}}
+\toprule
+\textbf{Paper} & \textbf{Topic} & \textbf{DOI} \\
+\midrule
+ERLHS & Hamiltonian framework for coherence-preserving ML & 10.5281/zenodo.17928909 \\
+Karmonic Mesh & O(N log N) spectral consensus on toroidal manifolds & 10.5281/zenodo.17928991 \\
+Proof of Coherence & QKD-based distributed consensus & 10.5281/zenodo.17929054 \\
+Toroidal Mesh & 10K TPS with SPHINCS+ via parallel verification & 10.5281/zenodo.17931222 \\
+Toroidal Governance & Tonnetz manifold governance & 10.5281/zenodo.17929091 \\
+Augmented Democracy & Coherence-constrained democratic infrastructure & Preprint \\
+\bottomrule
+\end{longtable}
+\end{center}
+
 \section{References}
 
 \begin{enumerate}
   \item NIST Post-Quantum Cryptography Standardization (2024)
   \item NIST FIPS 205: SPHINCS+
   \item NIST FIPS 206: Falcon
+  \item NIST FIPS 203: ML-KEM
   \item Substrate Developer Documentation
+  \item ETSI GS QKD 014: QKD Key Delivery API
   \item Grover, L. ``A Fast Quantum Mechanical Algorithm for Database Search'' (1996)
   \item Shor, P. ``Algorithms for Quantum Computation'' (1994)
 \end{enumerate}

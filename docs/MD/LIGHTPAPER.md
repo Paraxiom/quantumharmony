@@ -1,8 +1,10 @@
 # QuantumHarmony Light Paper
 
-**Version 1.4 - January 2025**
+**Version 1.5 - January 2025**
 
-> **Changelog v1.4**: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
+> **Changelog v1.5**: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
+>
+> **v1.4**: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
 >
 > **v1.3**: Added Use Cases section (QCAD, Fideicommis, Pedersen). Expanded governance documentation. Added Triple Ratchet encryption and 512-segment toroidal mesh documentation.
 >
@@ -357,15 +359,47 @@ QuantumHarmony includes standard Substrate governance pallets:
 | Substrate-based | Yes | Yes | No |
 | Quantum Hardware Support | Yes (Toshiba QKD, QRNG) | No | No |
 
-## 9. References
+## 9. Web Interface
+
+A web-based notarial interface is available for end users:
+
+**Features:**
+- Document attestation with SPHINCS+ signatures
+- Contract creation and multi-party signing
+- QCAD stablecoin transactions
+- Fideicommis trust management
+- Account creation with local key storage
+
+**Technical Stack:**
+- SHA-256 document hashing
+- SPHINCS+-256s post-quantum signatures
+- Real-time blockchain connection
+
+## 10. Research Publications
+
+Theoretical foundations published on Zenodo with DOIs:
+
+| Paper | Topic | DOI |
+|-------|-------|-----|
+| ERLHS | Hamiltonian framework for coherence-preserving ML | 10.5281/zenodo.17928909 |
+| Karmonic Mesh | O(N log N) spectral consensus on toroidal manifolds | 10.5281/zenodo.17928991 |
+| Proof of Coherence | QKD-based distributed consensus mechanism | 10.5281/zenodo.17929054 |
+| Toroidal Mesh | 10K TPS with SPHINCS+ via parallel verification | 10.5281/zenodo.17931222 |
+| Toroidal Governance | Tonnetz manifold governance (defensive publication) | 10.5281/zenodo.17929091 |
+| Augmented Democracy | Coherence-constrained democratic infrastructure | Preprint |
+
+## 11. References
 
 1. NIST Post-Quantum Cryptography Standardization (2024)
 2. SPHINCS+ Specification (NIST FIPS 205)
-3. Substrate Developer Documentation
-4. Grover's Algorithm - Quantum Search (1996)
-5. Shor's Algorithm - Quantum Factoring (1994)
+3. Falcon Specification (NIST FIPS 206)
+4. ML-KEM Specification (NIST FIPS 203)
+5. Substrate Developer Documentation
+6. ETSI GS QKD 014 - QKD Key Delivery API
+7. Grover's Algorithm - Quantum Search (1996)
+8. Shor's Algorithm - Quantum Factoring (1994)
 
-## 10. Contact
+## 12. Contact
 
 **Project**: QuantumHarmony by QuantumVerse Protocols
 **Technical Lead**: Sylvain Cormier (Paraxiom)
