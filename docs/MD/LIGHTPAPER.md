@@ -1,12 +1,14 @@
 # QuantumHarmony Light Paper
 
-**Version 1.6 - January 2025**
+**Version 1.7 - January 2025**
 
 **DOI**: [Pending Zenodo Publication]
 
 **Repository**: https://github.com/Paraxiom/quantumharmony
 
-> **Changelog v1.6**: Added "Why Greenfield?" section citing Campbell (2025) on PQC migration governance impossibility.
+> **Changelog v1.7**: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
+>
+> **v1.6**: Added "Why Greenfield?" section citing Campbell (2025) on PQC migration governance impossibility.
 >
 > **v1.5**: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
 >
@@ -47,6 +49,18 @@ Current blockchains rely on cryptographic primitives that quantum computers can 
 No rational validator/miner coalition will vote for changes that halve their revenue with no offsetting benefit. The required migration timeline (10-15 years for full ecosystem transition) may exceed the quantum threat timeline itself.
 
 **QuantumHarmony's approach**: Build post-quantum from genesis. No migration governance, no backwards compatibility debt, no hybrid transition period.
+
+**What we avoid vs. what we address differently**:
+
+| Cost | Migration Approach | QuantumHarmony |
+|------|-------------------|----------------|
+| Hybrid signature overhead | Required during transition | None (PQC-only from genesis) |
+| Legacy state bloat | 59× for backwards compatibility | None |
+| Governance deadlock | Unsolvable | Not applicable |
+| Raw PQC signature size | ~29KB SPHINCS+ | Same (~29KB) |
+| **Mitigation** | None proposed | 512-segment toroidal parallelization |
+
+PQC signatures are inherently larger than classical signatures. Campbell's state bloat comes from maintaining *both* formats during migration. QuantumHarmony still has larger signatures, but compensates through parallel verification across the toroidal mesh (see Section 2.4), achieving 10K TPS with SPHINCS+ signatures.
 
 ### What QuantumHarmony Changes
 
