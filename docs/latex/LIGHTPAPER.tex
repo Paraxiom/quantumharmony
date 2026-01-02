@@ -15,7 +15,7 @@
 
 \title{\textbf{QuantumHarmony Light Paper}\\
 \vspace{0.3em}
-\large Version 1.7 — January 2025}
+\large Version 1.8 — January 2026}
 
 \author{Sylvain Cormier\\QuantumVerse Protocols\\Paraxiom Research}
 \date{}
@@ -24,7 +24,9 @@
 \maketitle
 
 \begin{quote}
-\textbf{Changelog v1.7}: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
+\textbf{Changelog v1.8}: Updated to Public Beta status. 600+ tests passing. 3 production validators live.
+
+\textbf{v1.7}: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
 
 \textbf{v1.6}: Added ``Why Greenfield?'' section citing Campbell (2025) on PQC migration governance impossibility.
 
@@ -360,29 +362,30 @@ Document attestation system (\texttt{pallet-notarial}):
 
 \section{Current State}
 
-\textbf{Testnet}: Operational (3 validators) \\
+\textbf{Phase}: Public Beta Testnet \\
+\textbf{Validators}: 3 production validators (Montreal, Beauharnois, Frankfurt) \\
 \textbf{Block time}: 6 seconds \\
-\textbf{Consensus}: Aura + Coherence Gadget
+\textbf{Consensus}: Proof of Coherence (PQ-BFT) \\
+\textbf{Test Coverage}: 600+ unit and integration tests passing
 
-\textbf{What works}:
+\textbf{What's implemented}:
 \begin{itemize}
-  \item Block production with Aura + SPHINCS+
-  \item Deterministic BFT finality via Coherence Gadget
-  \item All governance and legal pallets
-  \item STARK proof verification path
-  \item Docker deployment
+  \item SPHINCS+ signature verification across all pallets
+  \item Falcon-1024/ML-KEM-1024 quantum P2P networking
+  \item Coherence Gadget for deterministic BFT finality
+  \item All governance pallets (Democracy, Treasury, Collective)
+  \item Financial pallets (QCAD stablecoin, Fideicommis trusts)
+  \item Legal pallets (Ricardian contracts, Notarial attestation)
+  \item 512-segment toroidal mesh parallelization
+  \item Docker deployment for node operators
+  \item Forkless runtime upgrades
 \end{itemize}
 
-\textbf{In progress}:
+\textbf{Seeking}:
 \begin{itemize}
-  \item Production QKD hardware integration
-  \item Multi-region validator expansion
-\end{itemize}
-
-\textbf{Not done}:
-\begin{itemize}
-  \item Security audit
-  \item Mainnet launch
+  \item Security audit (pre-mainnet)
+  \item QKD hardware production testing
+  \item Additional validator operators
 \end{itemize}
 
 \section{Limitations}

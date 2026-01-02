@@ -6,7 +6,7 @@
 //! - Cross-segment communication
 //! - **Chunked runtime upgrades** for large WASM blobs exceeding BlockLength
 //!
-//! Ported from quantumharmony-core for Substrate integration.
+//! Designed for Substrate-based post-quantum blockchain infrastructure.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

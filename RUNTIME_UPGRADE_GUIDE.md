@@ -8,7 +8,6 @@ This guide explains how to perform quantum-safe runtime upgrades on QuantumHarmo
 
 1. **Updated Runtime WASM**: Build the new runtime
 ```bash
-cd /Users/sylvaincormier/QuantumVerseProtocols/quantumharmony
 cargo build --release -p quantumharmony-runtime
 ```
 
@@ -80,7 +79,6 @@ The Rust CLI tool at `tools/runtime-upgrade` can help you **prepare** and **veri
 ### Using the CLI Tool
 
 ```bash
-cd /Users/sylvaincormier/QuantumVerseProtocols/quantumharmony
 cargo build --release -p quantumharmony-runtime-upgrade
 
 ./target/release/runtime-upgrade \
