@@ -15,7 +15,7 @@
 
 \title{\textbf{QuantumHarmony Light Paper}\\
 \vspace{0.3em}
-\large Version 1.5 — January 2025\\
+\large Version 1.6 — January 2025\\
 \vspace{0.2em}
 \small DOI: Pending Zenodo Publication}
 
@@ -26,7 +26,9 @@
 \maketitle
 
 \begin{quote}
-\textbf{Changelog v1.5}: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
+\textbf{Changelog v1.6}: Added ``Why Greenfield?'' section citing Campbell (2025) on PQC migration governance impossibility.
+
+\textbf{v1.5}: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
 
 \textbf{v1.4}: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
 
@@ -59,6 +61,27 @@ Hashing & Blake2b & Grover's Algorithm \\
 
 \noindent
 \textbf{Fact}: NIST estimates cryptographically relevant quantum computers could exist within 10–15 years. Blockchain addresses and signed transactions recorded today become vulnerable once such computers exist.
+
+\subsection{Why Greenfield?}
+
+\textbf{Why not migrate existing chains?} Campbell (2025) demonstrates that post-quantum migration for Bitcoin and Ethereum faces what he terms ``governance impossibility'':
+
+\begin{center}
+\begin{longtable}{@{}llll@{}}
+\toprule
+\textbf{Impact} & \textbf{Bitcoin} & \textbf{Ethereum} \\
+\midrule
+Capacity loss & 50\% & 50\% \\
+Fee increase & 3$\times$ & 3$\times$ \\
+State bloat & 59$\times$ & 59$\times$ \\
+Immediate user benefit & Zero & Zero \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+No rational validator/miner coalition will vote for changes that halve their revenue with no offsetting benefit. The required migration timeline (10–15 years for full ecosystem transition) may exceed the quantum threat timeline itself.
+
+\textbf{QuantumHarmony's approach}: Build post-quantum from genesis. No migration governance, no backwards compatibility debt, no hybrid transition period.
 
 \subsection{What QuantumHarmony Changes}
 
@@ -411,6 +434,7 @@ Augmented Democracy & Coherence-constrained democratic infrastructure & Preprint
   \item ETSI GS QKD 014: QKD Key Delivery API
   \item Grover, L. ``A Fast Quantum Mechanical Algorithm for Database Search'' (1996)
   \item Shor, P. ``Algorithms for Quantum Computation'' (1994)
+  \item Campbell, R. ``Hybrid Post-Quantum Signatures for Bitcoin and Ethereum: A Protocol-Level Integration Strategy.'' JBBA 9(1), 2025. DOI: 10.31585/jbba-9-1-(2)2026
 \end{enumerate}
 
 \section*{Contact}

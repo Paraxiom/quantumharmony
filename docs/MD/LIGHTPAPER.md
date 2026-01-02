@@ -1,12 +1,14 @@
 # QuantumHarmony Light Paper
 
-**Version 1.5 - January 2025**
+**Version 1.6 - January 2025**
 
 **DOI**: [Pending Zenodo Publication]
 
 **Repository**: https://github.com/Paraxiom/quantumharmony
 
-> **Changelog v1.5**: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
+> **Changelog v1.6**: Added "Why Greenfield?" section citing Campbell (2025) on PQC migration governance impossibility.
+>
+> **v1.5**: Added Web Interface section. Added Research Publications with DOIs (6 papers on Zenodo). Expanded references.
 >
 > **v1.4**: Added Quantum P2P networking section (ML-KEM-1024, Falcon-1024, QKD hardware interface). Expanded Proof of Coherence with P2P integration details.
 >
@@ -30,6 +32,21 @@ Current blockchains rely on cryptographic primitives that quantum computers can 
 | Hashing | Blake2b | Grover's Algorithm | Quadratic speedup (still secure with 256-bit) |
 
 **Fact**: NIST estimates cryptographically relevant quantum computers could exist within 10-15 years. Blockchain addresses and signed transactions recorded today become vulnerable when such computers exist.
+
+### Why Greenfield?
+
+**Why not migrate existing chains?** Campbell (2025) demonstrates that post-quantum migration for Bitcoin and Ethereum faces what he terms "governance impossibility":
+
+| Impact | Bitcoin | Ethereum |
+|--------|---------|----------|
+| Capacity loss | 50% | 50% |
+| Fee increase | 3× | 3× |
+| State bloat | 59× | 59× |
+| Immediate user benefit | Zero | Zero |
+
+No rational validator/miner coalition will vote for changes that halve their revenue with no offsetting benefit. The required migration timeline (10-15 years for full ecosystem transition) may exceed the quantum threat timeline itself.
+
+**QuantumHarmony's approach**: Build post-quantum from genesis. No migration governance, no backwards compatibility debt, no hybrid transition period.
 
 ### What QuantumHarmony Changes
 
@@ -402,6 +419,7 @@ Theoretical foundations published on Zenodo with DOIs:
 6. ETSI GS QKD 014 - QKD Key Delivery API
 7. Grover's Algorithm - Quantum Search (1996)
 8. Shor's Algorithm - Quantum Factoring (1994)
+9. Campbell, R. "Hybrid Post-Quantum Signatures for Bitcoin and Ethereum: A Protocol-Level Integration Strategy." JBBA 9(1), 2025. DOI: 10.31585/jbba-9-1-(2)2026
 
 ## 12. Contact
 
