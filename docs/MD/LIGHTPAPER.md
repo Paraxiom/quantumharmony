@@ -2,8 +2,6 @@
 
 **Version 1.7 - January 2025**
 
-**DOI**: [Pending Zenodo Publication]
-
 **Repository**: https://github.com/Paraxiom/quantumharmony
 
 > **Changelog v1.7**: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
