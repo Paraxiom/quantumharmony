@@ -706,12 +706,12 @@ mod tests {
         let signature = engine.create_test_signature(&secret, &public, &message);
 
         let submission = PqcPriceSubmission {
-            reporter_pubkey: public,
+            reporter_pubkey: public.to_vec(),
             feed: 0,
             price: 740_000_000_000_000_000,
-            source: [0u8; 32],
+            source: [0u8; 32].to_vec(),
             timestamp: now,
-            entropy_commitment: engine.create_entropy_commitment(740_000_000_000_000_000, now).unwrap(),
+            entropy_commitment: engine.create_entropy_commitment(740_000_000_000_000_000, now).unwrap().to_vec(),
             signature,
         };
 
@@ -731,7 +731,7 @@ mod tests {
         let session_key = [0x55u8; 32];
 
         // Establish channel
-        engine.establish_qkd_channel(public, "test-qkd", session_key).unwrap();
+        engine.establish_qkd_channel(&public, "test-qkd", &session_key).unwrap();
 
         // Verify channel exists
         let valid = engine.verify_qkd_channel(&public).unwrap();
