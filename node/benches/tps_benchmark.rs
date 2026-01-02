@@ -4,7 +4,7 @@
 //! - Sequential processing (baseline)
 //! - Parallel processing with 2-512 segments
 //!
-//! Based on quantumharmony-core's toroidal mesh architecture
+//! Based on 8x8x8 toroidal mesh architecture for parallel processing
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use sp_core::{ed25519, Pair, H256};

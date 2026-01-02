@@ -1,10 +1,12 @@
 # QuantumHarmony Light Paper
 
-**Version 1.7 - January 2025**
+**Version 1.8 - January 2026**
 
 **Repository**: https://github.com/Paraxiom/quantumharmony
 
-> **Changelog v1.7**: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
+> **Changelog v1.8**: Updated to Public Beta status. 600+ tests passing. 3 production validators live.
+>
+> **v1.7**: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
 >
 > **v1.6**: Added "Why Greenfield?" section citing Campbell (2025) on PQC migration governance impossibility.
 >
@@ -328,26 +330,27 @@ QuantumHarmony includes standard Substrate governance pallets:
 ## 5. Current State
 
 ### Network Status
-- **Testnet**: Operational with 3 validators
+- **Phase**: Public Beta Testnet
+- **Validators**: 3 production validators (Montreal, Beauharnois, Frankfurt)
 - **Block time**: 6 seconds
-- **Consensus**: Aura (proof of authority)
+- **Consensus**: Proof of Coherence (PQ-BFT)
+- **Test Coverage**: 600+ unit and integration tests passing
 
-### What Works
-- Block production with Aura
-- SPHINCS+ signature verification in pallets
-- All governance pallets
-- Academic vouch, Ricardian contracts, Notarial pallets
-- Docker deployment
+### What's Implemented
+- SPHINCS+ signature verification across all pallets
+- Falcon-1024/ML-KEM-1024 quantum P2P networking
+- Coherence Gadget for deterministic BFT finality
+- All governance pallets (Democracy, Treasury, Collective)
+- Financial pallets (QCAD stablecoin, Fideicommis trusts)
+- Legal pallets (Ricardian contracts, Notarial attestation)
+- 512-segment toroidal mesh parallelization
+- Docker deployment for node operators
+- Forkless runtime upgrades
 
-### What's In Progress
-- WASM runtime upgrade mechanism
-- Full SPHINCS+ integration in transaction signing
-- QKD hardware integration testing
-
-### What's Not Done
-- Production mainnet launch
-- Full security audit
-- Hardware QKD production deployment
+### Seeking
+- Security audit (pre-mainnet)
+- QKD hardware production testing
+- Additional validator operators
 
 ## 6. Token Economics
 
@@ -436,9 +439,9 @@ Theoretical foundations published on Zenodo with DOIs:
 ## 12. Contact
 
 **Project**: QuantumHarmony by QuantumVerse Protocols
-**Technical Lead**: Sylvain Cormier (Paraxiom)
-**Repository**: https://github.com/QuantumVerseProtocols/quantumharmony
+**Repository**: https://github.com/Paraxiom/quantumharmony
+**Security**: security@quantumverseprotocols.com
 
 ---
 
-*This document describes the system as implemented. No forward-looking statements or projections are made.*
+*This document describes the system as implemented. Version 1.8, January 2026.*
