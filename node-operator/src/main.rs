@@ -29,10 +29,12 @@ mod node;
 mod keystore;
 mod auth;
 mod rpc;
+mod messaging;
 
 use node::NodeManager;
 use keystore::KeystoreManager;
 use auth::AuthManager;
+use messaging::MessagingManager;
 
 /// Command line arguments
 #[derive(Parser, Debug)]
@@ -94,6 +96,7 @@ struct AppState {
     node_manager: Arc<Mutex<NodeManager>>,
     keystore_manager: Arc<RwLock<KeystoreManager>>,
     auth_manager: Arc<AuthManager>,
+    messaging_manager: Arc<RwLock<MessagingManager>>,
     config: Arc<OperatorConfig>,
     log_broadcast: broadcast::Sender<String>,
 }
@@ -198,6 +201,49 @@ struct ConfigResponse {
 #[derive(Serialize)]
 struct LogsResponse {
     logs: Vec<String>,
+}
+
+// ============================================================================
+// Messaging Request/Response Types
+// ============================================================================
+
+#[derive(Deserialize)]
+struct SendMessageRequest {
+    peer_fingerprint: String,
+    content: String,
+    message_type: Option<String>,
+}
+
+#[derive(Serialize)]
+struct SendMessageResponse {
+    success: bool,
+    message_id: Option<String>,
+    error: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct AddPeerRequest {
+    prekey_bundle: String, // Base64 encoded PreKeyBundle
+}
+
+#[derive(Serialize)]
+struct MessagingStatusResponse {
+    initialized: bool,
+    identity: Option<messaging::IdentityInfo>,
+    peer_count: usize,
+    unread_count: usize,
+}
+
+#[derive(Deserialize)]
+struct InboxQuery {
+    unread_only: Option<bool>,
+}
+
+#[derive(Serialize)]
+struct InboxResponse {
+    messages: Vec<messaging::StoredMessage>,
+    total: usize,
+    unread: usize,
 }
 
 // ============================================================================
@@ -428,6 +474,301 @@ async fn keystore_operation(
     }
 }
 
+// ============================================================================
+// Messaging API Handlers
+// ============================================================================
+
+/// Get messaging status and identity
+async fn get_messaging_status(State(state): State<AppState>) -> impl IntoResponse {
+    let manager = state.messaging_manager.read().await;
+
+    let identity = manager.get_identity_info().ok();
+    let peer_count = manager.list_peers().len();
+    let unread_count = manager.unread_count();
+
+    Json(MessagingStatusResponse {
+        initialized: identity.is_some(),
+        identity,
+        peer_count,
+        unread_count,
+    })
+}
+
+/// Initialize messaging identity
+async fn init_messaging(State(state): State<AppState>) -> impl IntoResponse {
+    let mut manager = state.messaging_manager.write().await;
+
+    match manager.initialize().await {
+        Ok(info) => {
+            let _ = state.log_broadcast.send(format!(
+                "Messaging initialized: {}",
+                info.fingerprint
+            ));
+            (StatusCode::OK, Json(serde_json::json!({
+                "success": true,
+                "identity": info
+            })))
+        }
+        Err(e) => {
+            error!("Failed to initialize messaging: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                "success": false,
+                "error": e
+            })))
+        }
+    }
+}
+
+/// Get our prekey bundle (for sharing with peers)
+async fn get_prekey_bundle(State(state): State<AppState>) -> impl IntoResponse {
+    let manager = state.messaging_manager.read().await;
+
+    match manager.get_prekey_bundle() {
+        Ok(bundle) => {
+            // Serialize bundle to JSON for easy sharing
+            match serde_json::to_string(&bundle) {
+                Ok(json) => {
+                    let encoded = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, json);
+                    (StatusCode::OK, Json(serde_json::json!({
+                        "success": true,
+                        "bundle": encoded
+                    })))
+                }
+                Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                    "success": false,
+                    "error": format!("Failed to serialize bundle: {}", e)
+                })))
+            }
+        }
+        Err(e) => (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "success": false,
+            "error": e
+        })))
+    }
+}
+
+/// List known peers
+async fn list_peers(State(state): State<AppState>) -> impl IntoResponse {
+    let manager = state.messaging_manager.read().await;
+    let peers = manager.list_peers();
+
+    Json(serde_json::json!({
+        "peers": peers,
+        "count": peers.len()
+    }))
+}
+
+/// Add a peer by their prekey bundle
+async fn add_peer(
+    State(state): State<AppState>,
+    Json(req): Json<AddPeerRequest>,
+) -> impl IntoResponse {
+    // Decode base64 bundle
+    let bundle_json = match base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &req.prekey_bundle) {
+        Ok(bytes) => match String::from_utf8(bytes) {
+            Ok(s) => s,
+            Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+                "success": false,
+                "error": format!("Invalid bundle encoding: {}", e)
+            }))),
+        },
+        Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "success": false,
+            "error": format!("Invalid base64: {}", e)
+        }))),
+    };
+
+    // Parse PreKeyBundle
+    let bundle: pq_triple_ratchet::keys::PreKeyBundle = match serde_json::from_str(&bundle_json) {
+        Ok(b) => b,
+        Err(e) => return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "success": false,
+            "error": format!("Invalid bundle format: {}", e)
+        }))),
+    };
+
+    let mut manager = state.messaging_manager.write().await;
+
+    match manager.add_peer(bundle) {
+        Ok(peer_info) => {
+            let _ = state.log_broadcast.send(format!(
+                "Added peer: {}",
+                peer_info.fingerprint
+            ));
+            (StatusCode::OK, Json(serde_json::json!({
+                "success": true,
+                "peer": peer_info
+            })))
+        }
+        Err(e) => (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "success": false,
+            "error": e
+        }))),
+    }
+}
+
+/// Send a message to a peer
+async fn send_message(
+    State(state): State<AppState>,
+    Json(req): Json<SendMessageRequest>,
+) -> impl IntoResponse {
+    let message_type = match req.message_type.as_deref() {
+        Some("maintenance") => pq_triple_ratchet::message::MessageType::MaintenanceNotice,
+        Some("online") => pq_triple_ratchet::message::MessageType::OnlineNotice,
+        Some("alert") => pq_triple_ratchet::message::MessageType::Alert,
+        Some("ping") => pq_triple_ratchet::message::MessageType::Ping,
+        _ => pq_triple_ratchet::message::MessageType::Text,
+    };
+
+    let mut manager = state.messaging_manager.write().await;
+
+    match manager.send_message(&req.peer_fingerprint, &req.content, message_type).await {
+        Ok(stored) => {
+            let _ = state.log_broadcast.send(format!(
+                "Message sent to {}",
+                req.peer_fingerprint
+            ));
+            (StatusCode::OK, Json(SendMessageResponse {
+                success: true,
+                message_id: Some(stored.id),
+                error: None,
+            }))
+        }
+        Err(e) => {
+            error!("Failed to send message: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(SendMessageResponse {
+                success: false,
+                message_id: None,
+                error: Some(e),
+            }))
+        }
+    }
+}
+
+/// Get inbox messages
+async fn get_inbox(
+    State(state): State<AppState>,
+    axum::extract::Query(query): axum::extract::Query<InboxQuery>,
+) -> impl IntoResponse {
+    let manager = state.messaging_manager.read().await;
+    let unread_only = query.unread_only.unwrap_or(false);
+
+    let messages = manager.get_inbox(unread_only);
+    let total = manager.get_inbox(false).len();
+    let unread = manager.unread_count();
+
+    Json(InboxResponse {
+        messages,
+        total,
+        unread,
+    })
+}
+
+/// Get outbox messages
+async fn get_outbox(State(state): State<AppState>) -> impl IntoResponse {
+    let manager = state.messaging_manager.read().await;
+    let messages = manager.get_outbox();
+
+    Json(serde_json::json!({
+        "messages": messages,
+        "total": messages.len()
+    }))
+}
+
+/// Mark message as read
+async fn mark_message_read(
+    State(state): State<AppState>,
+    axum::extract::Path(message_id): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    let mut manager = state.messaging_manager.write().await;
+
+    if manager.mark_read(&message_id) {
+        Json(serde_json::json!({"success": true}))
+    } else {
+        Json(serde_json::json!({"success": false, "error": "Message not found"}))
+    }
+}
+
+/// Broadcast maintenance notice to all peers
+async fn broadcast_maintenance(
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let reason = body.get("reason")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Scheduled maintenance");
+
+    let mut manager = state.messaging_manager.write().await;
+
+    match manager.broadcast_maintenance(reason).await {
+        Ok(count) => {
+            let _ = state.log_broadcast.send(format!(
+                "Broadcast maintenance notice to {} peers",
+                count
+            ));
+            Json(serde_json::json!({
+                "success": true,
+                "notified": count
+            }))
+        }
+        Err(e) => Json(serde_json::json!({
+            "success": false,
+            "error": e
+        })),
+    }
+}
+
+/// WebSocket endpoint for real-time messages
+async fn ws_messages(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_ws_messages(socket, state))
+}
+
+async fn handle_ws_messages(mut socket: WebSocket, state: AppState) {
+    let manager = state.messaging_manager.read().await;
+    let mut rx = manager.subscribe();
+    drop(manager);
+
+    // Send initial status
+    let status = {
+        let manager = state.messaging_manager.read().await;
+        let unread = manager.unread_count();
+        format!("Connected to messaging. {} unread messages.", unread)
+    };
+    let _ = socket.send(Message::Text(status)).await;
+
+    // Stream incoming messages
+    loop {
+        tokio::select! {
+            msg = rx.recv() => {
+                match msg {
+                    Ok(incoming) => {
+                        let json = serde_json::json!({
+                            "type": "message",
+                            "from": incoming.from,
+                            "message_type": incoming.message_type,
+                            "content": incoming.content,
+                            "timestamp": incoming.timestamp
+                        });
+                        if socket.send(Message::Text(json.to_string())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+            msg = socket.recv() => {
+                match msg {
+                    Some(Ok(Message::Close(_))) | None => break,
+                    _ => {}
+                }
+            }
+        }
+    }
+}
+
 /// WebSocket endpoint for real-time logs
 async fn ws_logs(
     ws: WebSocketUpgrade,
@@ -528,10 +869,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let keystore_manager = Arc::new(RwLock::new(KeystoreManager::new(args.operator_keystore)));
     let auth_manager = Arc::new(AuthManager::new(args.allow_unauthenticated));
 
+    // Initialize messaging manager
+    let messaging_path = config.data_dir.clone().map(|p| p.join("messaging"));
+    let messaging_manager = Arc::new(RwLock::new(MessagingManager::new(messaging_path)));
+    info!("Post-quantum messaging subsystem ready");
+
     let state = AppState {
         node_manager,
         keystore_manager,
         auth_manager,
+        messaging_manager,
         config,
         log_broadcast: log_tx,
     };
@@ -558,6 +905,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/keystore", post(keystore_operation))
         // RPC proxy
         .route("/rpc", post(rpc_proxy))
+        // Messaging (Post-Quantum Encrypted)
+        .route("/messaging/status", get(get_messaging_status))
+        .route("/messaging/init", post(init_messaging))
+        .route("/messaging/bundle", get(get_prekey_bundle))
+        .route("/messaging/peers", get(list_peers))
+        .route("/messaging/peers", post(add_peer))
+        .route("/messaging/send", post(send_message))
+        .route("/messaging/inbox", get(get_inbox))
+        .route("/messaging/outbox", get(get_outbox))
+        .route("/messaging/read/:id", post(mark_message_read))
+        .route("/messaging/broadcast", post(broadcast_maintenance))
+        .route("/ws/messages", get(ws_messages))
         // Static files for dashboard
         .nest_service("/", tower_http::services::ServeDir::new(&args.dashboard_path))
         .layer(cors)
