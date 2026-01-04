@@ -5598,7 +5598,12 @@
                 }
 
                 chatArea.innerHTML = allMessages.map(msg => {
-                    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const msgDate = new Date(msg.timestamp);
+                    const today = new Date();
+                    const isToday = msgDate.toDateString() === today.toDateString();
+                    const time = isToday
+                        ? msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                        : msgDate.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + msgDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     const isOutgoing = msg.direction === 'out';
                     const senderName = CHAT_VALIDATORS[msg.from] || msg.source || (msg.from || '').substring(0, 6);
                     const recipientName = CHAT_VALIDATORS[msg.to] || (msg.to || '').substring(0, 6);
@@ -5613,7 +5618,7 @@
                         <div style="margin-bottom: 6px; padding: 6px; background: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor};">
                             <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
                                 <span style="color: ${labelColor}; font-weight: bold;">${label}</span>
-                                <span style="color: #666;">${time}</span>
+                                <span style="color: #ff9900; font-weight: 500;">${time}</span>
                             </div>
                             <div style="color: #eee; font-size: 11px;">${escapeHtml(msg.content)}</div>
                         </div>
