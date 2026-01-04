@@ -4,6 +4,9 @@ members = [
 	"runtime",
 	"node-operator",
 
+	# Validator messaging (PQ Triple Ratchet + ZK)
+	"crates/pq-triple-ratchet",
+
 	"pallets/substrate-validator-set",
 	"pallets/validator-governance",
 	"pallets/qkd-client",
