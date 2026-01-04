@@ -5564,22 +5564,8 @@
                     allMessages.push(...outboxMsgs);
                 }
 
-                // POLL REMOTE VALIDATORS for messages TO this node
-                for (const [name, url] of Object.entries(VALIDATOR_MESSAGING)) {
-                    try {
-                        const remoteResp = await fetch(url + '/messaging/outbox', { signal: AbortSignal.timeout(3000) });
-                        if (remoteResp.ok) {
-                            const remoteData = await remoteResp.json();
-                            // Filter messages addressed to us
-                            const toMe = (remoteData.messages || [])
-                                .filter(m => m.to === chatFingerprint || m.to?.startsWith(chatFingerprint?.substring(0,8)))
-                                .map(m => ({...m, direction: 'in', source: name, from: m.from || name}));
-                            allMessages.push(...toMe);
-                        }
-                    } catch (e) {
-                        // Remote validator offline, ignore
-                    }
-                }
+                // NOTE: Remote polling disabled - requires HTTPS on node-operators
+                // Messages will only show local inbox/outbox until P2P transport is implemented
 
                 const chatArea = document.getElementById('chatMessages');
                 const unreadBadge = document.getElementById('chatUnread');
@@ -5730,7 +5716,7 @@
             if (chatInitialized) {
                 refreshChatMessages();
             }
-        }, 5000);
+        }, 15000); // Reduced polling frequency
 
         // Try to initialize chat on page load
         setTimeout(initChatMessaging, 2000);

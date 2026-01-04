@@ -1,10 +1,12 @@
 # QuantumHarmony Light Paper
 
-**Version 1.8 - January 2026**
+**Version 1.9 - January 2026**
 
 **Repository**: https://github.com/Paraxiom/quantumharmony
 
-> **Changelog v1.8**: Updated to Public Beta status. 600+ tests passing. 3 production validators live.
+> **Changelog v1.9**: Added Section 8 "Sovereignty and System-Level Auditability" — policy framing for vendor-agnostic, auditable quantum infrastructure.
+>
+> **v1.8**: Updated to Public Beta status. 600+ tests passing. 3 production validators live.
 >
 > **v1.7**: Clarified PQC costs—we avoid migration overhead but still have raw PQC signature size, mitigated via toroidal parallelization.
 >
@@ -384,7 +386,53 @@ QuantumHarmony includes standard Substrate governance pallets:
 - Performance at scale with larger signatures
 - Bridge compatibility with other chains
 
-## 8. Comparison with Alternatives
+## 8. Sovereignty and System-Level Auditability
+
+### The Distinction Between Component and System Validation
+
+Quantum security primitives can be validated at two levels:
+
+| Level | What's Validated | What's Not |
+|-------|------------------|------------|
+| **Component** | Individual QRNG/QKD device output | Integration, dependency chains, system behavior |
+| **System** | End-to-end protocol, all code paths | Nothing hidden; full auditability |
+
+Component-level validation certifies that a device produces quality entropy. It does not certify how that entropy is integrated, transported, or consumed by downstream systems.
+
+### Why This Matters for Public Infrastructure
+
+Public funding for quantum security R&D—whether from federal, provincial, or innovation programs—carries an implicit expectation: that the resulting capabilities strengthen domestic infrastructure and remain inspectable by the funding jurisdiction.
+
+When a publicly funded quantum primitive is validated exclusively through foreign, closed, or non-auditable systems, several issues arise:
+
+1. **Dependency chains**: The validated component becomes dependent on external trust anchors
+2. **Inspection gaps**: Domestic regulators cannot verify system-level behavior
+3. **Sovereignty erosion**: Critical security primitives become policy liabilities
+
+This is not a criticism of international collaboration, which is normal and often necessary. It is a structural observation about where validation authority resides.
+
+### QuantumHarmony's Position
+
+QuantumHarmony is designed as **vendor-agnostic infrastructure**:
+
+| Property | Implementation |
+|----------|----------------|
+| Entropy abstraction | QRNG/QKD are optional inputs, not dependencies |
+| Hardware interfaces | ETSI GS QKD 014 standard; vendor stubs for Toshiba, ID Quantique, QuantumCTek, etc. |
+| Fallback mode | Full BFT consensus operates without quantum hardware |
+| Code visibility | 100% open source, all paths inspectable |
+
+**Key point**: QuantumHarmony does not compete with QRNG/QKD vendors. It provides the neutral substrate into which such components can be integrated—with full system-level auditability.
+
+### Policy Implication
+
+A question for funders, regulators, and procurement officials:
+
+> *How should publicly funded quantum security primitives be integrated into open, auditable, sovereignty-preserving infrastructure?*
+
+QuantumHarmony offers one answer: build the substrate first, validate at the system level, and let component vendors plug in without creating closed dependency chains.
+
+## 9. Comparison with Alternatives
 
 | Feature | QuantumHarmony | Standard Substrate | QRL |
 |---------|----------------|-------------------|-----|
@@ -395,7 +443,7 @@ QuantumHarmony includes standard Substrate governance pallets:
 | Substrate-based | Yes | Yes | No |
 | Quantum Hardware Support | Yes (Toshiba QKD, QRNG) | No | No |
 
-## 9. Web Interface
+## 10. Web Interface
 
 A web-based notarial interface is available for end users:
 
@@ -411,7 +459,7 @@ A web-based notarial interface is available for end users:
 - SPHINCS+-256s post-quantum signatures
 - Real-time blockchain connection
 
-## 10. Research Publications
+## 11. Research Publications
 
 Theoretical foundations published on Zenodo with DOIs:
 
@@ -424,7 +472,7 @@ Theoretical foundations published on Zenodo with DOIs:
 | Toroidal Governance | Tonnetz manifold governance (defensive publication) | 10.5281/zenodo.17929091 |
 | Augmented Democracy | Coherence-constrained democratic infrastructure | Preprint |
 
-## 11. References
+## 12. References
 
 1. NIST Post-Quantum Cryptography Standardization (2024)
 2. SPHINCS+ Specification (NIST FIPS 205)
@@ -436,7 +484,7 @@ Theoretical foundations published on Zenodo with DOIs:
 8. Shor's Algorithm - Quantum Factoring (1994)
 9. Campbell, R. "Hybrid Post-Quantum Signatures for Bitcoin and Ethereum: A Protocol-Level Integration Strategy." JBBA 9(1), 2025. DOI: 10.31585/jbba-9-1-(2)2026
 
-## 12. Contact
+## 13. Contact
 
 **Project**: QuantumHarmony by QuantumVerse Protocols
 **Repository**: https://github.com/Paraxiom/quantumharmony
@@ -444,4 +492,4 @@ Theoretical foundations published on Zenodo with DOIs:
 
 ---
 
-*This document describes the system as implemented. Version 1.8, January 2026.*
+*This document describes the system as implemented. Version 1.9, January 2026.*
