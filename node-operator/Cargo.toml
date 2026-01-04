@@ -33,10 +33,14 @@ sha2 = "0.10"
 dirs = "5.0"
 rand = "0.8"
 base64 = "0.21"
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
 
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Post-Quantum Encrypted Messaging
+pq-triple-ratchet = { path = "../crates/pq-triple-ratchet" }
 
 # Configuration
 clap = { version = "4.5", features = ["derive", "env"] }
