@@ -699,6 +699,7 @@
             <button class="nav-btn" onclick="showPanel('quantum')">QUANTUM</button>
             <button class="nav-btn" onclick="showPanel('network')">NETWORK</button>
             <button class="nav-btn" onclick="showPanel('reporter')">REPORTER</button>
+            <button class="nav-btn" onclick="showPanel('messages')">MESSAGES</button>
             <div class="nav-spacer"></div>
             <button class="nav-btn" onclick="showPanel('settings')">SETTINGS</button>
             <button class="nav-btn" onclick="showPanel('proofs')">PROOFS</button>
@@ -1743,6 +1744,102 @@
                     </div>
                 </div>
 
+                <!-- MESSAGES PANEL -->
+                <div id="panel-messages" class="panel">
+                    <h2 class="panel-title">Validator Messaging (Post-Quantum Encrypted)</h2>
+
+                    <!-- Identity Status -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">MY IDENTITY</div>
+                            <div class="stat-value blue" id="msgFingerprint" style="font-size: 12px;">Not initialized</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">PEERS</div>
+                            <div class="stat-value gold" id="msgPeerCount">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">UNREAD</div>
+                            <div class="stat-value green" id="msgUnreadCount">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">ENCRYPTION</div>
+                            <div class="stat-value" style="font-size: 10px; color: var(--accent-success);">ML-KEM-768 + X25519</div>
+                        </div>
+                    </div>
+
+                    <!-- Initialize Button -->
+                    <div class="control-bar">
+                        <button class="btn btn-success" onclick="initMessaging()" id="initMsgBtn">INITIALIZE</button>
+                        <button class="btn btn-primary" onclick="refreshMessages()">REFRESH</button>
+                        <button class="btn btn-secondary" onclick="showMyBundle()">SHOW MY BUNDLE</button>
+                    </div>
+
+                    <div class="grid-2">
+                        <!-- Left: Chat Area -->
+                        <div>
+                            <div class="section-title">Messages</div>
+                            <div id="msgChatArea" style="
+                                background: #0a0a0f;
+                                border: 1px solid var(--lcars-gold-dark);
+                                border-radius: var(--radius-md);
+                                padding: var(--space-3);
+                                height: 300px;
+                                overflow-y: auto;
+                                font-family: 'JetBrains Mono', monospace;
+                                font-size: 11px;
+                            ">
+                                <div style="color: var(--text-muted); text-align: center; padding: 20px;">
+                                    Initialize messaging to start secure communication with other validators.
+                                </div>
+                            </div>
+
+                            <!-- Send Message -->
+                            <div style="margin-top: var(--space-3);">
+                                <div class="form-group">
+                                    <label class="form-label">Recipient Fingerprint</label>
+                                    <input type="text" class="form-input" id="msgRecipient" placeholder="e.g. 6bafb1037350eebd" style="font-family: 'JetBrains Mono', monospace;">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Message</label>
+                                    <textarea class="form-input" id="msgContent" rows="2" placeholder="Type your message..."></textarea>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-success" onclick="sendMessage()">SEND</button>
+                                    <select id="msgType" class="form-input" style="width: auto;">
+                                        <option value="text">Text</option>
+                                        <option value="maintenance">Maintenance Notice</option>
+                                        <option value="alert">Alert</option>
+                                        <option value="online">Online Notice</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Peers & Bundle -->
+                        <div>
+                            <div class="section-title">Known Peers</div>
+                            <div id="msgPeerList" class="info-box" style="max-height: 150px; overflow-y: auto;">
+                                <div style="color: var(--text-muted); font-size: 11px;">No peers added yet</div>
+                            </div>
+
+                            <div class="section-title" style="margin-top: var(--space-3);">Add Peer</div>
+                            <div class="form-group">
+                                <label class="form-label">Peer's Prekey Bundle (Base64)</label>
+                                <textarea class="form-input" id="msgPeerBundle" rows="3" placeholder="Paste peer's bundle here..." style="font-size: 10px;"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="addPeer()">ADD PEER</button>
+
+                            <!-- My Bundle Display -->
+                            <div id="msgMyBundle" style="display: none; margin-top: var(--space-3);">
+                                <div class="section-title">My Prekey Bundle (share with peers)</div>
+                                <textarea class="form-input" id="msgBundleText" rows="3" readonly style="font-size: 9px;"></textarea>
+                                <button class="btn btn-secondary" onclick="copyBundle()" style="margin-top: 8px;">COPY</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -1753,6 +1850,107 @@
                 <span class="footer-text" id="footerStatus">Disconnected</span>
             </div>
             <div class="footer-end"></div>
+        </div>
+    </div>
+
+    <!-- PERSISTENT CHAT BAR - Full width at bottom -->
+    <div id="chatBar" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(180deg, #1a1a2e 0%, #0d0d15 100%);
+        border-top: 3px solid #ff9900;
+        z-index: 9999;
+        font-family: 'JetBrains Mono', monospace;
+    ">
+        <!-- Expandable Messages Area -->
+        <div id="chatMessages" style="
+            height: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 0;
+            background: #08080c;
+            transition: height 0.3s ease, padding 0.3s ease;
+        "></div>
+
+        <!-- Chat Input Bar - Always visible -->
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 15px; background: #12121a;">
+            <!-- Toggle/Status -->
+            <div onclick="toggleChat()" style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <span style="color: #ff9900; font-weight: bold; font-size: 11px;">CHAT</span>
+                <span id="chatUnread" style="background: #ff4444; color: white; font-size: 9px; padding: 1px 5px; border-radius: 8px; display: none;">0</span>
+                <span id="chatToggleIcon" style="color: #ff9900; font-size: 10px;">▲</span>
+            </div>
+
+            <!-- My ID -->
+            <span id="chatFingerprint" style="color: #6699ff; font-size: 10px; padding: 4px 8px; background: rgba(100,150,255,0.1); border-radius: 4px; cursor: pointer;" onclick="showChatBundle()" title="Click to copy your bundle">--</span>
+
+            <!-- Validator Selector -->
+            <select id="chatRecipient" style="
+                background: #0a0a0f;
+                border: 1px solid #ff9900;
+                color: #fff;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-family: monospace;
+                min-width: 150px;
+            ">
+                <option value="">Select recipient...</option>
+                <option value="ALL">-- ALL VALIDATORS --</option>
+                <option value="97e3988b8c7e6f40">Alice (97e3988b)</option>
+                <option value="6bafb1037350eebd">Bob (6bafb103)</option>
+            </select>
+
+            <!-- Message Input -->
+            <input type="text" id="chatInput" placeholder="Type message and press Enter..." onkeypress="if(event.key==='Enter')sendChatMessage()" style="
+                flex: 1;
+                background: #0a0a0f;
+                border: 1px solid #444;
+                color: #fff;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+            ">
+
+            <!-- Message Type -->
+            <select id="chatMsgType" style="
+                background: #0a0a0f;
+                border: 1px solid #444;
+                color: #fff;
+                padding: 6px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+            ">
+                <option value="text">Text</option>
+                <option value="alert">Alert</option>
+                <option value="maintenance">Maintenance</option>
+            </select>
+
+            <!-- Send Button -->
+            <button onclick="sendChatMessage()" style="
+                background: linear-gradient(135deg, #00cc66 0%, #009944 100%);
+                border: none;
+                color: #000;
+                padding: 8px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 12px;
+            ">SEND</button>
+
+            <!-- Init Button (shows if not initialized) -->
+            <button onclick="initChatMessaging()" id="chatInitBtn" style="
+                background: #ff9900;
+                border: none;
+                color: #000;
+                padding: 8px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 10px;
+            ">INIT</button>
         </div>
     </div>
 
@@ -5008,7 +5206,550 @@
                 fetchOraclePrices();
                 fetchReporters();
             }
+            if (name === 'messages') {
+                checkMessagingStatus();
+            }
         };
+
+        // ===========================================
+        // MESSAGING FUNCTIONS (Post-Quantum Encrypted)
+        // ===========================================
+
+        const MESSAGING_URL = window.location.protocol + '//' + window.location.hostname + ':9955';
+        let messagingInitialized = false;
+        let myFingerprint = null;
+
+        async function checkMessagingStatus() {
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                if (response.ok) {
+                    const data = await response.json();
+                    messagingInitialized = true;
+                    // API returns 'bundle' as base64, generate fingerprint from it
+                    const bundleB64 = data.bundle || data.bundle_base64;
+                    myFingerprint = data.fingerprint || await generateFingerprint(bundleB64);
+                    document.getElementById('msgFingerprint').textContent = myFingerprint;
+                    document.getElementById('initMsgBtn').textContent = 'INITIALIZED';
+                    document.getElementById('initMsgBtn').disabled = true;
+                    await refreshMessages();
+                    await refreshPeers();
+                }
+            } catch (e) {
+                console.log('Messaging not initialized yet');
+            }
+        }
+
+        // Generate a short fingerprint from bundle data
+        async function generateFingerprint(bundleB64) {
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(bundleB64);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) {
+                return bundleB64.substring(0, 16);
+            }
+        }
+
+        async function initMessaging() {
+            const btn = document.getElementById('initMsgBtn');
+            btn.textContent = 'INITIALIZING...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    messagingInitialized = true;
+                    const bundleB64 = data.bundle || data.bundle_base64 || '';
+                    myFingerprint = data.fingerprint || await generateFingerprint(bundleB64);
+                    document.getElementById('msgFingerprint').textContent = myFingerprint;
+                    btn.textContent = 'INITIALIZED';
+                    terminalLog('Messaging initialized. Fingerprint: ' + myFingerprint, 'success');
+                    await refreshMessages();
+                } else {
+                    const err = await response.text();
+                    terminalLog('Init failed: ' + err, 'error');
+                    btn.textContent = 'INITIALIZE';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                terminalLog('Messaging init error: ' + e.message, 'error');
+                btn.textContent = 'INITIALIZE';
+                btn.disabled = false;
+            }
+        }
+
+        async function refreshMessages() {
+            if (!messagingInitialized) {
+                terminalLog('Initialize messaging first', 'warn');
+                return;
+            }
+
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/inbox');
+                if (!response.ok) throw new Error('Failed to fetch inbox');
+
+                const messages = await response.json();
+                const chatArea = document.getElementById('msgChatArea');
+
+                if (messages.length === 0) {
+                    chatArea.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No messages yet. Add peers and start communicating!</div>';
+                    document.getElementById('msgUnreadCount').textContent = '0';
+                    return;
+                }
+
+                messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                chatArea.innerHTML = messages.map(msg => {
+                    const time = new Date(msg.timestamp).toLocaleTimeString();
+                    const sender = msg.from_fingerprint.substring(0, 8);
+                    const typeColor = msg.message_type === 'alert' ? 'var(--accent-danger)' :
+                                      msg.message_type === 'maintenance' ? 'var(--accent-warning)' :
+                                      'var(--lcars-gold)';
+                    return `
+                        <div style="margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border-left: 3px solid ${typeColor};">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="color: var(--lcars-blue); font-weight: bold;">${sender}...</span>
+                                <span style="color: var(--text-muted); font-size: 10px;">${time}</span>
+                            </div>
+                            <div style="color: var(--text-primary);">${escapeHtml(msg.content)}</div>
+                            <div style="color: var(--text-muted); font-size: 9px; margin-top: 4px;">[${msg.message_type}]</div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('msgUnreadCount').textContent = messages.length;
+                chatArea.scrollTop = chatArea.scrollHeight;
+            } catch (e) {
+                terminalLog('Error fetching messages: ' + e.message, 'error');
+            }
+        }
+
+        async function refreshPeers() {
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/peers');
+                if (!response.ok) return;
+
+                const peers = await response.json();
+                const peerList = document.getElementById('msgPeerList');
+                document.getElementById('msgPeerCount').textContent = peers.length;
+
+                if (peers.length === 0) {
+                    peerList.innerHTML = '<div style="color: var(--text-muted); font-size: 11px;">No peers added yet</div>';
+                    return;
+                }
+
+                peerList.innerHTML = peers.map(p => `
+                    <div style="padding: 6px 0; border-bottom: 1px solid var(--bg-surface);">
+                        <div style="color: var(--lcars-gold); font-family: monospace; font-size: 11px;">${p.fingerprint}</div>
+                        <div style="color: var(--text-muted); font-size: 10px;">Added: ${new Date(p.added_at).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error fetching peers:', e);
+            }
+        }
+
+        async function sendMessage() {
+            if (!messagingInitialized) {
+                terminalLog('Initialize messaging first', 'warn');
+                return;
+            }
+
+            const recipient = document.getElementById('msgRecipient').value.trim();
+            const content = document.getElementById('msgContent').value.trim();
+            const msgType = document.getElementById('msgType').value;
+
+            if (!recipient || !content) {
+                terminalLog('Please enter recipient and message', 'warn');
+                return;
+            }
+
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        peer_fingerprint: recipient,
+                        content: content,
+                        message_type: msgType
+                    })
+                });
+
+                if (response.ok) {
+                    terminalLog('Message sent to ' + recipient.substring(0, 8) + '...', 'success');
+                    document.getElementById('msgContent').value = '';
+                    await refreshMessages();
+                } else {
+                    const err = await response.text();
+                    terminalLog('Send failed: ' + err, 'error');
+                }
+            } catch (e) {
+                terminalLog('Send error: ' + e.message, 'error');
+            }
+        }
+
+        async function addPeer() {
+            if (!messagingInitialized) {
+                terminalLog('Initialize messaging first', 'warn');
+                return;
+            }
+
+            const bundleBase64 = document.getElementById('msgPeerBundle').value.trim();
+            if (!bundleBase64) {
+                terminalLog('Please paste peer bundle', 'warn');
+                return;
+            }
+
+            try {
+                // Try both field names for compatibility
+                const response = await fetch(MESSAGING_URL + '/messaging/peers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bundle: bundleBase64, bundle_base64: bundleBase64 })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const fp = data.fingerprint || await generateFingerprint(bundleBase64);
+                    terminalLog('Peer added: ' + fp, 'success');
+                    document.getElementById('msgPeerBundle').value = '';
+                    await refreshPeers();
+                } else {
+                    const err = await response.text();
+                    terminalLog('Add peer failed: ' + err, 'error');
+                }
+            } catch (e) {
+                terminalLog('Add peer error: ' + e.message, 'error');
+            }
+        }
+
+        async function showMyBundle() {
+            if (!messagingInitialized) {
+                terminalLog('Initialize messaging first', 'warn');
+                return;
+            }
+
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                if (!response.ok) throw new Error('Failed to fetch bundle');
+
+                const data = await response.json();
+                document.getElementById('msgMyBundle').style.display = 'block';
+                document.getElementById('msgBundleText').value = data.bundle || data.bundle_base64;
+                terminalLog('Bundle displayed. Share with peers to enable messaging.', 'info');
+            } catch (e) {
+                terminalLog('Error fetching bundle: ' + e.message, 'error');
+            }
+        }
+
+        function copyBundle() {
+            const bundleText = document.getElementById('msgBundleText');
+            bundleText.select();
+            document.execCommand('copy');
+            terminalLog('Bundle copied to clipboard!', 'success');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Auto-refresh messages every 10 seconds when panel is active
+        setInterval(() => {
+            if (document.getElementById('panel-messages')?.classList.contains('active') && messagingInitialized) {
+                refreshMessages();
+                refreshPeers();
+            }
+        }, 10000);
+
+        // ===========================================
+        // PERSISTENT CHAT WIDGET FUNCTIONS
+        // ===========================================
+
+        let chatExpanded = false;
+        let chatInitialized = false;
+        let chatFingerprint = null;
+
+        // Known validators for chat (messaging fingerprints)
+        const CHAT_VALIDATORS = {
+            '97e3988b8c7e6f40': 'Alice',
+            '6bafb1037350eebd': 'Bob'
+        };
+
+        function toggleChat() {
+            chatExpanded = !chatExpanded;
+            const msgArea = document.getElementById('chatMessages');
+            const icon = document.getElementById('chatToggleIcon');
+            if (chatExpanded) {
+                msgArea.style.height = '200px';
+                msgArea.style.padding = '8px';
+                icon.textContent = '▼';
+                refreshChatMessages();
+            } else {
+                msgArea.style.height = '0';
+                msgArea.style.padding = '0';
+                icon.textContent = '▲';
+            }
+        }
+
+        async function initChatMessaging() {
+            const btn = document.getElementById('chatInitBtn');
+            btn.textContent = '...';
+            btn.disabled = true;
+
+            try {
+                // First try to get existing bundle
+                let response = await fetch(MESSAGING_URL + '/messaging/bundle');
+
+                if (!response.ok) {
+                    // Initialize if not exists
+                    response = await fetch(MESSAGING_URL + '/messaging/init', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    chatInitialized = true;
+                    const bundleB64 = data.bundle || data.bundle_base64 || '';
+                    chatFingerprint = data.fingerprint || await generateFingerprint(bundleB64);
+                    document.getElementById('chatFingerprint').textContent = chatFingerprint;
+                    btn.style.display = 'none'; // Hide init button
+                    updateValidatorDropdown();
+                    refreshChatMessages();
+                } else {
+                    btn.textContent = 'ERR';
+                    btn.style.background = '#ff4444';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                console.error('Chat init error:', e);
+                document.getElementById('chatFingerprint').textContent = 'Offline';
+                btn.textContent = 'INIT';
+                btn.disabled = false;
+            }
+        }
+
+        // Update dropdown to exclude self
+        function updateValidatorDropdown() {
+            const select = document.getElementById('chatRecipient');
+            select.innerHTML = '<option value="">Select recipient...</option><option value="ALL">-- ALL VALIDATORS --</option>';
+            for (const [fp, name] of Object.entries(CHAT_VALIDATORS)) {
+                if (fp !== chatFingerprint) {
+                    select.innerHTML += `<option value="${fp}">${name} (${fp.substring(0,8)})</option>`;
+                }
+            }
+        }
+
+        // Remote validator endpoints for message sync
+        const VALIDATOR_MESSAGING = {
+            'Alice': 'http://51.79.26.123:9955',
+            'Bob': 'http://51.79.26.168:9955'
+        };
+
+        async function refreshChatMessages() {
+            if (!chatInitialized) return;
+
+            try {
+                let allMessages = [];
+
+                // Fetch local inbox and outbox
+                const [inboxResp, outboxResp] = await Promise.all([
+                    fetch(MESSAGING_URL + '/messaging/inbox'),
+                    fetch(MESSAGING_URL + '/messaging/outbox')
+                ]);
+
+                if (inboxResp.ok) {
+                    const inboxData = await inboxResp.json();
+                    const inboxMsgs = (inboxData.messages || []).map(m => ({...m, direction: 'in', source: 'local'}));
+                    allMessages.push(...inboxMsgs);
+                }
+
+                if (outboxResp.ok) {
+                    const outboxData = await outboxResp.json();
+                    const outboxMsgs = (outboxData.messages || []).map(m => ({...m, direction: 'out', source: 'local'}));
+                    allMessages.push(...outboxMsgs);
+                }
+
+                // POLL REMOTE VALIDATORS for messages TO this node
+                for (const [name, url] of Object.entries(VALIDATOR_MESSAGING)) {
+                    try {
+                        const remoteResp = await fetch(url + '/messaging/outbox', { signal: AbortSignal.timeout(3000) });
+                        if (remoteResp.ok) {
+                            const remoteData = await remoteResp.json();
+                            // Filter messages addressed to us
+                            const toMe = (remoteData.messages || [])
+                                .filter(m => m.to === chatFingerprint || m.to?.startsWith(chatFingerprint?.substring(0,8)))
+                                .map(m => ({...m, direction: 'in', source: name, from: m.from || name}));
+                            allMessages.push(...toMe);
+                        }
+                    } catch (e) {
+                        // Remote validator offline, ignore
+                    }
+                }
+
+                const chatArea = document.getElementById('chatMessages');
+                const unreadBadge = document.getElementById('chatUnread');
+
+                if (allMessages.length === 0) {
+                    chatArea.innerHTML = '<div style="color: var(--text-muted); font-size: 10px; text-align: center; padding: 20px;">No messages yet. Send one!</div>';
+                    unreadBadge.style.display = 'none';
+                    return;
+                }
+
+                // Deduplicate by message ID
+                const seen = new Set();
+                allMessages = allMessages.filter(m => {
+                    const key = m.id || (m.timestamp + m.content);
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+
+                // Sort by timestamp
+                allMessages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+                // Show received count
+                const inboxCount = allMessages.filter(m => m.direction === 'in').length;
+                if (inboxCount > 0) {
+                    unreadBadge.textContent = inboxCount;
+                    unreadBadge.style.display = 'inline';
+                } else {
+                    unreadBadge.style.display = 'none';
+                }
+
+                chatArea.innerHTML = allMessages.map(msg => {
+                    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const isOutgoing = msg.direction === 'out';
+                    const senderName = CHAT_VALIDATORS[msg.from] || msg.source || (msg.from || '').substring(0, 6);
+                    const recipientName = CHAT_VALIDATORS[msg.to] || (msg.to || '').substring(0, 6);
+                    const bgColor = isOutgoing ? 'rgba(0,100,200,0.15)' : 'rgba(255,153,0,0.1)';
+                    const borderColor = isOutgoing ? '#6699ff' :
+                                        (msg.message_type === 'Alert' ? '#ff4444' :
+                                         msg.message_type === 'Maintenance' ? '#ffaa00' : '#ff9966');
+                    const label = isOutgoing ? `You → ${recipientName}` : `${senderName} → You`;
+                    const labelColor = isOutgoing ? '#66ff66' : '#ff9966';
+
+                    return `
+                        <div style="margin-bottom: 6px; padding: 6px; background: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor};">
+                            <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
+                                <span style="color: ${labelColor}; font-weight: bold;">${label}</span>
+                                <span style="color: #666;">${time}</span>
+                            </div>
+                            <div style="color: #eee; font-size: 11px;">${escapeHtml(msg.content)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                chatArea.scrollTop = chatArea.scrollHeight;
+            } catch (e) {
+                console.error('Chat refresh error:', e);
+            }
+        }
+
+        async function sendChatMessage() {
+            if (!chatInitialized) {
+                alert('Click INIT first');
+                return;
+            }
+
+            const recipientSelect = document.getElementById('chatRecipient');
+            const recipient = recipientSelect.value;
+            const content = document.getElementById('chatInput').value.trim();
+            const msgType = document.getElementById('chatMsgType')?.value || 'text';
+
+            if (!recipient || !content) {
+                return;
+            }
+
+            // Get list of recipients
+            const recipients = recipient === 'ALL'
+                ? Object.keys(CHAT_VALIDATORS).filter(fp => fp !== chatFingerprint)
+                : [recipient];
+
+            let sentCount = 0;
+            for (const fp of recipients) {
+                try {
+                    const response = await fetch(MESSAGING_URL + '/messaging/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            peer_fingerprint: fp,
+                            content: content,
+                            message_type: msgType
+                        })
+                    });
+                    if (response.ok) sentCount++;
+                } catch (e) {
+                    console.error('Send error to', fp, e);
+                }
+            }
+
+            if (sentCount > 0) {
+                document.getElementById('chatInput').value = '';
+                // Add to local display
+                const chatArea = document.getElementById('chatMessages');
+                const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const recipientLabel = recipient === 'ALL' ? 'ALL' : (CHAT_VALIDATORS[recipient] || recipient.substring(0,6));
+                const typeColor = msgType === 'alert' ? '#ff4444' : msgType === 'maintenance' ? '#ffaa00' : '#6699ff';
+                chatArea.innerHTML += `
+                    <div style="margin-bottom: 6px; padding: 6px; background: rgba(0,100,200,0.15); border-radius: 4px; border-left: 2px solid ${typeColor};">
+                        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
+                            <span style="color: #66ff66;">You → ${recipientLabel}</span>
+                            <span style="color: #666;">${time}</span>
+                        </div>
+                        <div style="color: #ddd; font-size: 11px;">${escapeHtml(content)}</div>
+                    </div>
+                `;
+                chatArea.scrollTop = chatArea.scrollHeight;
+
+                // Expand chat if collapsed
+                if (!chatExpanded) toggleChat();
+            }
+        }
+
+        async function showChatBundle() {
+            if (!chatInitialized) {
+                alert('Click INIT first');
+                return;
+            }
+
+            try {
+                const response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                if (!response.ok) throw new Error('Failed');
+
+                const data = await response.json();
+                const bundle = data.bundle || data.bundle_base64;
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(bundle).then(() => {
+                    alert('Your bundle copied to clipboard!\\n\\nFingerprint: ' + chatFingerprint + '\\n\\nShare this with other validators so they can message you.');
+                }).catch(() => {
+                    prompt('Copy your bundle:', bundle);
+                });
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // Auto-refresh chat every 5 seconds
+        setInterval(() => {
+            if (chatInitialized) {
+                refreshChatMessages();
+            }
+        }, 5000);
+
+        // Try to initialize chat on page load
+        setTimeout(initChatMessaging, 2000);
     </script>
 </body>
 </html>
