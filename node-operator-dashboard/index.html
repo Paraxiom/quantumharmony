@@ -699,7 +699,6 @@
             <button class="nav-btn" onclick="showPanel('quantum')">QUANTUM</button>
             <button class="nav-btn" onclick="showPanel('network')">NETWORK</button>
             <button class="nav-btn" onclick="showPanel('reporter')">REPORTER</button>
-            <button class="nav-btn" onclick="showPanel('messages')">MESSAGES</button>
             <div class="nav-spacer"></div>
             <button class="nav-btn" onclick="showPanel('settings')">SETTINGS</button>
             <button class="nav-btn" onclick="showPanel('proofs')">PROOFS</button>
@@ -1388,105 +1387,252 @@
                     </div>
                 </div>
 
-                <!-- REPORTER PANEL -->
+                <!-- REPORTER PANEL - Quantum Data Services -->
                 <div id="panel-reporter" class="panel">
-                    <h2 class="panel-title">Price Oracle Reporter</h2>
+                    <h2 class="panel-title">Quantum Data Services</h2>
 
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Reporter Status</div>
-                            <div class="stat-value" id="reporterStatus" style="color: var(--text-muted);">Not Registered</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Reputation</div>
-                            <div class="stat-value blue" id="reporterReputation">--</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Submissions</div>
-                            <div class="stat-value green" id="reporterSubmissions">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Success Rate</div>
-                            <div class="stat-value gold" id="reporterSuccessRate">--%</div>
-                        </div>
+                    <!-- Tab Navigation -->
+                    <div style="display: flex; gap: 4px; margin-bottom: var(--space-3); border-bottom: 2px solid var(--lcars-gold-dark); padding-bottom: 8px;">
+                        <button class="btn btn-secondary reporter-tab active" onclick="showReporterTab('qrng')" id="tab-qrng">QRNG POOL</button>
+                        <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('qkd')" id="tab-qkd">QKD ROUTING</button>
+                        <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('oracle')" id="tab-oracle">ORACLE FEEDS</button>
                     </div>
 
-                    <div class="section-title">Register as Reporter</div>
-                    <div class="form-group">
-                        <label class="form-label">Reporter ID</label>
-                        <input type="text" class="form-input" id="reporterId" placeholder="e.g., paraxiom-oracle-1">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Account Address</label>
-                        <input type="text" class="form-input" id="reporterAccount" placeholder="5xxxxx... (SS58 address)">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Price Feeds</label>
-                        <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
-                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                <input type="checkbox" id="feedCADUSD" checked> CAD/USD
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                <input type="checkbox" id="feedQMHYUSD"> QMHY/USD
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                                <input type="checkbox" id="feedQCADCAD"> QCAD/CAD
-                            </label>
+                    <!-- QRNG POOL SECTION -->
+                    <div id="reporter-qrng" class="reporter-section">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">LOCAL ENTROPY</div>
+                                <div class="stat-value green" id="qrngLocalStatus">ACTIVE</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">SOURCE</div>
+                                <div class="stat-value" id="qrngSource" style="font-size: 10px;">Crypto4A Sim</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">NETWORK SHARES</div>
+                                <div class="stat-value blue" id="qrngSharesReceived">0/3</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">THRESHOLD</div>
+                                <div class="stat-value gold" id="qrngThreshold">2-of-3</div>
+                            </div>
                         </div>
-                    </div>
-                    <button class="btn btn-primary" id="registerReporterBtn" onclick="registerReporter()">Register as Reporter</button>
 
-                    <div class="section-title" style="margin-top: var(--space-4);">Submit Price</div>
-                    <div class="form-group">
-                        <label class="form-label">Price Feed</label>
-                        <select class="form-input" id="priceFeed">
-                            <option value="CAD/USD">CAD/USD</option>
-                            <option value="QMHY/USD">QMHY/USD</option>
-                            <option value="QCAD/CAD">QCAD/CAD</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Price (8 decimals)</label>
-                        <input type="text" class="form-input" id="priceValue" placeholder="e.g., 0.73456789">
-                    </div>
-                    <button class="btn btn-primary" id="submitPriceBtn" onclick="submitPrice()">Submit Price</button>
+                        <div class="section-title">Network Entropy Shares</div>
+                        <div class="info-box" id="qrngSharesList">
+                            <div class="info-row">
+                                <span class="info-label">Alice</span>
+                                <span class="info-value" style="color: var(--accent-success);">32 bytes (QBER: 0.8%)</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Bob</span>
+                                <span class="info-value" style="color: var(--accent-success);">32 bytes (QBER: 1.1%)</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Charlie</span>
+                                <span class="info-value" style="color: var(--text-muted);">Waiting...</span>
+                            </div>
+                        </div>
 
-                    <div class="section-title" style="margin-top: var(--space-4);">External Price Adapters</div>
-                    <div class="info-box">
-                        <div class="info-row">
-                            <span class="info-label">Binance API</span>
-                            <span class="info-value" id="binanceStatus" style="color: var(--text-muted);">Not Connected</span>
+                        <div class="section-title" style="margin-top: var(--space-3);">Combined Output</div>
+                        <div class="info-box">
+                            <div class="info-row">
+                                <span class="info-label">Combined Entropy</span>
+                                <span class="info-value" id="qrngCombined" style="font-family: 'JetBrains Mono'; font-size: 10px;">0x7f3a...9b2c</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Proof Status</span>
+                                <span class="info-value" id="qrngProofStatus" style="color: var(--accent-success);">Valid STARK</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Last Update</span>
+                                <span class="info-value" id="qrngLastUpdate">Block #71,234</span>
+                            </div>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Kraken API</span>
-                            <span class="info-value" id="krakenStatus" style="color: var(--text-muted);">Not Connected</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Chainlink Feed</span>
-                            <span class="info-value" id="chainlinkStatus" style="color: var(--text-muted);">Not Connected</span>
+
+                        <div style="display: flex; gap: 8px; margin-top: var(--space-3);">
+                            <button class="btn btn-primary" onclick="generateNewQrng()">GENERATE NEW</button>
+                            <button class="btn btn-secondary" onclick="exportQrng()">EXPORT</button>
+                            <button class="btn btn-secondary" onclick="configureQrng()">CONFIGURE</button>
                         </div>
                     </div>
 
-                    <div class="section-title" style="margin-top: var(--space-4);">Current Oracle Prices</div>
-                    <div class="info-box" id="oraclePrices">
-                        <div class="info-row">
-                            <span class="info-label">CAD/USD</span>
-                            <span class="info-value" id="priceCADUSD">--</span>
+                    <!-- QKD ROUTING SECTION -->
+                    <div id="reporter-qkd" class="reporter-section" style="display: none;">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">KEYS AVAILABLE</div>
+                                <div class="stat-value green" id="qkdKeysAvailable">48</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">SOURCE</div>
+                                <div class="stat-value" id="qkdSource" style="font-size: 10px;">Threshold QRNG</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">LAST EXCHANGE</div>
+                                <div class="stat-value blue" id="qkdLastExchange" style="font-size: 11px;">#71,234</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">NEXT REFRESH</div>
+                                <div class="stat-value gold" id="qkdNextRefresh">~6 blocks</div>
+                            </div>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">QMHY/USD</span>
-                            <span class="info-value" id="priceQMHYUSD">--</span>
+
+                        <div class="section-title">Routing Status</div>
+                        <div class="info-box" id="qkdRoutingStatus">
+                            <div class="info-row">
+                                <span class="info-label">Consensus</span>
+                                <span class="info-value"><span style="color: var(--accent-success);">Active</span> - 12 keys used</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Messaging</span>
+                                <span class="info-value"><span style="color: var(--accent-success);">Active</span> - 8 keys used</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Custom Pool</span>
+                                <span class="info-value"><span style="color: var(--text-muted);">Idle</span> - 0 keys used</span>
+                            </div>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">QCAD/CAD</span>
-                            <span class="info-value" id="priceQCADCAD">--</span>
+
+                        <div class="section-title" style="margin-top: var(--space-3);">Route Keys To</div>
+                        <div class="form-group">
+                            <select class="form-input" id="qkdRouteTarget">
+                                <option value="consensus">Consensus (VRF/Nonces)</option>
+                                <option value="messaging">Messaging (PQ-Triple-Ratchet)</option>
+                                <option value="custom">Custom Application</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Key Count</label>
+                            <input type="number" class="form-input" id="qkdKeyCount" value="4" min="1" max="32">
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-primary" onclick="routeQkdKeys()">ROUTE KEYS</button>
+                            <button class="btn btn-secondary" onclick="refreshQkdPool()">REFRESH POOL</button>
                         </div>
                     </div>
 
-                    <div class="section-title" style="margin-top: var(--space-4);">Active Reporters</div>
-                    <div class="info-box" id="reportersList" style="max-height: 200px; overflow-y: auto;">
-                        <div class="info-row">
-                            <span class="info-label" style="color: var(--text-muted);">Loading reporters...</span>
+                    <!-- ORACLE FEEDS SECTION -->
+                    <div id="reporter-oracle" class="reporter-section" style="display: none;">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">ACTIVE FEEDS</div>
+                                <div class="stat-value green" id="oracleActiveFeeds">2</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">MY FEEDS</div>
+                                <div class="stat-value blue" id="oracleMyFeeds">1</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">EARNED</div>
+                                <div class="stat-value gold" id="oracleEarned">142 QMHY</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">SLA SCORE</div>
+                                <div class="stat-value" id="oracleSlaScore" style="color: var(--accent-success);">99.3%</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">
+                            Request New Feed
+                            <button class="btn btn-success" style="float: right; padding: 4px 12px; font-size: 11px;" onclick="showRequestFeedForm()">+ NEW FEED</button>
+                        </div>
+
+                        <!-- Request Feed Form (hidden by default) -->
+                        <div id="requestFeedForm" style="display: none; background: rgba(255,153,0,0.05); padding: var(--space-3); border-radius: var(--radius-md); margin-bottom: var(--space-3); border: 1px solid var(--lcars-gold-dark);">
+                            <div class="form-group">
+                                <label class="form-label">Data Type</label>
+                                <select class="form-input" id="feedDataType">
+                                    <option value="price">Price Feed</option>
+                                    <option value="weather">Weather Data</option>
+                                    <option value="sports">Sports/Events</option>
+                                    <option value="custom">Custom API</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Source URL</label>
+                                <input type="text" class="form-input" id="feedSourceUrl" placeholder="https://api.example.com/data">
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Reward (QMHY/report)</label>
+                                    <input type="number" class="form-input" id="feedReward" value="10" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Min Reporters</label>
+                                    <input type="number" class="form-input" id="feedMinReporters" value="2" min="2" max="10">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">SLA Uptime %</label>
+                                    <input type="number" class="form-input" id="feedSlaUptime" value="99" min="90" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Max Latency (ms)</label>
+                                    <input type="number" class="form-input" id="feedSlaLatency" value="5000" min="1000">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Duration (blocks)</label>
+                                <input type="number" class="form-input" id="feedDuration" value="1000" min="100">
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" onclick="submitFeedRequest()">SUBMIT REQUEST</button>
+                                <button class="btn btn-secondary" onclick="hideRequestFeedForm()">CANCEL</button>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Active Requests (from network)</div>
+                        <div class="info-box" id="oracleActiveRequests" style="max-height: 200px; overflow-y: auto;">
+                            <div style="background: rgba(0,100,200,0.1); padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--accent-info);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="color: var(--accent-info);">#1 Weather API</strong>
+                                    <span style="color: var(--accent-success); font-size: 10px;">ACTIVE</span>
+                                </div>
+                                <div style="font-size: 10px; color: var(--text-muted); margin: 4px 0;">api.openweather.com/...</div>
+                                <div style="font-size: 10px;">Reward: <span style="color: var(--lcars-gold);">10 QMHY</span> | SLA: 99% / 5s | Reporters: 2/3</div>
+                                <button class="btn btn-success" style="margin-top: 8px; padding: 4px 12px; font-size: 10px;" onclick="acceptFeed(1)">ACCEPT</button>
+                            </div>
+                            <div style="background: rgba(255,153,0,0.1); padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--lcars-gold);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="color: var(--lcars-gold);">#2 BTC/USD Price</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">PENDING</span>
+                                </div>
+                                <div style="font-size: 10px; color: var(--text-muted); margin: 4px 0;">api.coingecko.com/...</div>
+                                <div style="font-size: 10px;">Reward: <span style="color: var(--lcars-gold);">5 QMHY</span> | SLA: 99.5% / 2s | Reporters: 1/2</div>
+                                <button class="btn btn-success" style="margin-top: 8px; padding: 4px 12px; font-size: 10px;" onclick="acceptFeed(2)">ACCEPT</button>
+                            </div>
+                        </div>
+
+                        <div class="section-title" style="margin-top: var(--space-3);">My Active Feeds (providing)</div>
+                        <div class="info-box" id="oracleMyFeedsList">
+                            <div style="background: rgba(0,200,100,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-success);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="color: var(--accent-success);">#1 Weather API</strong>
+                                    <span style="color: var(--accent-success); font-size: 10px;">142 reports</span>
+                                </div>
+                                <div style="font-size: 10px; margin: 4px 0;">Earned: <span style="color: var(--lcars-gold);">1,420 QMHY</span></div>
+                                <div style="font-size: 10px;">SLA: 99.3% uptime | Avg latency: 2.1s</div>
+                                <div style="font-size: 10px; color: var(--accent-info);">Next report in: 3 blocks</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title" style="margin-top: var(--space-3);">Recent Reports</div>
+                        <div class="info-box" id="oracleRecentReports" style="max-height: 120px; overflow-y: auto; font-size: 10px;">
+                            <div class="info-row">
+                                <span class="info-label">#71,230</span>
+                                <span class="info-value">Weather: 22.5C | 3/3 agree | <span style="color: var(--accent-success);">Used</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">#71,220</span>
+                                <span class="info-value">Weather: 22.4C | 3/3 agree | <span style="color: var(--text-muted);">Unused</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">#71,210</span>
+                                <span class="info-value">Weather: 22.6C | 2/3 agree | <span style="color: var(--accent-success);">Used</span></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1740,102 +1886,6 @@
                         <div class="info-row">
                             <span class="info-label">Verification</span>
                             <span class="info-value" id="proofDocVerify" style="color: var(--text-muted);">Not verified</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- MESSAGES PANEL -->
-                <div id="panel-messages" class="panel">
-                    <h2 class="panel-title">Validator Messaging (Post-Quantum Encrypted)</h2>
-
-                    <!-- Identity Status -->
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">MY IDENTITY</div>
-                            <div class="stat-value blue" id="msgFingerprint" style="font-size: 12px;">Not initialized</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">PEERS</div>
-                            <div class="stat-value gold" id="msgPeerCount">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">UNREAD</div>
-                            <div class="stat-value green" id="msgUnreadCount">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">ENCRYPTION</div>
-                            <div class="stat-value" style="font-size: 10px; color: var(--accent-success);">ML-KEM-768 + X25519</div>
-                        </div>
-                    </div>
-
-                    <!-- Initialize Button -->
-                    <div class="control-bar">
-                        <button class="btn btn-success" onclick="initMessaging()" id="initMsgBtn">INITIALIZE</button>
-                        <button class="btn btn-primary" onclick="refreshMessages()">REFRESH</button>
-                        <button class="btn btn-secondary" onclick="showMyBundle()">SHOW MY BUNDLE</button>
-                    </div>
-
-                    <div class="grid-2">
-                        <!-- Left: Chat Area -->
-                        <div>
-                            <div class="section-title">Messages</div>
-                            <div id="msgChatArea" style="
-                                background: #0a0a0f;
-                                border: 1px solid var(--lcars-gold-dark);
-                                border-radius: var(--radius-md);
-                                padding: var(--space-3);
-                                height: 300px;
-                                overflow-y: auto;
-                                font-family: 'JetBrains Mono', monospace;
-                                font-size: 11px;
-                            ">
-                                <div style="color: var(--text-muted); text-align: center; padding: 20px;">
-                                    Initialize messaging to start secure communication with other validators.
-                                </div>
-                            </div>
-
-                            <!-- Send Message -->
-                            <div style="margin-top: var(--space-3);">
-                                <div class="form-group">
-                                    <label class="form-label">Recipient Fingerprint</label>
-                                    <input type="text" class="form-input" id="msgRecipient" placeholder="e.g. 6bafb1037350eebd" style="font-family: 'JetBrains Mono', monospace;">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Message</label>
-                                    <textarea class="form-input" id="msgContent" rows="2" placeholder="Type your message..."></textarea>
-                                </div>
-                                <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-success" onclick="sendMessage()">SEND</button>
-                                    <select id="msgType" class="form-input" style="width: auto;">
-                                        <option value="text">Text</option>
-                                        <option value="maintenance">Maintenance Notice</option>
-                                        <option value="alert">Alert</option>
-                                        <option value="online">Online Notice</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Peers & Bundle -->
-                        <div>
-                            <div class="section-title">Known Peers</div>
-                            <div id="msgPeerList" class="info-box" style="max-height: 150px; overflow-y: auto;">
-                                <div style="color: var(--text-muted); font-size: 11px;">No peers added yet</div>
-                            </div>
-
-                            <div class="section-title" style="margin-top: var(--space-3);">Add Peer</div>
-                            <div class="form-group">
-                                <label class="form-label">Peer's Prekey Bundle (Base64)</label>
-                                <textarea class="form-input" id="msgPeerBundle" rows="3" placeholder="Paste peer's bundle here..." style="font-size: 10px;"></textarea>
-                            </div>
-                            <button class="btn btn-primary" onclick="addPeer()">ADD PEER</button>
-
-                            <!-- My Bundle Display -->
-                            <div id="msgMyBundle" style="display: none; margin-top: var(--space-3);">
-                                <div class="section-title">My Prekey Bundle (share with peers)</div>
-                                <textarea class="form-input" id="msgBundleText" rows="3" readonly style="font-size: 9px;"></textarea>
-                                <button class="btn btn-secondary" onclick="copyBundle()" style="margin-top: 8px;">COPY</button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -5714,6 +5764,119 @@
             } catch (e) {
                 alert('Error: ' + e.message);
             }
+        }
+
+        // ==========================================
+        // REPORTER TAB FUNCTIONS
+        // ==========================================
+
+        function showReporterTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('.reporter-section').forEach(s => s.style.display = 'none');
+            // Remove active from all tabs
+            document.querySelectorAll('.reporter-tab').forEach(t => t.classList.remove('active'));
+
+            // Show selected section
+            const section = document.getElementById('reporter-' + tabName);
+            if (section) section.style.display = 'block';
+
+            // Activate tab
+            const tab = document.getElementById('tab-' + tabName);
+            if (tab) tab.classList.add('active');
+        }
+
+        // QRNG Functions
+        function generateNewQrng() {
+            log('Generating new QRNG entropy...', 'info');
+            // TODO: Connect to threshold_qrng endpoint
+            const mockEntropy = '0x' + Array.from({length: 8}, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('') + '...';
+            document.getElementById('qrngCombined').textContent = mockEntropy;
+            document.getElementById('qrngLastUpdate').textContent = 'Just now';
+            log('New entropy generated: ' + mockEntropy, 'success');
+        }
+
+        function exportQrng() {
+            const entropy = document.getElementById('qrngCombined').textContent;
+            navigator.clipboard.writeText(entropy).then(() => {
+                log('Entropy copied to clipboard', 'success');
+            }).catch(() => {
+                prompt('Copy entropy:', entropy);
+            });
+        }
+
+        function configureQrng() {
+            const threshold = prompt('Enter threshold (e.g., "2-of-3"):', '2-of-3');
+            if (threshold) {
+                document.getElementById('qrngThreshold').textContent = threshold;
+                log('QRNG threshold updated to ' + threshold, 'info');
+            }
+        }
+
+        // QKD Functions
+        function routeQkdKeys() {
+            const target = document.getElementById('qkdRouteTarget').value;
+            const count = document.getElementById('qkdKeyCount').value;
+            log(`Routing ${count} keys to ${target}...`, 'info');
+            // TODO: Connect to qkd-client endpoint
+            setTimeout(() => {
+                log(`Successfully routed ${count} keys to ${target}`, 'success');
+            }, 500);
+        }
+
+        function refreshQkdPool() {
+            log('Refreshing QKD key pool...', 'info');
+            // TODO: Connect to qkd-client endpoint
+            setTimeout(() => {
+                const newCount = Math.floor(Math.random() * 20) + 40;
+                document.getElementById('qkdKeysAvailable').textContent = newCount;
+                log('Key pool refreshed: ' + newCount + ' keys available', 'success');
+            }, 500);
+        }
+
+        // Oracle Feed Functions
+        function showRequestFeedForm() {
+            document.getElementById('requestFeedForm').style.display = 'block';
+        }
+
+        function hideRequestFeedForm() {
+            document.getElementById('requestFeedForm').style.display = 'none';
+        }
+
+        async function submitFeedRequest() {
+            const dataType = document.getElementById('feedDataType').value;
+            const sourceUrl = document.getElementById('feedSourceUrl').value;
+            const reward = document.getElementById('feedReward').value;
+            const minReporters = document.getElementById('feedMinReporters').value;
+            const slaUptime = document.getElementById('feedSlaUptime').value;
+            const slaLatency = document.getElementById('feedSlaLatency').value;
+            const duration = document.getElementById('feedDuration').value;
+
+            if (!sourceUrl) {
+                log('Please enter a source URL', 'error');
+                return;
+            }
+
+            log(`Submitting feed request: ${dataType} from ${sourceUrl}`, 'info');
+
+            // TODO: Submit to pallet-oracle-feeds extrinsic
+            // For now, show mock success
+            setTimeout(() => {
+                log(`Feed request submitted! Reward: ${reward} QMHY, Min reporters: ${minReporters}`, 'success');
+                hideRequestFeedForm();
+                // Add to active requests (mock)
+                const activeRequests = document.getElementById('oracleActiveFeeds');
+                activeRequests.textContent = parseInt(activeRequests.textContent) + 1;
+            }, 500);
+        }
+
+        function acceptFeed(feedId) {
+            log(`Accepting feed #${feedId}...`, 'info');
+            // TODO: Submit accept extrinsic
+            setTimeout(() => {
+                log(`Successfully accepted feed #${feedId}. You will now report data.`, 'success');
+                const myFeeds = document.getElementById('oracleMyFeeds');
+                myFeeds.textContent = parseInt(myFeeds.textContent) + 1;
+            }, 500);
         }
 
         // Auto-refresh chat every 5 seconds
