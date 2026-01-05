@@ -21,14 +21,15 @@ services:
       - "--chain=/config/chainspec.json"
       - "--base-path=/data"
       - "--name=${NODE_NAME:-Operator}"
+      - "--validator"
       - "--rpc-external"
       - "--rpc-cors=all"
       - "--rpc-methods=Unsafe"
       - "--network-backend=libp2p"
       - "--pool-type=single-state"
-      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWH93miqFA3KPsSjgFpwJdGw4WgnPxaLrmShPB6bbUFfWQ"
-      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWCcC6Qqjzoe34tGkFSMkSvef27FkdFjd7krzgvqAa78jV"
-      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWJJiAaXrKFufa6FcUmCWT7eihdBRPsiQXCEDVg8yf3ZwH"
+      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W"
+      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1"
+      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy"
     environment:
       - NODE_NAME=${NODE_NAME:-Operator}
     networks:
