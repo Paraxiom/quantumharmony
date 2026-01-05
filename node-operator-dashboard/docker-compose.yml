@@ -1,5 +1,6 @@
 # QuantumHarmony Node Operator
 # One-command deployment for node operators
+# Includes: blockchain node, messaging service, and dashboard
 
 services:
   # =====================================================
@@ -42,7 +43,36 @@ services:
       start_period: 60s
 
   # =====================================================
-  # DASHBOARD: Operator Web UI
+  # MESSAGING: Node Operator Service (VOTE SYNC)
+  # Post-quantum encrypted validator messaging
+  # =====================================================
+  operator:
+    image: sylvaincormier/quantumharmony-node-operator:latest
+    platform: linux/amd64
+    container_name: quantumharmony-operator
+    restart: unless-stopped
+    ports:
+      - "9955:9955"   # Operator API + VOTE SYNC messaging
+    volumes:
+      - operator-data:/data
+    environment:
+      - OPERATOR_PORT=9955
+      - DATA_DIR=/data
+      - RPC_URL=http://node:9944
+      - ALLOW_UNAUTHENTICATED=true
+    networks:
+      - quantum-net
+    depends_on:
+      - node
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9955/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # =====================================================
+  # DASHBOARD: Operator Web UI with VOTE SYNC
   # =====================================================
   dashboard:
     image: nginx:alpine
@@ -57,25 +87,7 @@ services:
       - quantum-net
     depends_on:
       - node
-
-  # =====================================================
-  # PROXY: Nginx Reverse Proxy
-  # =====================================================
-  nginx:
-    image: nginx:alpine
-    container_name: quantumharmony-proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
-    networks:
-      - quantum-net
-    depends_on:
-      - node
-      - dashboard
+      - operator
 
 networks:
   quantum-net:
@@ -83,3 +95,4 @@ networks:
 
 volumes:
   node-data:
+  operator-data:
