@@ -18,6 +18,7 @@ members = [
 	"pallets/academic-vouch",
 	"pallets/ricardian-contracts",
 	"pallets/notarial",
+	"pallets/oracle-feeds",
 	"tools/runtime-upgrade",
 	# "wallet", # Temporarily excluded - missing warp dependency
 	# quantum-crypto and proof-of-coherence are in Paraxiom/polkadot-sdk fork
@@ -33,6 +34,7 @@ repository = "https://github.com/Paraxiom/quantumharmony"
 
 [workspace.dependencies]
 qkd-client = { path = "pallets/qkd-client", default-features = false }
+pallet-oracle-feeds = { path = "pallets/oracle-feeds", default-features = false }
 async-trait = { version = "0.1", default-features = false }
 bn = { package = "substrate-bn", version = "0.6", default-features = false }
 clap = { version = "4.5", default-features = false, features = ["derive", "deprecated"] }
