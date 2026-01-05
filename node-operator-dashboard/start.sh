@@ -21,15 +21,18 @@ show_help() {
     echo "  restart     Restart all services"
     echo "  logs        Show live logs"
     echo "  status      Show service status"
-    echo "  pull        Pull latest images"
-    echo "  clean       Stop and remove all data (fresh start)"
+    echo "  pull        Pull latest images only"
+    echo "  fresh       Full update: stop, remove images, git pull, start fresh"
+    echo "  clean       Stop and remove all data (WARNING: deletes blockchain data)"
     echo "  help        Show this help"
     echo ""
     echo "Environment variables:"
     echo "  NODE_NAME   Your validator name (default: Operator)"
     echo ""
-    echo "Example:"
-    echo "  NODE_NAME=MyValidator ./start.sh start"
+    echo "Examples:"
+    echo "  ./start.sh                    # Start with default name"
+    echo "  NODE_NAME=Edwin ./start.sh    # Start as 'Edwin'"
+    echo "  ./start.sh fresh              # Full update and restart"
     echo ""
 }
 
@@ -88,11 +91,41 @@ case "${1:-start}" in
         check_docker
         docker-compose ps
         ;;
-    pull|update)
+    pull)
         check_docker
         echo "Pulling latest images..."
         docker-compose pull
         echo "Done. Restart with: ./start.sh restart"
+        ;;
+    fresh|update)
+        check_docker
+        echo "Performing fresh start (stop, remove images, pull latest, start)..."
+        echo ""
+        echo "Stopping containers..."
+        docker-compose down 2>/dev/null || true
+        docker stop quantumharmony-node quantumharmony-dashboard quantumharmony-operator 2>/dev/null || true
+        docker rm quantumharmony-node quantumharmony-dashboard quantumharmony-operator 2>/dev/null || true
+        echo ""
+        echo "Removing old images..."
+        docker rmi sylvaincormier/quantumharmony-node:latest 2>/dev/null || true
+        docker rmi sylvaincormier/quantumharmony-node-operator:latest 2>/dev/null || true
+        docker rmi nginx:alpine 2>/dev/null || true
+        echo ""
+        echo "Pulling latest code..."
+        git pull origin main 2>/dev/null || echo "Git pull skipped (not a git repo or no remote)"
+        echo ""
+        echo "Pulling fresh images..."
+        docker-compose pull
+        echo ""
+        echo "Starting services..."
+        docker-compose up -d
+        echo ""
+        echo "Done! Services:"
+        echo "  Dashboard:    http://localhost:8080"
+        echo "  RPC:          http://localhost:9944"
+        echo "  VOTE SYNC:    http://localhost:9955"
+        echo ""
+        echo "View logs with: ./start.sh logs"
         ;;
     clean|reset)
         check_docker
