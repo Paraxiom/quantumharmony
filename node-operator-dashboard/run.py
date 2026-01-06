@@ -10,8 +10,8 @@ import json
 import os
 import webbrowser
 
-PORT = 8080
-DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+PORT = int(os.environ.get("PORT", 8081))  # Default 8081 to avoid Docker conflict
+DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard")
 
 # Default to production testnet, override with env var
 RPC_URL = os.environ.get("RPC_URL", "http://51.79.26.123:9944")
