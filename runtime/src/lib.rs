@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 19,  // v19: Add OracleFeeds pallet for decentralized data feeds
+    spec_version: 20,  // v20: Add TopologicalCoherence pallet for inference validation
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -518,6 +518,16 @@ impl pallet_consensus_level::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+// Topological Coherence pallet configuration
+parameter_types! {
+    pub const MaxTopologicalEntities: u32 = 100;
+}
+
+impl pallet_topological_coherence::Config for Runtime {
+    type MaxEntitiesPerAccount = MaxTopologicalEntities;
+    type WeightInfo = ();
+}
+
 // Oracle pallet configuration (decentralized CAD price feeds)
 parameter_types! {
     // Minimum 1000 QMHY stake to become a reporter
@@ -773,6 +783,9 @@ construct_runtime!(
 
         // Adaptive consensus level tracking
         ConsensusLevel: pallet_consensus_level,
+
+        // Topological coherence - inference validation on-chain
+        TopologicalCoherence: pallet_topological_coherence,
     }
 );
 

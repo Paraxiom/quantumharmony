@@ -9786,6 +9786,7 @@ dependencies = [
  "pallet-stablecoin",
  "pallet-sudo",
  "pallet-timestamp",
+ "pallet-topological-coherence",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
