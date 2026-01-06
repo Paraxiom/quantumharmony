@@ -9755,6 +9755,7 @@ dependencies = [
  "pallet-identity",
  "pallet-notarial",
  "pallet-oracle",
+ "pallet-oracle-feeds",
  "pallet-preimage",
  "pallet-proof-of-coherence",
  "pallet-proxy",
