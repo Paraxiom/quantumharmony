@@ -210,8 +210,8 @@ runtime-benchmarks = [
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-validator-entropy/runtime-benchmarks",
-	"pallet-relay-coordination/runtime-benchmarks",
-	# "pallet-topological-coherence/runtime-benchmarks",  # Ready when fork benchmarking is fixed
+	# "pallet-relay-coordination/runtime-benchmarks",  # API mismatch - needs fix
+	"pallet-topological-coherence/runtime-benchmarks",
 
 	# "pallet-validator-set/runtime-benchmarks",
 ]
