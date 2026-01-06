@@ -16,7 +16,8 @@ show_help() {
     echo "Usage: ./start.sh [command]"
     echo ""
     echo "Commands:"
-    echo "  start       Start all services (node + messaging + dashboard)"
+    echo "  start       Start all services (node + messaging + dashboard) [default]"
+    echo "  ui          Dashboard only - no Docker needed (port 8081)"
     echo "  stop        Stop all services"
     echo "  restart     Restart all services"
     echo "  logs        Show live logs"
@@ -28,11 +29,14 @@ show_help() {
     echo ""
     echo "Environment variables:"
     echo "  NODE_NAME   Your validator name (default: Operator)"
+    echo "  RPC_URL     RPC endpoint for 'ui' mode (default: Alice production)"
     echo ""
     echo "Examples:"
-    echo "  ./start.sh                    # Start with default name"
-    echo "  NODE_NAME=Edwin ./start.sh    # Start as 'Edwin'"
-    echo "  ./start.sh fresh              # Full update and restart"
+    echo "  ./start.sh                              # Start full node + dashboard"
+    echo "  NODE_NAME=Edwin ./start.sh              # Start as 'Edwin'"
+    echo "  ./start.sh ui                           # Dashboard only (no Docker)"
+    echo "  RPC_URL=http://localhost:9944 ./start.sh ui  # Dashboard to local node"
+    echo "  ./start.sh fresh                        # Full update and restart"
     echo ""
 }
 
@@ -69,6 +73,16 @@ case "${1:-start}" in
         echo "Services started! Opening dashboard..."
         sleep 2
         docker-compose logs -f
+        ;;
+    ui|dashboard-only)
+        echo "Starting dashboard only (connects to production testnet)..."
+        echo ""
+        echo "  Dashboard:  http://localhost:8081"
+        echo "  Network:    Production testnet (Alice)"
+        echo ""
+        echo "To connect to local node: RPC_URL=http://localhost:9944 ./start.sh ui"
+        echo ""
+        python3 run.py
         ;;
     stop|down)
         check_docker
