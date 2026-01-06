@@ -211,6 +211,7 @@ runtime-benchmarks = [
 	"pallet-identity/runtime-benchmarks",
 	"pallet-validator-entropy/runtime-benchmarks",
 	"pallet-relay-coordination/runtime-benchmarks",
+	# "pallet-topological-coherence/runtime-benchmarks",  # Ready when fork benchmarking is fixed
 
 	# "pallet-validator-set/runtime-benchmarks",
 ]
