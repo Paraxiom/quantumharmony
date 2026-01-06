@@ -1,10 +1,12 @@
 # QuantumHarmony Light Paper
 
-**Version 1.9 - January 2026**
+**Version 2.0 - January 2026**
 
 **Repository**: https://github.com/Paraxiom/quantumharmony
 
-> **Changelog v1.9**: Added Section 8 "Sovereignty and System-Level Auditability" — policy framing for vendor-agnostic, auditable quantum infrastructure.
+> **Changelog v2.0**: Added VOTE SYNC encrypted validator messaging. Added Node Operator one-command deployment.
+>
+> **v1.9**: Added Section 8 "Sovereignty and System-Level Auditability" — policy framing for vendor-agnostic, auditable quantum infrastructure.
 >
 > **v1.8**: Updated to Public Beta status. 600+ tests passing. 3 production validators live.
 >
@@ -259,6 +261,23 @@ This ensures:
 | Transaction censorship | Multiple leaders, rotation |
 | Replay attacks | Random nonce in each report |
 
+### 2.9 VOTE SYNC - Encrypted Validator Messaging
+
+Real-time encrypted messaging between validators using the Triple Ratchet protocol (Section 2.3):
+
+**Cryptographic Stack:**
+- **ML-KEM-768**: Key encapsulation for session establishment
+- **SPHINCS+**: Message signatures
+- **Triple Ratchet**: Forward secrecy (Falcon + Merkle + Symmetric ratchets)
+
+**Features:**
+- End-to-end encrypted validator coordination
+- Message history with read receipts
+- Peer discovery via blockchain identity
+- Accessible via Node Operator Dashboard
+
+**Implementation**: `node-operator/src/messaging.rs`, `crates/pq-triple-ratchet/`
+
 ## 3. Use Cases
 
 ### 3.1 QCAD Stablecoin
@@ -348,6 +367,26 @@ QuantumHarmony includes standard Substrate governance pallets:
 - 512-segment toroidal mesh parallelization
 - Docker deployment for node operators
 - Forkless runtime upgrades
+
+### Node Operator Deployment
+
+One-command deployment for validators and node operators:
+
+```bash
+./start.sh              # Full node + messaging + dashboard
+./start.sh fresh        # Update and restart (pulls latest)
+./start.sh ui           # Dashboard only (no Docker)
+```
+
+**Services:**
+| Port | Service |
+|------|---------|
+| 8080 | Dashboard (web UI) |
+| 9944 | RPC/WebSocket |
+| 9955 | VOTE SYNC messaging |
+| 30333 | P2P |
+
+Pre-configured bootnodes enable automatic peer discovery.
 
 ### Seeking
 - Security audit (pre-mainnet)
@@ -492,4 +531,4 @@ Theoretical foundations published on Zenodo with DOIs:
 
 ---
 
-*This document describes the system as implemented. Version 1.9, January 2026.*
+*This document describes the system as implemented. Version 2.0, January 2026.*
