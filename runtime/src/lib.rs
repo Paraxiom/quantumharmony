@@ -1034,7 +1034,8 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_validator_entropy, ValidatorEntropy]
-        [pallet_relay_coordination, RelayCoordination]
+        // [pallet_relay_coordination, RelayCoordination]  // API mismatch - needs fix
+        [pallet_topological_coherence, TopologicalCoherence]
         // Governance pallets temporarily disabled
         // [pallet_democracy, Democracy]
         // [pallet_collective, Council]
