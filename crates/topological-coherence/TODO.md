@@ -1,6 +1,4 @@
-# Topological Coherence - Implementation TODO
-
-**Status**: Local development (not committed to main repo)
+# Topological Coherence - Implementation Complete
 
 **Paper**: [Topological Constraints for Coherent Language Models](https://github.com/Paraxiom/topological-coherence)
 
@@ -10,77 +8,51 @@
 
 - [x] `Tonnetz<N>` struct with const generic grid size
 - [x] Toroidal distance calculation (L1 with wraparound)
-- [x] Linear index ↔ 2D coordinate conversion
 - [x] Spectral gap computation (λ₁ = 2 - 2cos(2π/N))
-- [x] Decay rate for non-resonant modes
 - [x] Property tests: symmetry, identity, triangle inequality
-- [x] Max distance bounded test
-- [x] Coordinate roundtrip test
 
 ## Phase 2: Mask Variants - COMPLETE
 
 - [x] `MaskType` enum: HardCutoff, SoftExponential, Hybrid
-- [x] Hard cutoff mask: `M(i,j) = 1 if d ≤ r, else 0`
-- [x] Soft exponential: `M(i,j) = exp(-α * d)`
-- [x] Hybrid mask (default): `1 if d ≤ r, else exp(-α*(d-r))`
 - [x] `ToroidalMask` with configurable type
 - [x] `sinkhorn_knopp()` for doubly-stochastic projection
-- [x] `is_doubly_stochastic()` verification
-- [x] Tests for all mask variants
-- [x] Sinkhorn-Knopp convergence test
 
-## Phase 3: Substrate Integration - COMPLETE
+## Phase 3: QuantumHarmony Integration - COMPLETE
 
-- [x] SCALE codec support (`parity-scale-codec`, `scale-info`)
-- [x] `ToroidalPosition` - storage-optimized position type
-- [x] `CoherenceConfig` - on-chain configuration storage
-- [x] `CoherenceResult` - validation result type
-- [x] `substrate` feature flag for optional dependencies
-- [x] Tests for all integration types
-- [ ] Add to workspace `Cargo.toml` (when ready to commit)
-- [ ] Off-chain worker trait implementation (future)
-- [ ] Benchmarks for on-chain verification cost (future)
+- [x] Added to workspace
+- [x] SCALE codec support (substrate feature)
+- [x] `ToroidalPosition`, `CoherenceConfig`, `CoherenceResult`
 
-## Phase 4: Advanced Features - PENDING
+## Phase 4: Advanced Features - COMPLETE
 
-- [ ] Learned projection: `φ_θ(e) = (σ(W₁e) mod 1, σ(W₂e) mod 1)`
-- [ ] Adjacency loss: `L_topo = E[d_T(φ(a), φ(b))] - λ·E[d_T(φ(a), φ(c))]`
-- [ ] Multi-scale Tonnetz (6x6, 12x12, 24x24)
-- [ ] Higher-dimensional tori (T^3, T^4)
-- [ ] Sparse mask representation (CSR format)
+- [x] `Torus3D<N>`: Higher-dimensional 3D torus (T^3)
+- [x] `MultiScaleTonnetz`: Hierarchical multi-scale distance
+- [x] `LearnedProjection`: φ_θ(e) = (σ(W₁e) mod 1, σ(W₂e) mod 1)
+- [x] `AdjacencyLoss<N>`: Training loss for embeddings
+- [x] `SparseMask`: CSR format for memory efficiency
 
-## Phase 5: Pallet Development - PENDING
+## Phase 5: Pallet Development - COMPLETE
 
-- [ ] `pallet-topological-coherence`
-- [ ] Store topological embeddings on-chain
-- [ ] Verify coherence bounds in extrinsics
-- [ ] Oracle integration for off-chain ML validation
-- [ ] Governance for parameter updates (radius, alpha)
+- [x] `pallet-topological-coherence`
+- [x] Entity registration and transition validation
+- [x] Account flagging for violations
+- [x] Governance-controlled configuration
 
 ---
 
 ## Test Summary
 
 ```
-27 tests passed:
-- 4 basic distance tests
-- 5 property tests (metric space axioms)
-- 2 spectral gap tests
-- 5 mask type tests
-- 2 Sinkhorn-Knopp tests
-- 2 drift meter tests
-- 1 coordinate conversion test
-- 6 Substrate integration type tests
+41 tests passing:
+- Core topology (4 tests)
+- Property tests (5 tests)
+- Spectral gap (2 tests)
+- Mask variants (5 tests)
+- Sinkhorn-Knopp (2 tests)
+- Drift meter (2 tests)
+- Substrate types (6 tests)
+- Phase 4 advanced (15 tests)
 ```
-
----
-
-## Feature Flags
-
-| Feature | Dependencies | Use Case |
-|---------|--------------|----------|
-| `std` (default) | - | Standard library support |
-| `substrate` | parity-scale-codec, scale-info | Substrate/Polkadot integration |
 
 ---
 
@@ -88,18 +60,30 @@
 
 ```rust
 // Core topology
-let dist = Tonnetz::<12>::distance((0,0), (5,7));
-let gap = Tonnetz::<12>::spectral_gap();
+Tonnetz::<12>::distance((0,0), (5,7))
+Tonnetz::<12>::spectral_gap()
 
-// Mask generation
-let mask = ToroidalMask::new(64, 2.0, 1.0);
-let m = mask.generate();
-let ds = mask.generate_doubly_stochastic(50);
+// 3D torus
+Torus3D::<8>::distance((0,0,0), (4,4,4))
 
-// Substrate types (with `substrate` feature)
-let pos = ToroidalPosition::new(5, 7);
-let config = CoherenceConfig::default();
-let result = CoherenceResult::from_meter(&meter, 0.1);
+// Multi-scale
+let ms = MultiScaleTonnetz::default();
+ms.distance(a, b)
+
+// Learned projection
+let proj = LearnedProjection::new(input_dim, grid_size);
+let (row, col) = proj.project(&embedding);
+
+// Adjacency loss
+let mut loss = AdjacencyLoss::<12>::new(0.5);
+loss.record_positive(a, b);
+loss.record_negative(a, c);
+loss.loss()
+
+// Sparse mask
+let sparse = SparseMask::from_toroidal(&mask, 0.1);
+sparse.get(i, j)
+sparse.sparsity()
 ```
 
 ---
@@ -109,4 +93,3 @@ let result = CoherenceResult::from_meter(&meter, 0.1);
 - Cormier (2026): Topological Constraints for Coherent Language Models
 - ERLHS: DOI 10.5281/zenodo.17928909
 - Karmonic Mesh: DOI 10.5281/zenodo.17928991
-- mHC (DeepSeek): arXiv:2512.24880
