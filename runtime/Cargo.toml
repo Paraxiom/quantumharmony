@@ -98,6 +98,7 @@ pallet-notarial = { path = "../pallets/notarial", default-features = false }
 pallet-fideicommis = { path = "../pallets/fideicommis", default-features = false }
 pallet-stablecoin = { path = "../pallets/stablecoin", default-features = false }
 pallet-oracle = { path = "../pallets/oracle", default-features = false }
+pallet-oracle-feeds = { path = "../pallets/oracle-feeds", default-features = false }
 
 # Validator rewards pallet
 pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false }
@@ -176,6 +177,7 @@ std = [
 	"pallet-fideicommis/std",
 	"pallet-stablecoin/std",
 	"pallet-oracle/std",
+	"pallet-oracle-feeds/std",
 	"pallet-consensus-level/std",
 
 	# Governance pallets

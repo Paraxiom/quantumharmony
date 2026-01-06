@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 18,  // v18: Fix validator count log spam when SubstrateValidatorSet is empty
+    spec_version: 19,  // v19: Add OracleFeeds pallet for decentralized data feeds
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -541,6 +541,22 @@ impl pallet_oracle::Config for Runtime {
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 
+// Oracle Feeds configuration (v19)
+parameter_types! {
+    pub const OracleFeedsMinReporters: u8 = 2;
+    pub const OracleFeedsMaxFeedsPerAccount: u32 = 10;
+    pub const OracleFeedsSlashPercent: sp_runtime::Percent = sp_runtime::Percent::from_percent(10);
+}
+
+impl pallet_oracle_feeds::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type Balance = Balance;
+    type MinReporters = OracleFeedsMinReporters;
+    type MaxFeedsPerAccount = OracleFeedsMaxFeedsPerAccount;
+    type SlashPercent = OracleFeedsSlashPercent;
+}
+
 // Governance parameters
 parameter_types! {
     pub const LaunchPeriod: BlockNumber = 7 * DAYS;
@@ -753,6 +769,7 @@ construct_runtime!(
         Fideicommis: pallet_fideicommis,
         Stablecoin: pallet_stablecoin,
         Oracle: pallet_oracle,
+        OracleFeeds: pallet_oracle_feeds,  // v19: Decentralized data feeds
 
         // Adaptive consensus level tracking
         ConsensusLevel: pallet_consensus_level,
