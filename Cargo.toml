@@ -7,6 +7,9 @@ members = [
 	# Validator messaging (PQ Triple Ratchet + ZK)
 	"crates/pq-triple-ratchet",
 
+	# Topological coherence for inference validation
+	"crates/topological-coherence",
+
 	"pallets/substrate-validator-set",
 	"pallets/validator-governance",
 	"pallets/qkd-client",
@@ -35,6 +38,7 @@ repository = "https://github.com/Paraxiom/quantumharmony"
 [workspace.dependencies]
 qkd-client = { path = "pallets/qkd-client", default-features = false }
 pallet-oracle-feeds = { path = "pallets/oracle-feeds", default-features = false }
+topological-coherence = { path = "crates/topological-coherence", default-features = false }
 async-trait = { version = "0.1", default-features = false }
 bn = { package = "substrate-bn", version = "0.6", default-features = false }
 clap = { version = "4.5", default-features = false, features = ["derive", "deprecated"] }
