@@ -453,6 +453,15 @@ fn testnet_genesis(
                 .iter()
                 .map(|(account, _)| account.clone())
                 .collect::<Vec<_>>()
+        },
+        // Topological Coherence - on-chain inference validation
+        "topologicalCoherence": {
+            "config": {
+                "gridSize": 12,          // 12x12 Tonnetz torus
+                "driftThreshold": 2,     // Max allowed distance per transition
+                "maxViolationRate": 100, // 10% max violation rate (scaled by 1000)
+                "minTransitions": 10     // Minimum transitions before evaluation
+            }
         }
         // NOTE: Council and TechnicalCommittee removed - not in runtime
         // ConsensusLevel pallet uses defaults (genesis config not registered)
