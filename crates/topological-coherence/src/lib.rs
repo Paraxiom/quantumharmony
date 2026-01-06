@@ -547,6 +547,331 @@ impl CoherenceResult {
 }
 
 // =============================================================================
+// Phase 4: Advanced Features
+// =============================================================================
+
+/// 3D Torus topology (T^3).
+///
+/// Higher-dimensional torus for richer semantic spaces.
+/// Distance is L1 with wraparound in all three dimensions.
+#[derive(Debug, Clone, Copy)]
+pub struct Torus3D<const N: usize>;
+
+impl<const N: usize> Torus3D<N> {
+    /// Create a new 3D torus topology.
+    pub const fn new() -> Self {
+        Self
+    }
+
+    /// Total number of positions.
+    pub const fn total_positions() -> usize {
+        N * N * N
+    }
+
+    /// Convert linear index to 3D coordinates.
+    #[inline]
+    pub const fn to_coords(index: usize) -> (usize, usize, usize) {
+        let z = index / (N * N);
+        let rem = index % (N * N);
+        let y = rem / N;
+        let x = rem % N;
+        (x, y, z)
+    }
+
+    /// Convert 3D coordinates to linear index.
+    #[inline]
+    pub const fn to_index(x: usize, y: usize, z: usize) -> usize {
+        (z % N) * N * N + (y % N) * N + (x % N)
+    }
+
+    /// 3D toroidal distance (L1 with wraparound).
+    #[inline]
+    pub fn distance(a: (usize, usize, usize), b: (usize, usize, usize)) -> usize {
+        let dx = a.0.abs_diff(b.0);
+        let dy = a.1.abs_diff(b.1);
+        let dz = a.2.abs_diff(b.2);
+
+        let dx_wrap = if dx > N / 2 { N - dx } else { dx };
+        let dy_wrap = if dy > N / 2 { N - dy } else { dy };
+        let dz_wrap = if dz > N / 2 { N - dz } else { dz };
+
+        dx_wrap + dy_wrap + dz_wrap
+    }
+
+    /// Spectral gap for 3D torus.
+    pub fn spectral_gap() -> f32 {
+        // For T^3, gap is same as T^2 for fixed N
+        let pi = core::f32::consts::PI;
+        2.0 - 2.0 * cosf(2.0 * pi / N as f32)
+    }
+}
+
+impl<const N: usize> Default for Torus3D<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Multi-scale Tonnetz configuration.
+///
+/// Combines multiple grid sizes for hierarchical coherence.
+#[derive(Debug, Clone)]
+pub struct MultiScaleTonnetz {
+    /// Grid sizes (e.g., [6, 12, 24])
+    pub scales: [usize; 3],
+    /// Weights for each scale
+    pub weights: [f32; 3],
+}
+
+impl Default for MultiScaleTonnetz {
+    fn default() -> Self {
+        Self {
+            scales: [6, 12, 24],
+            weights: [0.5, 0.3, 0.2],
+        }
+    }
+}
+
+impl MultiScaleTonnetz {
+    /// Create with custom scales and weights.
+    pub fn new(scales: [usize; 3], weights: [f32; 3]) -> Self {
+        Self { scales, weights }
+    }
+
+    /// Weighted multi-scale distance.
+    pub fn distance(&self, a: (usize, usize), b: (usize, usize)) -> f32 {
+        let mut total = 0.0;
+        for (i, &scale) in self.scales.iter().enumerate() {
+            let d = Self::distance_at_scale(a, b, scale) as f32;
+            total += self.weights[i] * d;
+        }
+        total
+    }
+
+    fn distance_at_scale(a: (usize, usize), b: (usize, usize), n: usize) -> usize {
+        // Map positions to scale
+        let a_scaled = (a.0 % n, a.1 % n);
+        let b_scaled = (b.0 % n, b.1 % n);
+
+        let dx = a_scaled.0.abs_diff(b_scaled.0);
+        let dy = a_scaled.1.abs_diff(b_scaled.1);
+
+        let dx_wrap = if dx > n / 2 { n - dx } else { dx };
+        let dy_wrap = if dy > n / 2 { n - dy } else { dy };
+
+        dx_wrap + dy_wrap
+    }
+}
+
+/// Learned toroidal projection parameters.
+///
+/// Implements φ_θ(e) = (σ(W₁e) mod 1, σ(W₂e) mod 1)
+/// where σ is sigmoid and e is an embedding vector.
+#[derive(Debug, Clone)]
+pub struct LearnedProjection {
+    /// Input dimension
+    pub input_dim: usize,
+    /// Grid size for output
+    pub grid_size: usize,
+    /// Weight matrix W1 (flattened, grid_size elements)
+    pub w1: Vec<f32>,
+    /// Weight matrix W2 (flattened, grid_size elements)
+    pub w2: Vec<f32>,
+}
+
+impl LearnedProjection {
+    /// Create a new projection with random initialization.
+    #[cfg(feature = "std")]
+    pub fn new(input_dim: usize, grid_size: usize) -> Self {
+        // Initialize with small random values (placeholder - use proper RNG in practice)
+        let scale = 1.0 / (input_dim as f32).sqrt();
+        let w1 = (0..input_dim).map(|i| ((i * 7) % 100) as f32 * scale / 100.0 - scale / 2.0).collect();
+        let w2 = (0..input_dim).map(|i| ((i * 13) % 100) as f32 * scale / 100.0 - scale / 2.0).collect();
+        Self { input_dim, grid_size, w1, w2 }
+    }
+
+    /// Sigmoid function.
+    fn sigmoid(x: f32) -> f32 {
+        1.0 / (1.0 + expf(-x))
+    }
+
+    /// Project embedding to torus position.
+    ///
+    /// φ_θ(e) = (σ(W₁·e) mod 1, σ(W₂·e) mod 1) * grid_size
+    pub fn project(&self, embedding: &[f32]) -> (usize, usize) {
+        assert_eq!(embedding.len(), self.input_dim);
+
+        // Compute W1 · e
+        let dot1: f32 = self.w1.iter().zip(embedding.iter()).map(|(w, e)| w * e).sum();
+        let x = Self::sigmoid(dot1);
+
+        // Compute W2 · e
+        let dot2: f32 = self.w2.iter().zip(embedding.iter()).map(|(w, e)| w * e).sum();
+        let y = Self::sigmoid(dot2);
+
+        // Map to grid
+        let row = ((x * self.grid_size as f32) as usize) % self.grid_size;
+        let col = ((y * self.grid_size as f32) as usize) % self.grid_size;
+
+        (row, col)
+    }
+}
+
+/// Adjacency loss computation.
+///
+/// L_topo = E[(a,b)~co-occur][d_T(φ(a), φ(b))] - λ · E[(a,c)~random][d_T(φ(a), φ(c))]
+///
+/// Co-occurring pairs should be close; random pairs should be far.
+#[derive(Debug, Clone)]
+pub struct AdjacencyLoss<const N: usize> {
+    /// Regularization weight for negative samples
+    pub lambda: f32,
+    /// Accumulated positive pair distances
+    positive_sum: f32,
+    positive_count: usize,
+    /// Accumulated negative pair distances
+    negative_sum: f32,
+    negative_count: usize,
+}
+
+impl<const N: usize> AdjacencyLoss<N> {
+    /// Create a new adjacency loss tracker.
+    pub fn new(lambda: f32) -> Self {
+        Self {
+            lambda,
+            positive_sum: 0.0,
+            positive_count: 0,
+            negative_sum: 0.0,
+            negative_count: 0,
+        }
+    }
+
+    /// Record a positive (co-occurring) pair.
+    pub fn record_positive(&mut self, a: (usize, usize), b: (usize, usize)) {
+        let d = Tonnetz::<N>::distance(a, b) as f32;
+        self.positive_sum += d;
+        self.positive_count += 1;
+    }
+
+    /// Record a negative (random) pair.
+    pub fn record_negative(&mut self, a: (usize, usize), c: (usize, usize)) {
+        let d = Tonnetz::<N>::distance(a, c) as f32;
+        self.negative_sum += d;
+        self.negative_count += 1;
+    }
+
+    /// Compute the loss.
+    ///
+    /// Lower is better: positive pairs close, negative pairs far.
+    pub fn loss(&self) -> f32 {
+        let pos_mean = if self.positive_count > 0 {
+            self.positive_sum / self.positive_count as f32
+        } else {
+            0.0
+        };
+
+        let neg_mean = if self.negative_count > 0 {
+            self.negative_sum / self.negative_count as f32
+        } else {
+            0.0
+        };
+
+        pos_mean - self.lambda * neg_mean
+    }
+
+    /// Reset accumulators.
+    pub fn reset(&mut self) {
+        self.positive_sum = 0.0;
+        self.positive_count = 0;
+        self.negative_sum = 0.0;
+        self.negative_count = 0;
+    }
+}
+
+/// Sparse mask in CSR (Compressed Sparse Row) format.
+///
+/// Efficient storage for sparse attention masks.
+#[cfg(feature = "std")]
+#[derive(Debug, Clone)]
+pub struct SparseMask {
+    /// Number of rows/columns
+    pub size: usize,
+    /// Row pointers (size + 1 elements)
+    pub row_ptr: Vec<usize>,
+    /// Column indices
+    pub col_idx: Vec<usize>,
+    /// Non-zero values
+    pub values: Vec<f32>,
+}
+
+#[cfg(feature = "std")]
+impl SparseMask {
+    /// Create from dense mask, keeping values above threshold.
+    pub fn from_dense(dense: &[Vec<f32>], threshold: f32) -> Self {
+        let size = dense.len();
+        let mut row_ptr = vec![0];
+        let mut col_idx = Vec::new();
+        let mut values = Vec::new();
+
+        for row in dense {
+            for (j, &val) in row.iter().enumerate() {
+                if val > threshold {
+                    col_idx.push(j);
+                    values.push(val);
+                }
+            }
+            row_ptr.push(col_idx.len());
+        }
+
+        Self { size, row_ptr, col_idx, values }
+    }
+
+    /// Create from ToroidalMask with threshold.
+    pub fn from_toroidal(mask: &ToroidalMask, threshold: f32) -> Self {
+        let dense = mask.generate();
+        Self::from_dense(&dense, threshold)
+    }
+
+    /// Number of non-zero elements.
+    pub fn nnz(&self) -> usize {
+        self.values.len()
+    }
+
+    /// Sparsity ratio (1.0 = fully sparse, 0.0 = fully dense).
+    pub fn sparsity(&self) -> f32 {
+        let total = self.size * self.size;
+        if total == 0 {
+            0.0
+        } else {
+            1.0 - (self.nnz() as f32 / total as f32)
+        }
+    }
+
+    /// Get value at (i, j), or 0 if not stored.
+    pub fn get(&self, i: usize, j: usize) -> f32 {
+        if i >= self.size {
+            return 0.0;
+        }
+
+        let start = self.row_ptr[i];
+        let end = self.row_ptr[i + 1];
+
+        for k in start..end {
+            if self.col_idx[k] == j {
+                return self.values[k];
+            }
+        }
+
+        0.0
+    }
+
+    /// Memory usage in bytes (approximate).
+    pub fn memory_bytes(&self) -> usize {
+        self.row_ptr.len() * 8 + self.col_idx.len() * 8 + self.values.len() * 4
+    }
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
@@ -864,5 +1189,136 @@ mod tests {
             is_coherent: true,
         };
         assert!((result.drift_rate() - 0.25).abs() < 0.001);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 4: Advanced Feature Tests
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn test_torus3d_distance_self() {
+        let d = Torus3D::<8>::distance((0, 0, 0), (0, 0, 0));
+        assert_eq!(d, 0);
+    }
+
+    #[test]
+    fn test_torus3d_distance_adjacent() {
+        let d = Torus3D::<8>::distance((0, 0, 0), (1, 0, 0));
+        assert_eq!(d, 1);
+    }
+
+    #[test]
+    fn test_torus3d_distance_wraparound() {
+        // On 8x8x8 torus, (0,0,0) to (7,0,0) should wrap to distance 1
+        let d = Torus3D::<8>::distance((0, 0, 0), (7, 0, 0));
+        assert_eq!(d, 1);
+    }
+
+    #[test]
+    fn test_torus3d_max_distance() {
+        // Max distance on 8x8x8 torus is 4+4+4=12
+        let d = Torus3D::<8>::distance((0, 0, 0), (4, 4, 4));
+        assert_eq!(d, 12);
+    }
+
+    #[test]
+    fn test_torus3d_coord_roundtrip() {
+        for idx in 0..512 {
+            let (x, y, z) = Torus3D::<8>::to_coords(idx);
+            let back = Torus3D::<8>::to_index(x, y, z);
+            assert_eq!(idx, back, "Roundtrip failed for index {}", idx);
+        }
+    }
+
+    #[test]
+    fn test_multi_scale_tonnetz_default() {
+        let ms = MultiScaleTonnetz::default();
+        assert_eq!(ms.scales, [6, 12, 24]);
+    }
+
+    #[test]
+    fn test_multi_scale_distance_same_point() {
+        let ms = MultiScaleTonnetz::default();
+        let d = ms.distance((0, 0), (0, 0));
+        assert_eq!(d, 0.0);
+    }
+
+    #[test]
+    fn test_multi_scale_distance_weighted() {
+        let ms = MultiScaleTonnetz::new([6, 12, 24], [1.0, 0.0, 0.0]);
+        // Only use 6x6 scale
+        let d = ms.distance((0, 0), (3, 3));
+        // On 6x6 torus, (0,0) to (3,3) = 3+3 = 6
+        assert_eq!(d, 6.0);
+    }
+
+    #[test]
+    fn test_learned_projection() {
+        let proj = LearnedProjection::new(4, 12);
+        let embedding = vec![1.0, 0.5, -0.5, 0.2];
+        let (row, col) = proj.project(&embedding);
+        assert!(row < 12);
+        assert!(col < 12);
+    }
+
+    #[test]
+    fn test_adjacency_loss_positive_pairs() {
+        let mut loss = AdjacencyLoss::<12>::new(0.5);
+        loss.record_positive((0, 0), (1, 1)); // distance 2
+        loss.record_positive((0, 0), (0, 1)); // distance 1
+        // Mean positive distance = 1.5
+        let l = loss.loss();
+        assert!((l - 1.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_adjacency_loss_with_negatives() {
+        let mut loss = AdjacencyLoss::<12>::new(0.5);
+        loss.record_positive((0, 0), (1, 0)); // distance 1
+        loss.record_negative((0, 0), (6, 6)); // distance 12
+        // Loss = 1 - 0.5 * 12 = -5
+        let l = loss.loss();
+        assert!((l - (-5.0)).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_sparse_mask_from_toroidal() {
+        let mask = ToroidalMask::hard_cutoff(16, 1.0, 4);
+        let sparse = SparseMask::from_toroidal(&mask, 0.5);
+        // Hard cutoff with radius 1 on 4x4 grid should have limited non-zeros
+        assert!(sparse.nnz() < 16 * 16);
+        assert!(sparse.sparsity() > 0.0);
+    }
+
+    #[test]
+    fn test_sparse_mask_get() {
+        let mask = ToroidalMask::hard_cutoff(16, 1.0, 4);
+        let dense = mask.generate();
+        let sparse = SparseMask::from_toroidal(&mask, 0.5);
+
+        // Spot check some values
+        for i in 0..16 {
+            for j in 0..16 {
+                let dense_val = dense[i][j];
+                let sparse_val = sparse.get(i, j);
+                if dense_val > 0.5 {
+                    assert!((dense_val - sparse_val).abs() < 0.001);
+                } else {
+                    assert_eq!(sparse_val, 0.0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_sparse_mask_memory() {
+        let mask = ToroidalMask::soft_exponential(64, 2.0, 12);
+        let sparse = SparseMask::from_toroidal(&mask, 0.1);
+        let dense_bytes = 64 * 64 * 4; // f32 = 4 bytes
+        let sparse_bytes = sparse.memory_bytes();
+        // Sparse should use less memory if sufficiently sparse
+        if sparse.sparsity() > 0.5 {
+            assert!(sparse_bytes < dense_bytes);
+        }
     }
 }
