@@ -31,16 +31,23 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
 
+pub mod weights;
+
 pub use pallet::*;
+pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use crate::weights::WeightInfo;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use topological_coherence::Tonnetz;
@@ -171,7 +178,7 @@ pub mod pallet {
         type MaxEntitiesPerAccount: Get<u32>;
 
         /// Weight information for extrinsics.
-        type WeightInfo: WeightInfo;
+        type WeightInfo: crate::weights::WeightInfo;
     }
 
     /// Global coherence configuration.
@@ -395,30 +402,6 @@ pub mod pallet {
             Self::deposit_event(Event::AccountUnflagged { account });
 
             Ok(())
-        }
-    }
-
-    /// Weight info trait.
-    pub trait WeightInfo {
-        fn register_entity() -> Weight;
-        fn submit_transition() -> Weight;
-        fn update_config() -> Weight;
-        fn unflag_account() -> Weight;
-    }
-
-    /// Default weights (placeholder).
-    impl WeightInfo for () {
-        fn register_entity() -> Weight {
-            Weight::from_parts(10_000, 0)
-        }
-        fn submit_transition() -> Weight {
-            Weight::from_parts(15_000, 0)
-        }
-        fn update_config() -> Weight {
-            Weight::from_parts(5_000, 0)
-        }
-        fn unflag_account() -> Weight {
-            Weight::from_parts(5_000, 0)
         }
     }
 

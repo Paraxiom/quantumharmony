@@ -525,7 +525,7 @@ parameter_types! {
 
 impl pallet_topological_coherence::Config for Runtime {
     type MaxEntitiesPerAccount = MaxTopologicalEntities;
-    type WeightInfo = ();
+    type WeightInfo = pallet_topological_coherence::weights::SubstrateWeight<Runtime>;
 }
 
 // Oracle pallet configuration (decentralized CAD price feeds)
