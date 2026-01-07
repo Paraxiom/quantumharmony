@@ -86,8 +86,8 @@ pub mod pallet {
     /// Coherence configuration parameters.
     #[derive(
         Clone, Copy, Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, TypeInfo, PartialEq, Eq,
+        serde::Serialize, serde::Deserialize,
     )]
-    #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
     pub struct CoherenceConfig {
         /// Grid size for Tonnetz topology (default 12)
         pub grid_size: u8,

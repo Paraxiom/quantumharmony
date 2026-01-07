@@ -667,6 +667,9 @@ impl MultiScaleTonnetz {
 ///
 /// Implements φ_θ(e) = (σ(W₁e) mod 1, σ(W₂e) mod 1)
 /// where σ is sigmoid and e is an embedding vector.
+///
+/// Note: Only available with `std` feature due to Vec usage.
+#[cfg(feature = "std")]
 #[derive(Debug, Clone)]
 pub struct LearnedProjection {
     /// Input dimension
@@ -679,9 +682,9 @@ pub struct LearnedProjection {
     pub w2: Vec<f32>,
 }
 
+#[cfg(feature = "std")]
 impl LearnedProjection {
     /// Create a new projection with random initialization.
-    #[cfg(feature = "std")]
     pub fn new(input_dim: usize, grid_size: usize) -> Self {
         // Initialize with small random values (placeholder - use proper RNG in practice)
         let scale = 1.0 / (input_dim as f32).sqrt();
