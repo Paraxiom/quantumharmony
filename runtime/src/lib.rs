@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 20,  // v20: Add TopologicalCoherence pallet for inference validation
+    spec_version: 18,  // v18: Fix validator count log spam when SubstrateValidatorSet is empty
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -465,7 +465,18 @@ impl pallet_notarial::Config for Runtime {
     type DefaultValidityPeriod = DefaultValidityPeriod;
 }
 
-// Fideicommis (civil law trust) pallet configuration
+// Mesh Forum pallet configuration
+parameter_types! {
+    pub const MaxMessageLength: u32 = 512;
+    pub const MaxMessages: u32 = 1000;
+}
+
+impl pallet_mesh_forum::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxMessageLength = MaxMessageLength;
+    type MaxMessages = MaxMessages;
+}
+
 parameter_types! {
     // Minimum 1 day before trigger (at 3s blocks = 28,800 blocks)
     pub const MinTrustDuration: BlockNumber = 28_800;
@@ -516,55 +527,6 @@ impl pallet_stablecoin::Config for Runtime {
 // Consensus Level pallet configuration
 impl pallet_consensus_level::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-}
-
-// Topological Coherence pallet configuration
-parameter_types! {
-    pub const MaxTopologicalEntities: u32 = 100;
-}
-
-impl pallet_topological_coherence::Config for Runtime {
-    type MaxEntitiesPerAccount = MaxTopologicalEntities;
-    type WeightInfo = pallet_topological_coherence::weights::SubstrateWeight<Runtime>;
-}
-
-// Oracle pallet configuration (decentralized CAD price feeds)
-parameter_types! {
-    // Minimum 1000 QMHY stake to become a reporter
-    pub const MinReporterStake: Balance = 1_000_000_000_000_000_000_000;
-    // Max 5% price deviation from median
-    pub const MaxPriceDeviation: u32 = 50_000;
-    // Aggregate prices every 100 blocks (~5 minutes at 3s blocks)
-    pub const AggregationPeriod: BlockNumber = 100;
-    // 10% slash for malicious reporters
-    pub const SlashPercent: u32 = 100_000;
-}
-
-impl pallet_oracle::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type MinReporterStake = MinReporterStake;
-    type MaxPriceDeviation = MaxPriceDeviation;
-    type AggregationPeriod = AggregationPeriod;
-    type SlashPercent = SlashPercent;
-    type ForceOrigin = EnsureRoot<AccountId>;
-    type AdminOrigin = EnsureRoot<AccountId>;
-}
-
-// Oracle Feeds configuration (v19)
-parameter_types! {
-    pub const OracleFeedsMinReporters: u8 = 2;
-    pub const OracleFeedsMaxFeedsPerAccount: u32 = 10;
-    pub const OracleFeedsSlashPercent: sp_runtime::Percent = sp_runtime::Percent::from_percent(10);
-}
-
-impl pallet_oracle_feeds::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type Balance = Balance;
-    type MinReporters = OracleFeedsMinReporters;
-    type MaxFeedsPerAccount = OracleFeedsMaxFeedsPerAccount;
-    type SlashPercent = OracleFeedsSlashPercent;
 }
 
 // Governance parameters
@@ -776,16 +738,12 @@ construct_runtime!(
         AcademicVouch: pallet_academic_vouch,
         RicardianContracts: pallet_ricardian_contracts,
         Notarial: pallet_notarial,
+		MeshForum: pallet_mesh_forum,
         Fideicommis: pallet_fideicommis,
         Stablecoin: pallet_stablecoin,
-        Oracle: pallet_oracle,
-        OracleFeeds: pallet_oracle_feeds,  // v19: Decentralized data feeds
 
         // Adaptive consensus level tracking
         ConsensusLevel: pallet_consensus_level,
-
-        // Topological coherence - inference validation on-chain
-        TopologicalCoherence: pallet_topological_coherence,
     }
 );
 
@@ -1034,8 +992,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_validator_entropy, ValidatorEntropy]
-        // [pallet_relay_coordination, RelayCoordination]  // API mismatch - needs fix
-        [pallet_topological_coherence, TopologicalCoherence]
+        [pallet_relay_coordination, RelayCoordination]
         // Governance pallets temporarily disabled
         // [pallet_democracy, Democracy]
         // [pallet_collective, Council]
