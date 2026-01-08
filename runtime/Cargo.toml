@@ -95,19 +95,15 @@ pallet-dev-governance = { path = "../pallets/dev-governance", default-features =
 pallet-academic-vouch = { path = "../pallets/academic-vouch", default-features = false }
 pallet-ricardian-contracts = { path = "../pallets/ricardian-contracts", default-features = false }
 pallet-notarial = { path = "../pallets/notarial", default-features = false }
+pallet-mesh-forum = { path = "../pallets/mesh-forum", default-features = false }
 pallet-fideicommis = { path = "../pallets/fideicommis", default-features = false }
 pallet-stablecoin = { path = "../pallets/stablecoin", default-features = false }
-pallet-oracle = { path = "../pallets/oracle", default-features = false }
-pallet-oracle-feeds = { path = "../pallets/oracle-feeds", default-features = false }
 
 # Validator rewards pallet
 pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false }
 
 # Consensus level tracking pallet
 pallet-consensus-level = { path = "../pallets/consensus-level", default-features = false }
-
-# Topological coherence pallet
-pallet-topological-coherence = { workspace = true, default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
@@ -177,12 +173,10 @@ std = [
 	"pallet-academic-vouch/std",
 	"pallet-ricardian-contracts/std",
 	"pallet-notarial/std",
+	"pallet-mesh-forum/std",
 	"pallet-fideicommis/std",
 	"pallet-stablecoin/std",
-	"pallet-oracle/std",
-	"pallet-oracle-feeds/std",
 	"pallet-consensus-level/std",
-	"pallet-topological-coherence/std",
 
 	# Governance pallets
 	"pallet-democracy/std",
@@ -210,8 +204,7 @@ runtime-benchmarks = [
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-validator-entropy/runtime-benchmarks",
-	# "pallet-relay-coordination/runtime-benchmarks",  # API mismatch - needs fix
-	"pallet-topological-coherence/runtime-benchmarks",
+	"pallet-relay-coordination/runtime-benchmarks",
 
 	# "pallet-validator-set/runtime-benchmarks",
 ]
