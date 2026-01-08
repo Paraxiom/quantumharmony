@@ -1643,19 +1643,19 @@
 
                     <div class="form-group">
                         <label class="form-label">RPC Endpoint</label>
-                        <input type="text" class="form-input" id="settingsRpc" value="http://localhost:9944">
+                        <input type="text" class="form-input" id="settingsRpc" value="/rpc">
                     </div>
                     <div class="form-group">
                         <label class="form-label">QKD Endpoint</label>
-                        <input type="text" class="form-input" id="settingsQkd" value="http://localhost:8181">
+                        <input type="text" class="form-input" id="settingsQkd" value="/api">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Entropy Hub</label>
-                        <input type="text" class="form-input" id="settingsHub" value="http://localhost:8180">
+                        <input type="text" class="form-input" id="settingsHub" value="/api">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Controller</label>
-                        <input type="text" class="form-input" id="settingsController" value="http://localhost:9955">
+                        <input type="text" class="form-input" id="settingsController" value="/messaging">
                     </div>
 
                     <div class="form-group">
@@ -2004,8 +2004,8 @@
 
         let config = {
             rpc: RPC_URL,
-            qkd: 'http://localhost:8181',
-            hub: 'http://localhost:8180',
+            qkd: '/api',
+            hub: '/api',
             controller: window.location.origin
         };
 
