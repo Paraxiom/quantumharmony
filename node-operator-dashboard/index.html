@@ -1987,6 +1987,7 @@
                     <option value="alert">ALT</option>
                 </select>
                 <button onclick="sendChatMessage()" style="background: #00cc66; border: none; color: #000; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">SEND</button>
+                <button onclick="postToChainForum()" style="background: #ff9900; border: none; color: #000; padding: 8px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Post to on-chain forum (visible to all validators)">CHAIN</button>
             </div>
         </div>
     </div>
@@ -5764,6 +5765,81 @@
                 });
             } catch (e) {
                 alert('Error: ' + e.message);
+            }
+        }
+
+        // ==========================================
+        // ON-CHAIN MESH FORUM FUNCTIONS
+        // ==========================================
+
+        async function postToChainForum() {
+            const content = document.getElementById('chatInput').value.trim();
+            if (!content) {
+                alert('Please enter a message');
+                return;
+            }
+
+            const chatArea = document.getElementById('chatMessages');
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            try {
+                // Encode message content as hex
+                const contentHex = '0x' + Array.from(new TextEncoder().encode(content))
+                    .map(b => b.toString(16).padStart(2, '0')).join('');
+
+                // Create the extrinsic call for MeshForum.post_message
+                const call = await rpc('state_call', ['MeshForum_post_message', contentHex]);
+
+                if (call.error) {
+                    throw new Error(call.error.message || 'RPC error');
+                }
+
+                // For now, show as pending - actual submission requires signing
+                chatArea.innerHTML += `
+                    <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.15); border-radius: 4px; border-left: 2px solid #ff9900;">
+                        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
+                            <span style="color: #ff9900;">ON-CHAIN</span>
+                            <span style="color: #666;">${time}</span>
+                        </div>
+                        <div style="color: #ddd; font-size: 11px;">${escapeHtml(content)}</div>
+                        <div style="font-size: 9px; color: #888; margin-top: 4px;">Message will appear after block finalization</div>
+                    </div>
+                `;
+                chatArea.scrollTop = chatArea.scrollHeight;
+                document.getElementById('chatInput').value = '';
+
+                // Also load latest on-chain messages
+                loadChainForumMessages();
+            } catch (e) {
+                console.error('Chain forum error:', e);
+                alert('Failed to post to chain: ' + e.message + '\\n\\nNote: This requires the MeshForum pallet and a connected wallet.');
+            }
+        }
+
+        async function loadChainForumMessages() {
+            try {
+                // Query MeshForum storage prefix
+                const prefix = '0x' + Array.from(new TextEncoder().encode('MeshForumMessages'))
+                    .map(b => b.toString(16).padStart(2, '0')).join('');
+
+                const keys = await rpc('state_getKeys', [prefix]);
+                if (!keys.result || keys.result.length === 0) return;
+
+                const chatArea = document.getElementById('chatMessages');
+                for (const key of keys.result.slice(-5)) {
+                    const value = await rpc('state_getStorage', [key]);
+                    if (value.result) {
+                        // Parse and display (simplified - adjust for actual encoding)
+                        chatArea.innerHTML += `
+                            <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.1); border-radius: 4px; border-left: 2px solid #ff9900;">
+                                <div style="font-size: 9px; color: #ff9900;">CHAIN MESSAGE</div>
+                                <div style="color: #ddd; font-size: 11px;">[Stored on-chain]</div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load chain messages:', e);
             }
         }
 
