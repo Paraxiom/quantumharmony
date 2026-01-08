@@ -1,6 +1,7 @@
-# QuantumHarmony Node Operator
+# QuantumHarmony Node Operator v1.1
 # One-command deployment for node operators
 # Includes: blockchain node, messaging service, and dashboard
+# Updated: January 2026 - Fixed cache/CORS, env-based bootnodes
 
 services:
   # =====================================================
@@ -18,21 +19,11 @@ services:
     volumes:
       - node-data:/data
       - ./configs/chain-spec.json:/config/chainspec.json:ro
-    command:
-      - "--chain=/config/chainspec.json"
-      - "--base-path=/data"
-      - "--name=${NODE_NAME:-Operator}"
-      - "--validator"
-      - "--rpc-external"
-      - "--rpc-cors=all"
-      - "--rpc-methods=Unsafe"
-      - "--network-backend=libp2p"
-      - "--pool-type=single-state"
-      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W"
-      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1"
-      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy"
     environment:
       - NODE_NAME=${NODE_NAME:-Operator}
+      - VALIDATOR=${VALIDATOR:-true}
+      - RPC_METHODS=${RPC_METHODS:-Unsafe}
+      - BOOTNODES=${BOOTNODES:-/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W,/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1,/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy}
     networks:
       - quantum-net
     healthcheck:
