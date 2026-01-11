@@ -698,10 +698,10 @@
             <button class="nav-btn" onclick="showPanel('keys')">KEYS</button>
             <button class="nav-btn" onclick="showPanel('quantum')">QUANTUM</button>
             <button class="nav-btn" onclick="showPanel('network')">NETWORK</button>
-            <button class="nav-btn" onclick="showPanel('reporter')">REPORTER</button>
+            <button class="nav-btn" onclick="showPanel('signals')">SIGNALS</button>
+            <button class="nav-btn" onclick="showPanel('proofs')">PROOFS</button>
             <div class="nav-spacer"></div>
             <button class="nav-btn" onclick="showPanel('settings')">SETTINGS</button>
-            <button class="nav-btn" onclick="showPanel('proofs')">PROOFS</button>
         </div>
 
         <!-- Main Content -->
@@ -1387,19 +1387,103 @@
                     </div>
                 </div>
 
-                <!-- REPORTER PANEL - Quantum Data Services -->
-                <div id="panel-reporter" class="panel">
-                    <h2 class="panel-title">Quantum Data Services</h2>
+                <!-- SIGNALS PANEL - Quantum-Secured Data Intelligence -->
+                <div id="panel-signals" class="panel">
+                    <h2 class="panel-title">Quantum-Secured Signals</h2>
 
                     <!-- Tab Navigation -->
                     <div style="display: flex; gap: 4px; margin-bottom: var(--space-3); border-bottom: 2px solid var(--lcars-gold-dark); padding-bottom: 8px;">
-                        <button class="btn btn-secondary reporter-tab active" onclick="showReporterTab('qrng')" id="tab-qrng">QRNG POOL</button>
+                        <button class="btn btn-secondary reporter-tab active" onclick="showReporterTab('tao')" id="tab-tao">TAO INTELLIGENCE</button>
+                        <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('qrng')" id="tab-qrng">QRNG POOL</button>
                         <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('qkd')" id="tab-qkd">QKD ROUTING</button>
-                        <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('oracle')" id="tab-oracle">ORACLE FEEDS</button>
+                        <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('oracle')" id="tab-oracle">ORACLE</button>
+                    </div>
+
+                    <!-- TAO INTELLIGENCE SECTION -->
+                    <div id="reporter-tao" class="reporter-section">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">SIGNAL API</div>
+                                <div class="stat-value green" id="taoApiStatus">LIVE</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">TAO SUBNETS</div>
+                                <div class="stat-value blue" id="taoSubnetCount">32</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">X402 PROTOCOL</div>
+                                <div class="stat-value gold">ENABLED</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">ATTESTATION</div>
+                                <div class="stat-value" style="color: var(--accent-success);">SPHINCS+</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Live Signal Feed</div>
+                        <div class="info-box" id="taoSignalFeed" style="max-height: 180px; overflow-y: auto;">
+                            <div class="info-row">
+                                <span class="info-label">SN8 (Taoshi)</span>
+                                <span class="info-value"><span style="color: var(--accent-success); font-weight: 600;">LONG</span> BTC <span style="color: var(--text-muted);">(87%)</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">SN18 (Cortex)</span>
+                                <span class="info-value"><span style="color: var(--accent-warning); font-weight: 600;">HOLD</span> ETH <span style="color: var(--text-muted);">(72%)</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">SN19 (Inference)</span>
+                                <span class="info-value"><span style="color: var(--accent-danger); font-weight: 600;">SHORT</span> SOL <span style="color: var(--text-muted);">(65%)</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">SN8 (Taoshi)</span>
+                                <span class="info-value"><span style="color: var(--accent-success); font-weight: 600;">LONG</span> TAO <span style="color: var(--text-muted);">(91%)</span></span>
+                            </div>
+                        </div>
+
+                        <div class="section-title" style="margin-top: var(--space-3);">Top Subnets by Emission</div>
+                        <div id="taoSubnetList" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                            <div class="stat-card" style="padding: 8px;">
+                                <div class="stat-label" style="font-size: 9px;">SN8 Taoshi</div>
+                                <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">18.2%</div>
+                            </div>
+                            <div class="stat-card" style="padding: 8px;">
+                                <div class="stat-label" style="font-size: 9px;">SN1 Apex</div>
+                                <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">12.4%</div>
+                            </div>
+                            <div class="stat-card" style="padding: 8px;">
+                                <div class="stat-label" style="font-size: 9px;">SN18 Cortex</div>
+                                <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">8.7%</div>
+                            </div>
+                            <div class="stat-card" style="padding: 8px;">
+                                <div class="stat-label" style="font-size: 9px;">SN19 Inference</div>
+                                <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">6.1%</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title" style="margin-top: var(--space-3);">X402 Agent Payments</div>
+                        <div class="info-box">
+                            <div class="info-row">
+                                <span class="info-label">Protocol</span>
+                                <span class="info-value">X-402-Payment, X-402-Signature</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Payment Chains</span>
+                                <span class="info-value">TAO, Base, Polygon, Solana</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">API Endpoint</span>
+                                <span class="info-value" style="font-family: 'JetBrains Mono'; font-size: 10px;">http://209.38.225.4/api</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: var(--space-3);">
+                            <button class="btn btn-primary" onclick="refreshTaoSignals()">REFRESH SIGNALS</button>
+                            <button class="btn btn-secondary" onclick="window.open('http://209.38.225.4/api/docs', '_blank')">API DOCS</button>
+                        </div>
                     </div>
 
                     <!-- QRNG POOL SECTION -->
-                    <div id="reporter-qrng" class="reporter-section">
+                    <div id="reporter-qrng" class="reporter-section" style="display: none;">
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-label">LOCAL ENTROPY</div>
@@ -5226,23 +5310,23 @@
             }
         }
 
-        // Auto-refresh reporter panel every 30 seconds
+        // Auto-refresh signals panel every 30 seconds
         setInterval(() => {
-            if (document.getElementById('panel-reporter')?.classList.contains('active')) {
+            if (document.getElementById('panel-signals')?.classList.contains('active')) {
+                refreshTaoSignals();
                 updateReporterStatus();
                 fetchOraclePrices();
-                fetchReporters();
             }
         }, 30000);
 
-        // Initialize reporter panel when shown
+        // Initialize signals panel when shown
         const originalShowPanel = showPanel;
         showPanel = function(name) {
             originalShowPanel(name);
-            if (name === 'reporter') {
+            if (name === 'signals') {
+                refreshTaoSignals();
                 updateReporterStatus();
                 fetchOraclePrices();
-                fetchReporters();
             }
             if (name === 'messages') {
                 checkMessagingStatus();
@@ -5844,8 +5928,39 @@
         }
 
         // ==========================================
-        // REPORTER TAB FUNCTIONS
+        // SIGNALS TAB FUNCTIONS
         // ==========================================
+
+        async function refreshTaoSignals() {
+            try {
+                const response = await fetch('http://209.38.225.4/api/subnets');
+                if (response.ok) {
+                    const subnets = await response.json();
+                    document.getElementById('taoApiStatus').textContent = 'LIVE';
+                    document.getElementById('taoApiStatus').style.color = 'var(--accent-success)';
+                    document.getElementById('taoSubnetCount').textContent = subnets.length;
+
+                    // Update top subnets
+                    const topSubnets = subnets
+                        .filter(s => s.emission > 0.01)
+                        .sort((a, b) => b.emission - a.emission)
+                        .slice(0, 4);
+
+                    let html = '';
+                    topSubnets.forEach(s => {
+                        const emissionPct = (s.emission * 100).toFixed(1);
+                        html += `<div class="stat-card" style="padding: 8px;">
+                            <div class="stat-label" style="font-size: 9px;">SN${s.netuid} ${s.name.split(' ')[0]}</div>
+                            <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">${emissionPct}%</div>
+                        </div>`;
+                    });
+                    document.getElementById('taoSubnetList').innerHTML = html;
+                }
+            } catch (e) {
+                document.getElementById('taoApiStatus').textContent = 'OFFLINE';
+                document.getElementById('taoApiStatus').style.color = 'var(--accent-danger)';
+            }
+        }
 
         function showReporterTab(tabName) {
             // Hide all sections
