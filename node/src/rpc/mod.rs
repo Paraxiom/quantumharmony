@@ -63,6 +63,10 @@ use oracle_rpc::{OracleRpc, OracleApiServer};
 pub mod pqc_rpc;
 use pqc_rpc::{PqcOracleRpc, PqcOracleApiServer};
 
+// MeshForum RPC - On-chain forum messaging between validators
+pub mod mesh_forum_rpc;
+use mesh_forum_rpc::{MeshForumRpc, MeshForumApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -190,6 +194,15 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ PQC Oracle RPC registered (pqc_* - SPHINCS+/QRNG/QKD)");
+
+    // Create MeshForum RPC instance for on-chain forum messaging
+    let mesh_forum_rpc = MeshForumRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge MeshForum RPC into module
+    module.merge(mesh_forum_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ MeshForum RPC registered (forum_* - on-chain validator messaging)");
 
     Ok(module)
 }
