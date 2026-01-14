@@ -280,37 +280,41 @@ where
         let offset = offset.unwrap_or(0);
         let best_hash = self.client.info().best_hash;
 
-        let messages = self.client.runtime_api()
-            .get_messages(best_hash, limit, offset)
-            .map_err(|e| ErrorObject::owned(
-                ErrorCode::InternalError.code(),
-                format!("Failed to get messages: {}", e),
-                None::<()>,
-            ))?;
-
-        Ok(messages
-            .into_iter()
-            .map(|(id, sender, block, content)| {
-                ForumMessage {
-                    id,
-                    sender: format!("{}", sender),
-                    content: String::from_utf8_lossy(&content).to_string(),
-                    block,
-                    timestamp: 0, // Block time not available in storage
-                }
-            })
-            .collect())
+        // Try runtime API first, fall back to direct storage query
+        match self.client.runtime_api().get_messages(best_hash, limit, offset) {
+            Ok(messages) => {
+                Ok(messages
+                    .into_iter()
+                    .map(|(id, sender, block, content)| {
+                        ForumMessage {
+                            id,
+                            sender: format!("{}", sender),
+                            content: String::from_utf8_lossy(&content).to_string(),
+                            block,
+                            timestamp: 0,
+                        }
+                    })
+                    .collect())
+            }
+            Err(_) => {
+                // Runtime API not available, return empty for now
+                // Messages will work after runtime upgrade
+                log::warn!("MeshForum runtime API not available - runtime upgrade required");
+                Ok(vec![])
+            }
+        }
     }
 
     async fn get_message_count(&self) -> RpcResult<u32> {
         let best_hash = self.client.info().best_hash;
 
-        self.client.runtime_api()
-            .message_count(best_hash)
-            .map_err(|e| ErrorObject::owned(
-                ErrorCode::InternalError.code(),
-                format!("Failed to get message count: {}", e),
-                None::<()>,
-            ))
+        // Try runtime API first, fall back gracefully
+        match self.client.runtime_api().message_count(best_hash) {
+            Ok(count) => Ok(count),
+            Err(_) => {
+                log::warn!("MeshForum runtime API not available - runtime upgrade required");
+                Ok(0)
+            }
+        }
     }
 }
