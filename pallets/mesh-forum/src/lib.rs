@@ -2,6 +2,8 @@
 
 pub use pallet::*;
 
+pub mod runtime_api;
+
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::pallet_prelude::*;

@@ -91,6 +91,7 @@ where
     C::Api: pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>,
     C::Api: quantumharmony_runtime::wallet_api::WalletApi<Block, AccountId, Balance>,
     C::Api: pallet_validator_rewards::runtime_api::ValidatorRewardsApi<Block, AccountId, Balance>,
+    C::Api: pallet_mesh_forum::runtime_api::MeshForumApi<Block, AccountId>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     Pool: TxPool<Block = Block> + 'static,
 {
