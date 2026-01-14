@@ -606,12 +606,14 @@ async fn new_full(
     let rpc_extensions_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
+        let keystore = keystore_container.keystore();
 
         Box::new(move |_spawn_handle| {
             let deps = crate::rpc::FullDeps {
                 client: client.clone(),
                 pool: pool.clone(),
                 deny_unsafe: sc_rpc_api::DenyUnsafe::No,
+                keystore: keystore.clone(),
             };
 
             crate::rpc::create_full(deps)

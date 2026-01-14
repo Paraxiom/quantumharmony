@@ -12,6 +12,7 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 // QUANTUM: Using SPHINCS+ instead of sr25519
 use sp_consensus_aura::sphincs::AuthorityId as AuraId;
 use jsonrpsee::RpcModule;
+use sp_keystore::KeystorePtr;
 
 // Runtime
 use quantumharmony_runtime::{opaque::Block, AccountId, Balance, Nonce};
@@ -75,6 +76,8 @@ pub struct FullDeps<C, P> {
     pub pool: Arc<P>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
+    /// Keystore for signing transactions (used by MeshForum RPC)
+    pub keystore: KeystorePtr,
 }
 
 /// Instantiate all Full RPC extensions
@@ -197,7 +200,7 @@ where
     log::info!("✅ PQC Oracle RPC registered (pqc_* - SPHINCS+/QRNG/QKD)");
 
     // Create MeshForum RPC instance for on-chain forum messaging
-    let mesh_forum_rpc = MeshForumRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+    let mesh_forum_rpc = MeshForumRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone(), deps.keystore.clone());
 
     // Merge MeshForum RPC into module
     module.merge(mesh_forum_rpc.into_rpc())
