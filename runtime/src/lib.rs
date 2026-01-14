@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 18,  // v18: Fix validator count log spam when SubstrateValidatorSet is empty
+    spec_version: 22,  // v22: Add MeshForum runtime API for reading messages
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
