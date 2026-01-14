@@ -30,6 +30,7 @@ use sp_blockchain::HeaderBackend;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use frame_system_rpc_runtime_api::AccountNonceApi;
+use pallet_mesh_forum::runtime_api::MeshForumApi as MeshForumRuntimeApi;
 
 /// Post message request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,7 +128,8 @@ where
     C::Api: sp_block_builder::BlockBuilder<Block>
         + Core<Block>
         + substrate_frame_rpc_system::AccountNonceApi<Block, AccountId32, u32>
-        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId32, u32>,
+        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId32, u32>
+        + MeshForumRuntimeApi<Block, AccountId32>,
     P: TransactionPool<Block = Block> + 'static,
 {
     async fn post_message(&self, request: PostMessageRequest) -> RpcResult<PostMessageResponse> {
@@ -274,17 +276,41 @@ where
     }
 
     async fn get_messages(&self, limit: Option<u32>, offset: Option<u32>) -> RpcResult<Vec<ForumMessage>> {
-        // Query storage directly for messages
-        let _limit = limit.unwrap_or(50);
-        let _offset = offset.unwrap_or(0);
+        let limit = limit.unwrap_or(50);
+        let offset = offset.unwrap_or(0);
+        let best_hash = self.client.info().best_hash;
 
-        // TODO: Add runtime API for querying MeshForum storage
-        // For now, return empty - this requires runtime API integration
-        Ok(vec![])
+        let messages = self.client.runtime_api()
+            .get_messages(best_hash, limit, offset)
+            .map_err(|e| ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to get messages: {}", e),
+                None::<()>,
+            ))?;
+
+        Ok(messages
+            .into_iter()
+            .map(|(id, sender, block, content)| {
+                ForumMessage {
+                    id,
+                    sender: format!("{}", sender),
+                    content: String::from_utf8_lossy(&content).to_string(),
+                    block,
+                    timestamp: 0, // Block time not available in storage
+                }
+            })
+            .collect())
     }
 
     async fn get_message_count(&self) -> RpcResult<u32> {
-        // TODO: Add runtime API for querying MeshForum::MessageCount
-        Ok(0)
+        let best_hash = self.client.info().best_hash;
+
+        self.client.runtime_api()
+            .message_count(best_hash)
+            .map_err(|e| ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to get message count: {}", e),
+                None::<()>,
+            ))
     }
 }
