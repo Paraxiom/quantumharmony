@@ -4837,6 +4837,9 @@
             // Check quantum status
             updateQuantumStatus();
 
+            // Load on-chain forum messages
+            loadChainForumMessages();
+
             // Update every 5 seconds
             setInterval(fetchAllData, 5000);
             setInterval(updateQuantumStatus, 15000);
@@ -4844,6 +4847,9 @@
 
             // Refresh governance every 30 seconds
             setInterval(refreshProposals, 30000);
+
+            // Refresh on-chain forum messages every 30 seconds
+            setInterval(loadChainForumMessages, 30000);
 
             log('Dashboard initialized - all panels active', 'info');
         }
@@ -5867,18 +5873,14 @@
             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
             try {
-                // Encode message content as hex
-                const contentHex = '0x' + Array.from(new TextEncoder().encode(content))
-                    .map(b => b.toString(16).padStart(2, '0')).join('');
+                // Use forum_postMessage RPC - requires signer key or uses dev key
+                const result = await rpc('forum_postMessage', [{ content: content }]);
 
-                // Create the extrinsic call for MeshForum.post_message
-                const call = await rpc('state_call', ['MeshForum_post_message', contentHex]);
-
-                if (call.error) {
-                    throw new Error(call.error.message || 'RPC error');
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to post message');
                 }
 
-                // For now, show as pending - actual submission requires signing
+                // Show success with tx hash
                 chatArea.innerHTML += `
                     <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.15); border-radius: 4px; border-left: 2px solid #ff9900;">
                         <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
@@ -5886,42 +5888,47 @@
                             <span style="color: #666;">${time}</span>
                         </div>
                         <div style="color: #ddd; font-size: 11px;">${escapeHtml(content)}</div>
-                        <div style="font-size: 9px; color: #888; margin-top: 4px;">Message will appear after block finalization</div>
+                        <div style="font-size: 9px; color: #888; margin-top: 4px;">TX: ${result.txHash.substring(0, 18)}...</div>
                     </div>
                 `;
                 chatArea.scrollTop = chatArea.scrollHeight;
                 document.getElementById('chatInput').value = '';
 
-                // Also load latest on-chain messages
-                loadChainForumMessages();
+                // Refresh on-chain messages after a delay for block inclusion
+                setTimeout(() => loadChainForumMessages(), 12000);
             } catch (e) {
                 console.error('Chain forum error:', e);
-                alert('Failed to post to chain: ' + e.message + '\\n\\nNote: This requires the MeshForum pallet and a connected wallet.');
+                alert('Failed to post to chain: ' + e.message + '\\n\\nNote: Dev key account may need funds for transaction fees.');
             }
         }
 
         async function loadChainForumMessages() {
             try {
-                // Query MeshForum storage prefix
-                const prefix = '0x' + Array.from(new TextEncoder().encode('MeshForumMessages'))
-                    .map(b => b.toString(16).padStart(2, '0')).join('');
-
-                const keys = await rpc('state_getKeys', [prefix]);
-                if (!keys.result || keys.result.length === 0) return;
+                // Use forum_getMessages RPC to fetch on-chain messages
+                const messages = await rpc('forum_getMessages', [50, 0]);
+                if (!messages || messages.length === 0) return;
 
                 const chatArea = document.getElementById('chatMessages');
-                for (const key of keys.result.slice(-5)) {
-                    const value = await rpc('state_getStorage', [key]);
-                    if (value.result) {
-                        // Parse and display (simplified - adjust for actual encoding)
-                        chatArea.innerHTML += `
-                            <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.1); border-radius: 4px; border-left: 2px solid #ff9900;">
-                                <div style="font-size: 9px; color: #ff9900;">CHAIN MESSAGE</div>
-                                <div style="color: #ddd; font-size: 11px;">[Stored on-chain]</div>
+
+                // Clear existing chain messages and re-render
+                const existingLocal = chatArea.querySelectorAll('[data-local="true"]');
+                chatArea.innerHTML = '';
+                existingLocal.forEach(el => chatArea.appendChild(el.cloneNode(true)));
+
+                // Display on-chain messages
+                messages.forEach(msg => {
+                    const senderShort = msg.sender.substring(0, 8) + '...' + msg.sender.substring(msg.sender.length - 4);
+                    chatArea.innerHTML += `
+                        <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.1); border-radius: 4px; border-left: 2px solid #ff9900;">
+                            <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
+                                <span style="color: #ff9900;">CHAIN #${msg.block}</span>
+                                <span style="color: #666;">${senderShort}</span>
                             </div>
-                        `;
-                    }
-                }
+                            <div style="color: #ddd; font-size: 11px;">${escapeHtml(msg.content)}</div>
+                        </div>
+                    `;
+                });
+                chatArea.scrollTop = chatArea.scrollHeight;
             } catch (e) {
                 console.warn('Failed to load chain messages:', e);
             }
