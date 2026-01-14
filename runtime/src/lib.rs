@@ -963,6 +963,32 @@ impl_runtime_apis! {
             ValidatorRewards::total_staked()
         }
     }
+
+    impl pallet_mesh_forum::runtime_api::MeshForumApi<Block, AccountId> for Runtime {
+        fn get_messages(limit: u32, offset: u32) -> sp_std::vec::Vec<(u32, AccountId, u32, sp_std::vec::Vec<u8>)> {
+            let messages = pallet_mesh_forum::Messages::<Runtime>::get();
+            let total = messages.len() as u32;
+
+            messages
+                .into_iter()
+                .enumerate()
+                .skip(offset as usize)
+                .take(limit as usize)
+                .map(|(idx, msg)| {
+                    (
+                        idx as u32,
+                        msg.sender,
+                        msg.block.try_into().unwrap_or(0u32),
+                        msg.content.into_inner(),
+                    )
+                })
+                .collect()
+        }
+
+        fn message_count() -> u32 {
+            pallet_mesh_forum::MessageCount::<Runtime>::get()
+        }
+    }
 }
 
 #[cfg(feature = "std")]
