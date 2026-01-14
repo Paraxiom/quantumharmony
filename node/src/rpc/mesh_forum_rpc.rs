@@ -14,9 +14,11 @@ use jsonrpsee::{
 };
 use scale_codec::{Encode, Decode};
 use sp_core::{
-    sphincs::{Pair as SphincsPair, SignatureWithPublic},
+    sphincs::{Pair as SphincsPair, Public as SphincsPublic, SignatureWithPublic},
     Pair,
 };
+use sp_keystore::{KeystorePtr, Keystore};
+use sp_application_crypto::KeyTypeId;
 use sp_runtime::{
     generic::Era,
     traits::{Block as BlockT, IdentifyAccount},
@@ -83,6 +85,7 @@ pub trait MeshForumApi<BlockHash> {
 pub struct MeshForumRpc<C, P, Block> {
     client: Arc<C>,
     pool: Arc<P>,
+    keystore: KeystorePtr,
     _marker: std::marker::PhantomData<Block>,
 }
 
@@ -91,10 +94,11 @@ where
     Block: BlockT,
     C: ProvideRuntimeApi<Block>,
 {
-    pub fn new(client: Arc<C>, pool: Arc<P>) -> Self {
+    pub fn new(client: Arc<C>, pool: Arc<P>, keystore: KeystorePtr) -> Self {
         Self {
             client,
             pool,
+            keystore,
             _marker: std::marker::PhantomData,
         }
     }
@@ -152,26 +156,42 @@ where
             ));
         }
 
-        // Get or create signing keypair
-        let keypair = if let Some(ref key_hex) = request.signer_key {
-            self.get_keypair(key_hex)
+        // Get signing key - prefer keystore, fall back to provided key or dev key
+        let aura_keytype = KeyTypeId(*b"aura");
+
+        let (signer_public, use_keystore) = if let Some(ref key_hex) = request.signer_key {
+            // User provided a specific key
+            let keypair = self.get_keypair(key_hex)
                 .map_err(|e| ErrorObject::owned(
                     ErrorCode::InvalidParams.code(),
                     e,
                     None::<()>,
-                ))?
+                ))?;
+            (keypair.public(), false)
         } else {
-            // Use dev key
-            SphincsPair::from_string(DEV_FORUM_SEED, None)
-                .map_err(|_| ErrorObject::owned(
-                    ErrorCode::InternalError.code(),
-                    "Failed to derive dev key",
-                    None::<()>,
-                ))?
+            // Try keystore first - get SPHINCS+ keys
+            let keystore_keys = self.keystore.sphincs_public_keys(aura_keytype);
+
+            if !keystore_keys.is_empty() {
+                // Use first available keystore key
+                let public_key = keystore_keys[0].clone();
+                log::info!("📝 Using keystore SPHINCS+ key: 0x{}...", hex::encode(&public_key.0[..8]));
+                (public_key, true)
+            } else {
+                // Fall back to dev key (for development only)
+                log::warn!("⚠️  No SPHINCS+ keys in keystore, falling back to dev key");
+                let keypair = SphincsPair::from_string(DEV_FORUM_SEED, None)
+                    .map_err(|_| ErrorObject::owned(
+                        ErrorCode::InternalError.code(),
+                        "Failed to derive dev key and no keystore keys available",
+                        None::<()>,
+                    ))?;
+                (keypair.public(), false)
+            }
         };
 
         // Derive signer account
-        let signer_account = MultiSigner::from(keypair.public()).into_account();
+        let signer_account = MultiSigner::from(signer_public.clone()).into_account();
 
         log::info!("   Sender: {:?}", signer_account);
         log::info!("   Content: {}...", &request.content[..std::cmp::min(50, request.content.len())]);
@@ -232,10 +252,34 @@ where
             ),
         );
 
-        // Sign with SPHINCS+
-        let signature = raw_payload.using_encoded(|payload| keypair.sign(payload));
-        let sig_with_pub = SignatureWithPublic::new(signature, keypair.public());
-        let sphincs_signature = MultiSignature::SphincsPlus(sig_with_pub);
+        // Sign with SPHINCS+ - use keystore if available
+        let sphincs_signature = if use_keystore {
+            // Sign via keystore
+            let payload_bytes = raw_payload.using_encoded(|p| p.to_vec());
+            let signature = self.keystore.sphincs_sign(aura_keytype, &signer_public, &payload_bytes)
+                .map_err(|e| ErrorObject::owned(
+                    ErrorCode::InternalError.code(),
+                    format!("Keystore signing failed: {:?}", e),
+                    None::<()>,
+                ))?
+                .ok_or_else(|| ErrorObject::owned(
+                    ErrorCode::InternalError.code(),
+                    "Keystore returned no signature - key may not be available",
+                    None::<()>,
+                ))?;
+            let sig_with_pub = SignatureWithPublic::new(signature, signer_public.clone());
+            MultiSignature::SphincsPlus(sig_with_pub)
+        } else {
+            // Sign directly with keypair (dev key or user-provided)
+            let keypair = if let Some(ref key_hex) = request.signer_key {
+                self.get_keypair(key_hex).unwrap()
+            } else {
+                SphincsPair::from_string(DEV_FORUM_SEED, None).unwrap()
+            };
+            let signature = raw_payload.using_encoded(|payload| keypair.sign(payload));
+            let sig_with_pub = SignatureWithPublic::new(signature, keypair.public());
+            MultiSignature::SphincsPlus(sig_with_pub)
+        };
 
         // Build extrinsic
         use quantumharmony_runtime::UncheckedExtrinsic;
