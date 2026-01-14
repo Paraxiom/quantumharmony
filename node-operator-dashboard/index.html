@@ -2010,7 +2010,7 @@
             align-items: center;
             border-radius: 9px 9px 0 0;
         ">
-            <span style="color: #000; font-weight: bold; font-size: 14px;">VOTE SYNC</span>
+            <span style="color: #000; font-weight: bold; font-size: 14px;">VALIDATOR CHAT</span>
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span id="chatUnread" style="background: #ff0000; color: white; font-size: 9px; padding: 1px 5px; border-radius: 8px; display: none;">0</span>
                 <span id="chatToggleIcon" style="color: #000; font-size: 10px;">▼</span>
@@ -2028,35 +2028,12 @@
                 font-size: 14px;
                 line-height: 1.6;
             ">
-                <div style="color: #666; text-align: center; padding: 10px;">Click INIT to enable</div>
-            </div>
-
-            <!-- Validator List -->
-            <div style="padding: 6px; background: #12121a; border-top: 1px solid #333;">
-                <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
-                    <span id="chatFingerprint" onclick="showChatBundle()" style="color: #6699ff; font-size: 10px; padding: 3px 8px; background: rgba(100,150,255,0.15); border-radius: 4px; cursor: pointer;" title="Your ID">--</span>
-                    <button onclick="initChatMessaging()" id="chatInitBtn" style="background: #ff9900; border: none; color: #000; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">INIT</button>
-                </div>
-                <select id="chatRecipient" style="
-                    width: 100%;
-                    background: #0a0a0f;
-                    border: 1px solid #ff9900;
-                    color: #fff;
-                    padding: 6px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    margin-bottom: 8px;
-                ">
-                    <option value="">Select validator...</option>
-                    <option value="ALL">ALL VALIDATORS</option>
-                    <option value="97e3988b8c7e6f40">Alice</option>
-                    <option value="6bafb1037350eebd">Bob</option>
-                </select>
+                <div style="color: #666; text-align: center; padding: 10px;">Loading on-chain messages...</div>
             </div>
 
             <!-- Input Area -->
             <div style="padding: 8px; background: #12121a; display: flex; gap: 6px;">
-                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')sendChatMessage()" style="
+                <input type="text" id="chatInput" placeholder="Message to all validators..." onkeypress="if(event.key==='Enter')postToChainForum()" style="
                     flex: 1;
                     background: #0a0a0f;
                     border: 1px solid #444;
@@ -2065,13 +2042,7 @@
                     border-radius: 4px;
                     font-size: 12px;
                 ">
-                <select id="chatMsgType" style="background: #0a0a0f; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 4px; font-size: 11px; width: 55px;">
-                    <option value="text">TXT</option>
-                    <option value="vote">VOTE</option>
-                    <option value="alert">ALT</option>
-                </select>
-                <button onclick="sendChatMessage()" style="background: #00cc66; border: none; color: #000; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">SEND</button>
-                <button onclick="postToChainForum()" style="background: #ff9900; border: none; color: #000; padding: 8px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Post to on-chain forum (visible to all validators)">CHAIN</button>
+                <button onclick="postToChainForum()" style="background: #238636; border: none; color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">POST</button>
             </div>
         </div>
     </div>
@@ -5619,7 +5590,7 @@
             if (chatExpanded) {
                 body.style.display = 'block';
                 icon.textContent = '▼';
-                refreshChatMessages();
+                loadChainForumMessages();
             } else {
                 body.style.display = 'none';
                 icon.textContent = '▲';
@@ -5865,12 +5836,17 @@
         async function postToChainForum() {
             const content = document.getElementById('chatInput').value.trim();
             if (!content) {
-                alert('Please enter a message');
                 return;
             }
 
             const chatArea = document.getElementById('chatMessages');
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const postBtn = document.querySelector('button[onclick="postToChainForum()"]');
+
+            // Disable button during posting
+            if (postBtn) {
+                postBtn.disabled = true;
+                postBtn.textContent = '...';
+            }
 
             try {
                 // Use forum_postMessage RPC - requires signer key or uses dev key
@@ -5880,15 +5856,14 @@
                     throw new Error(result?.error || 'Failed to post message');
                 }
 
-                // Show success with tx hash
+                // Show pending message
                 chatArea.innerHTML += `
-                    <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.15); border-radius: 4px; border-left: 2px solid #ff9900;">
-                        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
-                            <span style="color: #ff9900;">ON-CHAIN</span>
-                            <span style="color: #666;">${time}</span>
+                    <div style="margin-bottom: 8px; padding: 8px; background: rgba(35,134,54,0.15); border-radius: 6px; border-left: 3px solid #238636;">
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px;">
+                            <span style="color: #238636; font-weight: bold;">⏳ Pending...</span>
+                            <span style="color: #888;">You</span>
                         </div>
-                        <div style="color: #ddd; font-size: 11px;">${escapeHtml(content)}</div>
-                        <div style="font-size: 9px; color: #888; margin-top: 4px;">TX: ${result.txHash.substring(0, 18)}...</div>
+                        <div style="color: #eee; font-size: 12px;">${escapeHtml(content)}</div>
                     </div>
                 `;
                 chatArea.scrollTop = chatArea.scrollHeight;
@@ -5898,39 +5873,46 @@
                 setTimeout(() => loadChainForumMessages(), 12000);
             } catch (e) {
                 console.error('Chain forum error:', e);
-                alert('Failed to post to chain: ' + e.message + '\\n\\nNote: Dev key account may need funds for transaction fees.');
+                alert('Failed to post: ' + e.message);
+            } finally {
+                if (postBtn) {
+                    postBtn.disabled = false;
+                    postBtn.textContent = 'POST';
+                }
             }
         }
 
         async function loadChainForumMessages() {
+            const chatArea = document.getElementById('chatMessages');
             try {
                 // Use forum_getMessages RPC to fetch on-chain messages
                 const messages = await rpc('forum_getMessages', [50, 0]);
-                if (!messages || messages.length === 0) return;
 
-                const chatArea = document.getElementById('chatMessages');
+                if (!messages || messages.length === 0) {
+                    chatArea.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No messages yet. Be the first to post!</div>';
+                    return;
+                }
 
-                // Clear existing chain messages and re-render
-                const existingLocal = chatArea.querySelectorAll('[data-local="true"]');
+                // Clear and render messages
                 chatArea.innerHTML = '';
-                existingLocal.forEach(el => chatArea.appendChild(el.cloneNode(true)));
 
                 // Display on-chain messages
                 messages.forEach(msg => {
                     const senderShort = msg.sender.substring(0, 8) + '...' + msg.sender.substring(msg.sender.length - 4);
                     chatArea.innerHTML += `
-                        <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.1); border-radius: 4px; border-left: 2px solid #ff9900;">
-                            <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
-                                <span style="color: #ff9900;">CHAIN #${msg.block}</span>
-                                <span style="color: #666;">${senderShort}</span>
+                        <div style="margin-bottom: 8px; padding: 8px; background: rgba(255,153,0,0.08); border-radius: 6px; border-left: 3px solid #ff9900;">
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px;">
+                                <span style="color: #ff9900; font-weight: bold;">Block #${msg.block}</span>
+                                <span style="color: #888;">${senderShort}</span>
                             </div>
-                            <div style="color: #ddd; font-size: 11px;">${escapeHtml(msg.content)}</div>
+                            <div style="color: #eee; font-size: 12px;">${escapeHtml(msg.content)}</div>
                         </div>
                     `;
                 });
                 chatArea.scrollTop = chatArea.scrollHeight;
             } catch (e) {
                 console.warn('Failed to load chain messages:', e);
+                chatArea.innerHTML = '<div style="color: #ff6666; text-align: center; padding: 20px;">Failed to load messages. Check RPC connection.</div>';
             }
         }
 
