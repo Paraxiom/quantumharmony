@@ -1,0 +1,41 @@
+# Build artifacts
+target/
+*.pdb
+
+# Git
+.git/
+.gitignore
+.github/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+docs/
+README*
+LICENSE*
+
+# Test data
+test-data/
+*.log
+
+# Local dev
+.env
+.env.*
+*.local
+
+# Node operator dashboard (separate image)
+node-operator-dashboard/
+
+# Misc
+*.bak
+*.tmp
