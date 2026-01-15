@@ -8,7 +8,9 @@ services:
   # CORE: QuantumHarmony Blockchain Node
   # =====================================================
   node:
-    image: sylvaincormier/quantumharmony-node:latest
+    # TODO: Switch to :latest after multi-arch CI build completes
+    # Currently using mesh-forum (x86_64 only) until proper image is built
+    image: sylvaincormier/quantumharmony-node:mesh-forum
     platform: linux/amd64
     container_name: quantumharmony-node
     restart: unless-stopped
@@ -19,11 +21,20 @@ services:
     volumes:
       - node-data:/data
       - ./configs/chain-spec.json:/config/chainspec.json:ro
-    environment:
-      - NODE_NAME=${NODE_NAME:-Operator}
-      - VALIDATOR=${VALIDATOR:-true}
-      - RPC_METHODS=${RPC_METHODS:-Unsafe}
-      - BOOTNODES=${BOOTNODES:-/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W,/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1,/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy}
+    command:
+      - "--chain=/config/chainspec.json"
+      - "--base-path=/data"
+      - "--name=${NODE_NAME:-Operator}"
+      - "--rpc-port=9944"
+      - "--rpc-cors=all"
+      - "--rpc-methods=${RPC_METHODS:-Unsafe}"
+      - "--rpc-external"
+      - "--port=30333"
+      - "--prometheus-port=9615"
+      - "--prometheus-external"
+      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W"
+      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1"
+      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy"
     networks:
       - quantum-net
     healthcheck:
