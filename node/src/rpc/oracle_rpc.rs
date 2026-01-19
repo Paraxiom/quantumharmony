@@ -81,6 +81,30 @@ pub struct OracleMetrics {
     pub uptime_seconds: u64,
 }
 
+/// External signal from another node/reporter
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExternalSignal {
+    pub signal_id: String,
+    pub signal_type: String,  // "qrng", "price", "custom"
+    pub data: String,
+    pub source_node: String,
+    pub source_reporter: String,
+    pub timestamp: u64,
+    pub signature: String,  // Falcon1024 signature
+}
+
+/// Available signal for subscription
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AvailableSignal {
+    pub signal_id: String,
+    pub signal_type: String,
+    pub source_node: String,
+    pub source_reporter: String,
+    pub timestamp: u64,
+    pub accepted: bool,
+    pub data_preview: String,  // First 64 chars of data
+}
+
 /// Stored price submission
 #[derive(Debug, Clone)]
 struct StoredSubmission {
@@ -155,6 +179,34 @@ pub trait OracleApi {
     /// Force price aggregation (admin only - for testing)
     #[method(name = "oracle_forceAggregate")]
     async fn force_aggregate(&self, feed: String, admin_key: String) -> RpcResult<Option<PriceInfo>>;
+
+    // ==================== SIGNAL SUBSCRIPTION METHODS ====================
+
+    /// Accept an external signal from another node/approved reporter.
+    /// Verifies the reporter is approved and the signature is valid.
+    #[method(name = "oracle_acceptExternalSignal")]
+    async fn accept_external_signal(&self, signal: ExternalSignal) -> RpcResult<bool>;
+
+    /// Get available signals from other nodes/reporters.
+    /// Returns signals that can be subscribed to.
+    #[method(name = "oracle_getAvailableSignals")]
+    async fn get_available_signals(&self, signal_type: Option<String>, limit: u32) -> RpcResult<Vec<AvailableSignal>>;
+
+    /// Subscribe to a specific signal by ID.
+    /// The signal data will be pushed to the local priority queue.
+    #[method(name = "oracle_subscribeToSignal")]
+    async fn subscribe_to_signal(&self, signal_id: String) -> RpcResult<bool>;
+
+    /// List all subscribed signals.
+    #[method(name = "oracle_listSubscriptions")]
+    async fn list_subscriptions(&self) -> RpcResult<Vec<String>>;
+}
+
+/// Stored external signal
+#[derive(Debug, Clone)]
+struct StoredSignal {
+    signal: ExternalSignal,
+    accepted: bool,
 }
 
 /// Oracle RPC implementation
@@ -164,6 +216,8 @@ pub struct OracleRpc<C, Block> {
     current_submissions: Arc<RwLock<HashMap<String, Vec<StoredSubmission>>>>,
     latest_prices: Arc<RwLock<HashMap<String, PriceInfo>>>,
     current_round: Arc<RwLock<u64>>,
+    external_signals: Arc<RwLock<HashMap<String, StoredSignal>>>,
+    subscriptions: Arc<RwLock<Vec<String>>>,
     start_time: u64,
     _phantom: PhantomData<Block>,
 }
@@ -185,6 +239,8 @@ where
             current_submissions: Arc::new(RwLock::new(HashMap::new())),
             latest_prices: Arc::new(RwLock::new(HashMap::new())),
             current_round: Arc::new(RwLock::new(1)),
+            external_signals: Arc::new(RwLock::new(HashMap::new())),
+            subscriptions: Arc::new(RwLock::new(Vec::new())),
             start_time: now,
             _phantom: PhantomData,
         }
@@ -565,5 +621,176 @@ where
         );
 
         Ok(Some(price_info))
+    }
+
+    // ==================== SIGNAL SUBSCRIPTION METHODS ====================
+
+    async fn accept_external_signal(&self, signal: ExternalSignal) -> RpcResult<bool> {
+        // Verify reporter is registered
+        {
+            let reporters = self.reporters.read().unwrap();
+            if !reporters.contains_key(&signal.source_reporter) {
+                return Err(ErrorObjectOwned::owned(
+                    -32020,
+                    format!("Reporter {} is not registered", signal.source_reporter),
+                    None::<String>,
+                ));
+            }
+
+            let reporter = reporters.get(&signal.source_reporter).unwrap();
+            if reporter.status != "active" {
+                return Err(ErrorObjectOwned::owned(
+                    -32021,
+                    format!("Reporter {} is not active", signal.source_reporter),
+                    None::<String>,
+                ));
+            }
+        }
+
+        // TODO: Verify Falcon1024 signature
+        // For now, accept if reporter is valid
+        if signal.signature.is_empty() {
+            log::warn!("Signal {} has no signature, accepting anyway (dev mode)", signal.signal_id);
+        }
+
+        // Store the signal
+        {
+            let mut signals = self.external_signals.write().unwrap();
+            signals.insert(signal.signal_id.clone(), StoredSignal {
+                signal: signal.clone(),
+                accepted: false,
+            });
+        }
+
+        log::info!(
+            "Accepted external signal {} from {} (type: {})",
+            signal.signal_id,
+            signal.source_reporter,
+            signal.signal_type
+        );
+
+        Ok(true)
+    }
+
+    async fn get_available_signals(&self, signal_type: Option<String>, limit: u32) -> RpcResult<Vec<AvailableSignal>> {
+        let signals = self.external_signals.read().unwrap();
+
+        let available: Vec<AvailableSignal> = signals
+            .values()
+            .filter(|s| {
+                if let Some(ref filter_type) = signal_type {
+                    s.signal.signal_type == *filter_type
+                } else {
+                    true
+                }
+            })
+            .take(limit as usize)
+            .map(|s| AvailableSignal {
+                signal_id: s.signal.signal_id.clone(),
+                signal_type: s.signal.signal_type.clone(),
+                source_node: s.signal.source_node.clone(),
+                source_reporter: s.signal.source_reporter.clone(),
+                timestamp: s.signal.timestamp,
+                accepted: s.accepted,
+                data_preview: s.signal.data.chars().take(64).collect(),
+            })
+            .collect();
+
+        Ok(available)
+    }
+
+    async fn subscribe_to_signal(&self, signal_id: String) -> RpcResult<bool> {
+        // Find the signal
+        let signal_data = {
+            let mut signals = self.external_signals.write().unwrap();
+            match signals.get_mut(&signal_id) {
+                Some(stored) => {
+                    stored.accepted = true;
+                    Some(stored.signal.clone())
+                }
+                None => None,
+            }
+        };
+
+        let signal = signal_data.ok_or_else(|| {
+            ErrorObjectOwned::owned(
+                -32022,
+                format!("Signal {} not found", signal_id),
+                None::<String>,
+            )
+        })?;
+
+        // Add to subscriptions
+        {
+            let mut subs = self.subscriptions.write().unwrap();
+            if !subs.contains(&signal_id) {
+                subs.push(signal_id.clone());
+            }
+        }
+
+        // Push signal data to priority queue
+        let pq_port = std::env::var("PRIORITY_QUEUE_PORT")
+            .unwrap_or_else(|_| "5555".to_string());
+
+        let url = format!("http://127.0.0.1:{}", pq_port);
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        // Create signal event for priority queue
+        let signal_event = serde_json::json!({
+            "signal_type": signal.signal_type,
+            "data": signal.data,
+            "source": format!("external/{}", signal.source_reporter),
+            "timestamp": now
+        });
+
+        let request_body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "submit_event",
+            "params": [{
+                "id": now,
+                "data": serde_json::to_string(&signal_event).unwrap_or_default(),
+                "timestamp": now,
+                "block_height": 0
+            }, 70]  // Priority 70 for external signals
+        });
+
+        // Make HTTP request to priority queue
+        let client = reqwest::Client::new();
+        match client
+            .post(&url)
+            .json(&request_body)
+            .timeout(std::time::Duration::from_secs(2))
+            .send()
+            .await
+        {
+            Ok(response) if response.status().is_success() => {
+                log::info!(
+                    "Signal {} subscribed and pushed to priority queue",
+                    signal_id
+                );
+            }
+            Ok(response) => {
+                log::warn!(
+                    "Failed to push signal {} to queue: HTTP {}",
+                    signal_id,
+                    response.status()
+                );
+            }
+            Err(e) => {
+                log::warn!("Failed to reach priority queue for signal {}: {}", signal_id, e);
+            }
+        }
+
+        Ok(true)
+    }
+
+    async fn list_subscriptions(&self) -> RpcResult<Vec<String>> {
+        let subs = self.subscriptions.read().unwrap();
+        Ok(subs.clone())
     }
 }

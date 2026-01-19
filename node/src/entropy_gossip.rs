@@ -38,6 +38,76 @@ use rand::RngCore;
 /// Maximum entropy package size (10 KB)
 const MAX_ENTROPY_SIZE: usize = 10 * 1024;
 
+/// Push received entropy to the local priority queue
+///
+/// This function is called when entropy is received via gossip from other validators.
+/// It stores the entropy in the local priority queue for later use.
+pub async fn push_entropy_to_priority_queue(
+    entropy_hex: &str,
+    source: &str,
+    priority: i32,
+) -> Result<(), String> {
+    let pq_port = std::env::var("PRIORITY_QUEUE_PORT")
+        .unwrap_or_else(|_| "5555".to_string());
+
+    let url = format!("http://127.0.0.1:{}", pq_port);
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    // Create signal event
+    let signal = serde_json::json!({
+        "signal_type": "QrngEntropy",
+        "data": entropy_hex,
+        "source": source,
+        "timestamp": timestamp
+    });
+
+    // Build JSON-RPC request
+    let request_body = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "submit_event",
+        "params": [{
+            "id": timestamp,
+            "data": serde_json::to_string(&signal).unwrap_or_default(),
+            "timestamp": timestamp,
+            "block_height": 0
+        }, priority]
+    });
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(&url)
+        .json(&request_body)
+        .timeout(std::time::Duration::from_secs(2))
+        .send()
+        .await
+        .map_err(|e| format!("Failed to reach priority queue: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Priority queue returned error: {}", response.status()));
+    }
+
+    info!("📥 Pushed entropy from {} to priority queue with priority {}", source, priority);
+    Ok(())
+}
+
+/// Handle received entropy message from gossip and store in priority queue
+pub async fn handle_received_entropy(
+    package: &EntropyPackage,
+) -> Result<(), String> {
+    let entropy_hex = hex::encode(&package.combined_entropy);
+    let source = format!(
+        "gossip/block-{}",
+        package.block_number
+    );
+
+    // High priority (75) for gossip-received entropy
+    push_entropy_to_priority_queue(&entropy_hex, &source, 75).await
+}
+
 /// Entropy package containing all data needed for consensus
 #[derive(Clone, Encode, Decode, Debug)]
 pub struct EntropyPackage {

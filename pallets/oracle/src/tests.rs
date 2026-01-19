@@ -116,3 +116,185 @@ fn oracle_pallet_compiles() {
         assert_eq!(System::block_number(), 0);
     });
 }
+
+// ==================== REPORTER APPROVAL TESTS ====================
+
+#[test]
+fn propose_reporter_works() {
+    new_test_ext().execute_with(|| {
+        // Account 1 proposes account 2 as a reporter
+        assert_ok!(Oracle::propose_reporter(
+            RuntimeOrigin::signed(1),
+            2, // candidate
+            100, // stake (min required)
+            vec![0, 1] // CAD/USD and QMHY/USD feeds
+        ));
+
+        // Check proposal was created
+        let proposal = Oracle::reporter_proposals(0).expect("Proposal should exist");
+        assert_eq!(proposal.candidate, 2);
+        assert_eq!(proposal.stake, 100);
+        assert_eq!(proposal.yes_votes, 0);
+        assert_eq!(proposal.no_votes, 0);
+        assert!(!proposal.finalized);
+
+        // Check stake was reserved from candidate
+        assert_eq!(Balances::reserved_balance(2), 100);
+    });
+}
+
+#[test]
+fn propose_reporter_fails_insufficient_stake() {
+    new_test_ext().execute_with(|| {
+        // Try to propose with less than minimum stake
+        assert!(Oracle::propose_reporter(
+            RuntimeOrigin::signed(1),
+            2,
+            50, // less than MinReporterStake (100)
+            vec![0]
+        ).is_err());
+    });
+}
+
+#[test]
+fn vote_on_reporter_requires_active_reporter() {
+    new_test_ext().execute_with(|| {
+        // First create a proposal
+        assert_ok!(Oracle::propose_reporter(
+            RuntimeOrigin::signed(1),
+            2,
+            100,
+            vec![0]
+        ));
+
+        // Account 3 is not a reporter, should fail to vote
+        assert!(Oracle::vote_on_reporter(
+            RuntimeOrigin::signed(3),
+            0, // proposal_id
+            true
+        ).is_err());
+    });
+}
+
+#[test]
+fn vote_and_finalize_reporter_proposal() {
+    new_test_ext().execute_with(|| {
+        // First, register account 1 as a reporter (using old direct registration for setup)
+        assert_ok!(Oracle::register_reporter(
+            RuntimeOrigin::signed(1),
+            100,
+            vec![0]
+        ));
+
+        // Register account 3 as a reporter too
+        assert_ok!(Oracle::register_reporter(
+            RuntimeOrigin::signed(3),
+            100,
+            vec![0]
+        ));
+
+        // Now propose account 2 as a reporter
+        assert_ok!(Oracle::propose_reporter(
+            RuntimeOrigin::signed(1),
+            2,
+            100,
+            vec![0, 1]
+        ));
+
+        // Account 1 (active reporter) votes yes
+        assert_ok!(Oracle::vote_on_reporter(
+            RuntimeOrigin::signed(1),
+            0,
+            true
+        ));
+
+        // Account 3 (active reporter) votes yes
+        assert_ok!(Oracle::vote_on_reporter(
+            RuntimeOrigin::signed(3),
+            0,
+            true
+        ));
+
+        // Check votes recorded
+        let proposal = Oracle::reporter_proposals(0).unwrap();
+        assert_eq!(proposal.yes_votes, 2);
+        assert_eq!(proposal.no_votes, 0);
+
+        // Advance past voting period
+        System::set_block_number(101);
+
+        // Finalize the proposal
+        assert_ok!(Oracle::finalize_reporter_proposal(
+            RuntimeOrigin::signed(1),
+            0
+        ));
+
+        // Check proposal finalized and approved
+        let proposal = Oracle::reporter_proposals(0).unwrap();
+        assert!(proposal.finalized);
+        assert!(proposal.approved);
+
+        // Check account 2 is now a registered reporter
+        let reporter = Oracle::reporters(2).expect("Reporter should exist");
+        assert_eq!(reporter.account, 2);
+        assert_eq!(reporter.reputation, 50); // Initial reputation
+    });
+}
+
+#[test]
+fn rejected_proposal_returns_stake() {
+    new_test_ext().execute_with(|| {
+        // Setup: register account 1 and 3 as reporters
+        assert_ok!(Oracle::register_reporter(RuntimeOrigin::signed(1), 100, vec![0]));
+        assert_ok!(Oracle::register_reporter(RuntimeOrigin::signed(3), 100, vec![0]));
+
+        // Propose account 2
+        assert_ok!(Oracle::propose_reporter(RuntimeOrigin::signed(1), 2, 100, vec![0]));
+
+        // Check stake reserved
+        assert_eq!(Balances::reserved_balance(2), 100);
+
+        // Vote NO
+        assert_ok!(Oracle::vote_on_reporter(RuntimeOrigin::signed(1), 0, false));
+        assert_ok!(Oracle::vote_on_reporter(RuntimeOrigin::signed(3), 0, false));
+
+        // Advance and finalize
+        System::set_block_number(101);
+        assert_ok!(Oracle::finalize_reporter_proposal(RuntimeOrigin::signed(1), 0));
+
+        // Check proposal rejected
+        let proposal = Oracle::reporter_proposals(0).unwrap();
+        assert!(proposal.finalized);
+        assert!(!proposal.approved);
+
+        // Check stake returned to candidate
+        assert_eq!(Balances::reserved_balance(2), 0);
+        assert_eq!(Balances::free_balance(2), 10000); // Original balance
+    });
+}
+
+#[test]
+fn cannot_vote_twice() {
+    new_test_ext().execute_with(|| {
+        // Setup
+        assert_ok!(Oracle::register_reporter(RuntimeOrigin::signed(1), 100, vec![0]));
+        assert_ok!(Oracle::propose_reporter(RuntimeOrigin::signed(1), 2, 100, vec![0]));
+
+        // First vote succeeds
+        assert_ok!(Oracle::vote_on_reporter(RuntimeOrigin::signed(1), 0, true));
+
+        // Second vote fails
+        assert!(Oracle::vote_on_reporter(RuntimeOrigin::signed(1), 0, true).is_err());
+    });
+}
+
+#[test]
+fn cannot_finalize_before_voting_period_ends() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(Oracle::register_reporter(RuntimeOrigin::signed(1), 100, vec![0]));
+        assert_ok!(Oracle::propose_reporter(RuntimeOrigin::signed(1), 2, 100, vec![0]));
+
+        // Try to finalize immediately (voting period is 100 blocks)
+        assert!(Oracle::finalize_reporter_proposal(RuntimeOrigin::signed(1), 0).is_err());
+    });
+}

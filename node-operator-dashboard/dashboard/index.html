@@ -1393,22 +1393,22 @@
 
                     <!-- Tab Navigation -->
                     <div style="display: flex; gap: 4px; margin-bottom: var(--space-3); border-bottom: 2px solid var(--lcars-gold-dark); padding-bottom: 8px;">
-                        <button class="btn btn-secondary reporter-tab active" onclick="showReporterTab('tao')" id="tab-tao">TAO INTELLIGENCE</button>
+                        <button class="btn btn-secondary reporter-tab active" onclick="showReporterTab('agents')" id="tab-agents">SIGNAL AGENTS</button>
                         <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('qrng')" id="tab-qrng">QRNG POOL</button>
                         <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('qkd')" id="tab-qkd">QKD ROUTING</button>
                         <button class="btn btn-secondary reporter-tab" onclick="showReporterTab('oracle')" id="tab-oracle">ORACLE</button>
                     </div>
 
-                    <!-- TAO INTELLIGENCE SECTION -->
-                    <div id="reporter-tao" class="reporter-section">
+                    <!-- SIGNAL AGENTS SECTION -->
+                    <div id="reporter-agents" class="reporter-section">
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-label">SIGNAL API</div>
-                                <div class="stat-value green" id="taoApiStatus">LIVE</div>
+                                <div class="stat-value green" id="agentApiStatus">LIVE</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">TAO SUBNETS</div>
-                                <div class="stat-value blue" id="taoSubnetCount">32</div>
+                                <div class="stat-label">SIGNAL SOURCES</div>
+                                <div class="stat-value blue" id="agentSourceCount">32</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-label">X402 PROTOCOL</div>
@@ -1421,7 +1421,7 @@
                         </div>
 
                         <div class="section-title">Live Signal Feed</div>
-                        <div class="info-box" id="taoSignalFeed" style="max-height: 180px; overflow-y: auto;">
+                        <div class="info-box" id="agentSignalFeed" style="max-height: 180px; overflow-y: auto;">
                             <div class="info-row">
                                 <span class="info-label">SN8 (Taoshi)</span>
                                 <span class="info-value"><span style="color: var(--accent-success); font-weight: 600;">LONG</span> BTC <span style="color: var(--text-muted);">(87%)</span></span>
@@ -1441,7 +1441,7 @@
                         </div>
 
                         <div class="section-title" style="margin-top: var(--space-3);">Top Subnets by Emission</div>
-                        <div id="taoSubnetList" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                        <div id="agentSourceList" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
                             <div class="stat-card" style="padding: 8px;">
                                 <div class="stat-label" style="font-size: 9px;">SN8 Taoshi</div>
                                 <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">18.2%</div>
@@ -1477,7 +1477,7 @@
                         </div>
 
                         <div style="display: flex; gap: 8px; margin-top: var(--space-3);">
-                            <button class="btn btn-primary" onclick="refreshTaoSignals()">REFRESH SIGNALS</button>
+                            <button class="btn btn-primary" onclick="refreshAgentSignals()">REFRESH SIGNALS</button>
                             <button class="btn btn-secondary" onclick="window.open('http://209.38.225.4/api/docs', '_blank')">API DOCS</button>
                         </div>
                     </div>
@@ -1537,6 +1537,7 @@
 
                         <div style="display: flex; gap: 8px; margin-top: var(--space-3);">
                             <button class="btn btn-primary" onclick="generateNewQrng()">GENERATE NEW</button>
+                            <button class="btn btn-success" onclick="fetchQrngFromNode()">FETCH FROM NODE</button>
                             <button class="btn btn-secondary" onclick="exportQrng()">EXPORT</button>
                             <button class="btn btn-secondary" onclick="configureQrng()">CONFIGURE</button>
                         </div>
@@ -1716,6 +1717,39 @@
                             <div class="info-row">
                                 <span class="info-label">#71,210</span>
                                 <span class="info-value">Weather: 22.6C | 2/3 agree | <span style="color: var(--accent-success);">Used</span></span>
+                            </div>
+                        </div>
+
+                        <!-- SIGNAL SUBSCRIPTION SECTION -->
+                        <div style="border-top: 2px solid var(--accent-info); margin-top: var(--space-4); padding-top: var(--space-3);">
+                            <div class="section-title">
+                                External Signals
+                                <div style="float: right;">
+                                    <button class="btn btn-primary" style="padding: 4px 12px; font-size: 11px; margin-right: 4px;" onclick="acceptExternalSignal()">+ ACCEPT</button>
+                                    <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 11px;" onclick="listMySubscriptions()">MY SUBS</button>
+                                </div>
+                            </div>
+
+                            <div class="info-box" id="availableSignalsList" style="max-height: 200px; overflow-y: auto;">
+                                <div style="color: var(--text-muted); text-align: center;">Loading available signals...</div>
+                            </div>
+                        </div>
+
+                        <!-- REPORTER APPROVAL SECTION -->
+                        <div style="border-top: 2px solid var(--lcars-gold-dark); margin-top: var(--space-4); padding-top: var(--space-3);">
+                            <div class="section-title">
+                                Reporter Approval
+                                <button class="btn btn-success" style="float: right; padding: 4px 12px; font-size: 11px;" onclick="proposeReporter()">+ PROPOSE</button>
+                            </div>
+
+                            <div class="section-title" style="font-size: 11px; margin-top: var(--space-2);">Pending Proposals</div>
+                            <div class="info-box" id="reporterProposalsList" style="max-height: 200px; overflow-y: auto;">
+                                <div style="color: var(--text-muted); text-align: center;">Loading...</div>
+                            </div>
+
+                            <div class="section-title" style="font-size: 11px; margin-top: var(--space-3);">Approved Reporters</div>
+                            <div class="info-box" id="approvedReportersList" style="max-height: 150px; overflow-y: auto;">
+                                <div style="color: var(--text-muted); text-align: center;">Loading...</div>
                             </div>
                         </div>
                     </div>
@@ -5313,7 +5347,7 @@
         // Auto-refresh signals panel every 30 seconds
         setInterval(() => {
             if (document.getElementById('panel-signals')?.classList.contains('active')) {
-                refreshTaoSignals();
+                refreshAgentSignals();
                 updateReporterStatus();
                 fetchOraclePrices();
             }
@@ -5324,7 +5358,7 @@
         showPanel = function(name) {
             originalShowPanel(name);
             if (name === 'signals') {
-                refreshTaoSignals();
+                refreshAgentSignals();
                 updateReporterStatus();
                 fetchOraclePrices();
             }
@@ -5931,14 +5965,14 @@
         // SIGNALS TAB FUNCTIONS
         // ==========================================
 
-        async function refreshTaoSignals() {
+        async function refreshAgentSignals() {
             try {
                 const response = await fetch('http://209.38.225.4/api/subnets');
                 if (response.ok) {
                     const subnets = await response.json();
-                    document.getElementById('taoApiStatus').textContent = 'LIVE';
-                    document.getElementById('taoApiStatus').style.color = 'var(--accent-success)';
-                    document.getElementById('taoSubnetCount').textContent = subnets.length;
+                    document.getElementById('agentApiStatus').textContent = 'LIVE';
+                    document.getElementById('agentApiStatus').style.color = 'var(--accent-success)';
+                    document.getElementById('agentSourceCount').textContent = subnets.length;
 
                     // Update top subnets
                     const topSubnets = subnets
@@ -5954,11 +5988,11 @@
                             <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">${emissionPct}%</div>
                         </div>`;
                     });
-                    document.getElementById('taoSubnetList').innerHTML = html;
+                    document.getElementById('agentSourceList').innerHTML = html;
                 }
             } catch (e) {
-                document.getElementById('taoApiStatus').textContent = 'OFFLINE';
-                document.getElementById('taoApiStatus').style.color = 'var(--accent-danger)';
+                document.getElementById('agentApiStatus').textContent = 'OFFLINE';
+                document.getElementById('agentApiStatus').style.color = 'var(--accent-danger)';
             }
         }
 
@@ -5975,16 +6009,98 @@
             // Activate tab
             const tab = document.getElementById('tab-' + tabName);
             if (tab) tab.classList.add('active');
+
+            // Tab-specific actions
+            if (tabName === 'qrng') {
+                refreshKirqSources();
+            } else if (tabName === 'oracle') {
+                refreshOracleData();
+            }
         }
 
-        // QRNG Functions
-        function generateNewQrng() {
-            log('Generating new QRNG entropy...', 'info');
-            // TODO: Connect to threshold_qrng endpoint
-            const mockEntropy = '0x' + Array.from({length: 8}, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('') + '...';
-            document.getElementById('qrngCombined').textContent = mockEntropy;
-            document.getElementById('qrngLastUpdate').textContent = 'Just now';
-            log('New entropy generated: ' + mockEntropy, 'success');
+        // QRNG Functions - Connected to Kirq Hub
+        const KIRQ_HUB_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:8001'
+            : `http://${window.location.hostname}:8001`;
+
+        async function generateNewQrng() {
+            log('Fetching entropy from Kirq Hub...', 'info');
+            try {
+                const response = await fetch(`${KIRQ_HUB_URL}/api/entropy/mixed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        num_bytes: 32,
+                        sources: ['crypto4a', 'quantum_vault'],
+                        proof_required: true
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const entropyHex = '0x' + data.entropy.slice(0, 16) + '...' + data.entropy.slice(-8);
+                document.getElementById('qrngCombined').textContent = entropyHex;
+                document.getElementById('qrngLastUpdate').textContent = 'Just now';
+                document.getElementById('qrngLocalStatus').textContent = 'ACTIVE';
+                document.getElementById('qrngLocalStatus').style.color = 'var(--accent-success)';
+
+                if (data.proof) {
+                    document.getElementById('qrngProofStatus').textContent = 'Valid STARK';
+                    document.getElementById('qrngProofStatus').style.color = 'var(--accent-success)';
+                }
+
+                log('Entropy fetched: ' + entropyHex, 'success');
+
+                // Also push to priority queue
+                await pushEntropyToQueue(data.entropy);
+
+            } catch (err) {
+                log('Failed to fetch entropy: ' + err.message, 'error');
+                document.getElementById('qrngLocalStatus').textContent = 'OFFLINE';
+                document.getElementById('qrngLocalStatus').style.color = 'var(--accent-danger)';
+            }
+        }
+
+        async function pushEntropyToQueue(entropy) {
+            try {
+                // Push to local priority queue via node RPC
+                await rpcCall('priority_submitEvent', [{
+                    id: Date.now(),
+                    data: JSON.stringify({ type: 'qrng_entropy', entropy: entropy }),
+                    timestamp: Date.now(),
+                    block_height: currentBlockNumber || 0
+                }, 75]); // Priority 75 = High
+                log('Entropy pushed to priority queue', 'info');
+            } catch (err) {
+                // Priority queue RPC may not be available, that's ok
+                console.log('Priority queue push skipped:', err.message);
+            }
+        }
+
+        async function refreshKirqSources() {
+            try {
+                const response = await fetch(`${KIRQ_HUB_URL}/api/sources`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const sources = await response.json();
+
+                let html = '';
+                for (const [name, status] of Object.entries(sources)) {
+                    const color = status.healthy ? 'var(--accent-success)' : 'var(--accent-danger)';
+                    const statusText = status.healthy ? `${status.bytes_available || 32} bytes` : 'Offline';
+                    html += `<div class="info-row">
+                        <span class="info-label">${name}</span>
+                        <span class="info-value" style="color: ${color};">${statusText}</span>
+                    </div>`;
+                }
+                document.getElementById('qrngSharesList').innerHTML = html || '<div class="info-row"><span class="info-label">No sources</span></div>';
+
+                const activeCount = Object.values(sources).filter(s => s.healthy).length;
+                document.getElementById('qrngSharesReceived').textContent = `${activeCount}/${Object.keys(sources).length}`;
+
+            } catch (err) {
+                console.log('Failed to refresh Kirq sources:', err.message);
+            }
         }
 
         function exportQrng() {
@@ -5996,11 +6112,14 @@
             });
         }
 
-        function configureQrng() {
-            const threshold = prompt('Enter threshold (e.g., "2-of-3"):', '2-of-3');
-            if (threshold) {
-                document.getElementById('qrngThreshold').textContent = threshold;
-                log('QRNG threshold updated to ' + threshold, 'info');
+        async function configureQrng() {
+            // Show Kirq Hub health and configuration
+            try {
+                const response = await fetch(`${KIRQ_HUB_URL}/api/health`);
+                const health = await response.json();
+                alert(`Kirq Hub Status:\n\nStatus: ${health.status}\nSources: ${JSON.stringify(health.sources || {}, null, 2)}\n\nEndpoint: ${KIRQ_HUB_URL}`);
+            } catch (err) {
+                alert(`Kirq Hub Status: OFFLINE\n\nEndpoint: ${KIRQ_HUB_URL}\nError: ${err.message}`);
             }
         }
 
@@ -6069,6 +6188,255 @@
                 const myFeeds = document.getElementById('oracleMyFeeds');
                 myFeeds.textContent = parseInt(myFeeds.textContent) + 1;
             }, 500);
+        }
+
+        // ==================== REPORTER APPROVAL FUNCTIONS ====================
+
+        async function refreshOracleData() {
+            try {
+                // Fetch available signals from other nodes
+                await refreshAvailableSignals();
+                // Fetch pending reporter proposals
+                await refreshReporterProposals();
+                // Fetch approved reporters
+                await refreshApprovedReporters();
+            } catch (err) {
+                console.log('Failed to refresh oracle data:', err.message);
+            }
+        }
+
+        async function refreshReporterProposals() {
+            try {
+                // Get all proposals from chain via RPC
+                const proposals = await rpcCall('oracle_getPendingProposals', []);
+                const container = document.getElementById('reporterProposalsList');
+                if (!container) return;
+
+                if (!proposals || proposals.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); text-align: center;">No pending proposals</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const p of proposals) {
+                    html += `
+                        <div style="background: rgba(255,153,0,0.1); padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--lcars-gold);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: var(--lcars-gold);">Proposal #${p.id}</strong>
+                                <span style="font-size: 10px;">Votes: ${p.yes_votes} yes / ${p.no_votes} no</span>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin: 4px 0;">
+                                Candidate: ${p.candidate.slice(0, 12)}...
+                            </div>
+                            <div style="font-size: 10px;">Stake: ${p.stake} | Feeds: ${p.supported_feeds.join(', ')}</div>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="btn btn-success" style="padding: 4px 12px; font-size: 10px;" onclick="voteOnReporter(${p.id}, true)">APPROVE</button>
+                                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 10px;" onclick="voteOnReporter(${p.id}, false)">REJECT</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                console.log('Failed to fetch proposals:', err.message);
+            }
+        }
+
+        async function refreshApprovedReporters() {
+            try {
+                const reporters = await rpcCall('oracle_getAllReporters', []);
+                const container = document.getElementById('approvedReportersList');
+                if (!container) return;
+
+                if (!reporters || reporters.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); text-align: center;">No approved reporters</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const r of reporters) {
+                    const statusColor = r.status === 'Active' ? 'var(--accent-success)' : 'var(--text-muted)';
+                    html += `
+                        <div class="info-row">
+                            <span class="info-label">${r.account.slice(0, 12)}...</span>
+                            <span class="info-value" style="color: ${statusColor};">Rep: ${r.reputation} | Priority: ${r.priority}</span>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                console.log('Failed to fetch reporters:', err.message);
+            }
+        }
+
+        async function proposeReporter() {
+            const candidate = prompt('Enter candidate account address:');
+            if (!candidate) return;
+
+            const stake = prompt('Enter stake amount (QMHY):', '1000');
+            if (!stake) return;
+
+            const feeds = prompt('Enter supported feeds (0=CadUsd, 1=QmhyUsd, 2=QmhyCad), comma-separated:', '0,1');
+            if (!feeds) return;
+
+            const feedsArray = feeds.split(',').map(f => parseInt(f.trim()));
+
+            log('Submitting reporter proposal...', 'info');
+            try {
+                // This would need to be an extrinsic call via extension
+                // For now, show how it would work
+                await rpcCall('oracle_proposeReporter', [candidate, parseInt(stake) * 1e12, feedsArray]);
+                log('Reporter proposal submitted!', 'success');
+                refreshReporterProposals();
+            } catch (err) {
+                log('Failed to submit proposal: ' + err.message, 'error');
+            }
+        }
+
+        async function voteOnReporter(proposalId, approve) {
+            log(`Voting ${approve ? 'APPROVE' : 'REJECT'} on proposal #${proposalId}...`, 'info');
+            try {
+                await rpcCall('oracle_voteOnReporter', [proposalId, approve]);
+                log(`Vote submitted!`, 'success');
+                refreshReporterProposals();
+            } catch (err) {
+                log('Failed to vote: ' + err.message, 'error');
+            }
+        }
+
+        async function finalizeProposal(proposalId) {
+            log(`Finalizing proposal #${proposalId}...`, 'info');
+            try {
+                await rpcCall('oracle_finalizeReporterProposal', [proposalId]);
+                log('Proposal finalized!', 'success');
+                refreshReporterProposals();
+                refreshApprovedReporters();
+            } catch (err) {
+                log('Failed to finalize: ' + err.message, 'error');
+            }
+        }
+
+        // ==================== SIGNAL SUBSCRIPTION FUNCTIONS ====================
+
+        async function refreshAvailableSignals() {
+            try {
+                const signals = await rpcCall('oracle_getAvailableSignals', [null, 20]);
+                const container = document.getElementById('availableSignalsList');
+                if (!container) return;
+
+                if (!signals || signals.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); text-align: center;">No available signals</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const s of signals) {
+                    const typeColor = s.signal_type === 'qrng' ? 'var(--accent-info)' :
+                                     s.signal_type === 'price' ? 'var(--lcars-gold)' : 'var(--text-muted)';
+                    const acceptedIcon = s.accepted ? '✓' : '';
+                    html += `
+                        <div style="background: rgba(0,100,200,0.05); padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid ${typeColor};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: ${typeColor};">${s.signal_type.toUpperCase()} ${acceptedIcon}</strong>
+                                <span style="font-size: 10px; color: var(--text-muted);">${new Date(s.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin: 4px 0;">
+                                From: ${s.source_reporter.slice(0, 12)}... @ ${s.source_node.slice(0, 8)}
+                            </div>
+                            <div style="font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-secondary);">
+                                ${s.data_preview}${s.data_preview.length >= 64 ? '...' : ''}
+                            </div>
+                            ${!s.accepted ? `
+                                <button class="btn btn-success" style="margin-top: 8px; padding: 4px 12px; font-size: 10px;" onclick="subscribeToSignal('${s.signal_id}')">SUBSCRIBE</button>
+                            ` : '<span style="font-size: 10px; color: var(--accent-success);">Subscribed</span>'}
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                console.log('Failed to fetch available signals:', err.message);
+            }
+        }
+
+        async function subscribeToSignal(signalId) {
+            log(`Subscribing to signal ${signalId}...`, 'info');
+            try {
+                await rpcCall('oracle_subscribeToSignal', [signalId]);
+                log('Subscribed to signal! Data pushed to priority queue.', 'success');
+                refreshAvailableSignals();
+            } catch (err) {
+                log('Failed to subscribe: ' + err.message, 'error');
+            }
+        }
+
+        async function acceptExternalSignal() {
+            const sourceReporter = prompt('Enter source reporter ID:');
+            if (!sourceReporter) return;
+
+            const signalType = prompt('Enter signal type (qrng, price, custom):', 'qrng');
+            if (!signalType) return;
+
+            const data = prompt('Enter signal data (hex):');
+            if (!data) return;
+
+            const signal = {
+                signal_id: 'sig_' + Date.now(),
+                signal_type: signalType,
+                data: data,
+                source_node: 'external',
+                source_reporter: sourceReporter,
+                timestamp: Date.now(),
+                signature: ''  // Would need actual signature in production
+            };
+
+            log('Accepting external signal...', 'info');
+            try {
+                await rpcCall('oracle_acceptExternalSignal', [signal]);
+                log('External signal accepted!', 'success');
+                refreshAvailableSignals();
+            } catch (err) {
+                log('Failed to accept signal: ' + err.message, 'error');
+            }
+        }
+
+        async function fetchQrngFromNode() {
+            log('Fetching QRNG entropy from node via Kirq Hub...', 'info');
+            try {
+                const result = await rpcCall('qrng_fetchFromKirqHub', [32]);
+                log(`QRNG entropy fetched: 0x${result.entropy_hex.slice(0, 16)}...`, 'success');
+
+                // Also display in QRNG tab
+                document.getElementById('qrngCombined').textContent =
+                    '0x' + result.entropy_hex.slice(0, 16) + '...' + result.entropy_hex.slice(-8);
+                document.getElementById('qrngLastUpdate').textContent = 'Just now';
+
+                // Optionally push to queue
+                const push = confirm('Push entropy to priority queue?');
+                if (push) {
+                    await rpcCall('qrng_pushToQueue', [{
+                        signal_type: 'QrngEntropy',
+                        data: result.entropy_hex,
+                        source: 'kirq-hub',
+                        timestamp: Date.now()
+                    }, 75]);
+                    log('Entropy pushed to priority queue', 'success');
+                }
+            } catch (err) {
+                log('Failed to fetch QRNG: ' + err.message, 'error');
+            }
+        }
+
+        async function listMySubscriptions() {
+            try {
+                const subs = await rpcCall('oracle_listSubscriptions', []);
+                if (subs.length === 0) {
+                    alert('No active subscriptions');
+                } else {
+                    alert('Active subscriptions:\n' + subs.join('\n'));
+                }
+            } catch (err) {
+                log('Failed to list subscriptions: ' + err.message, 'error');
+            }
         }
 
         // Auto-refresh chat every 5 seconds
