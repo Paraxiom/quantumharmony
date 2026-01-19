@@ -47,12 +47,12 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push (amd64 only for now)
+      - name: Build and push (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.production
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
