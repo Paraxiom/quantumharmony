@@ -104,6 +104,7 @@ pub struct SignalPayload {
 
     /// Type-specific metadata
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[codec(skip)]
     pub metadata: Option<serde_json::Value>,
 }
 
