@@ -88,6 +88,12 @@ pub mod pallet {
     /// Maximum supported feeds per reporter (there are only 3 feeds)
     pub const MAX_SUPPORTED_FEEDS: u32 = 3;
 
+    /// Reporter proposal voting period in blocks
+    pub const REPORTER_VOTING_PERIOD: u32 = 100;
+
+    /// Minimum votes required to finalize a proposal
+    pub const MIN_VOTES_FOR_PROPOSAL: u32 = 2;
+
     // ==================== DATA STRUCTURES ====================
 
     /// Reporter status
@@ -169,6 +175,30 @@ pub mod pallet {
         pub feed: PriceFeed,
         /// Standard deviation (for quality assessment)
         pub std_deviation: u128,
+    }
+
+    /// Reporter proposal for validator approval
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+    #[scale_info(skip_type_params(T))]
+    pub struct ReporterProposal<T: Config> {
+        /// Candidate account wanting to become a reporter
+        pub candidate: T::AccountId,
+        /// Proposed stake amount
+        pub stake: BalanceOf<T>,
+        /// Supported price feeds
+        pub supported_feeds: BoundedVec<u8, ConstU32<MAX_SUPPORTED_FEEDS>>,
+        /// Block when proposed
+        pub proposed_at: BlockNumberFor<T>,
+        /// Account that created the proposal
+        pub proposer: T::AccountId,
+        /// Yes votes count
+        pub yes_votes: u32,
+        /// No votes count
+        pub no_votes: u32,
+        /// Whether voting has been finalized
+        pub finalized: bool,
+        /// Whether proposal was approved (only valid if finalized)
+        pub approved: bool,
     }
 
     // ==================== PALLET CONFIG ====================
@@ -264,6 +294,33 @@ pub mod pallet {
     #[pallet::getter(fn qrng_seed)]
     pub type QrngSeed<T: Config> = StorageValue<_, [u8; 32], ValueQuery>;
 
+    /// Reporter approval proposals
+    #[pallet::storage]
+    #[pallet::getter(fn reporter_proposals)]
+    pub type ReporterProposals<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        u32, // proposal_id
+        ReporterProposal<T>,
+        OptionQuery,
+    >;
+
+    /// Votes on reporter proposals (proposal_id -> voter -> has_voted)
+    #[pallet::storage]
+    pub type ReporterVotes<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        u32, // proposal_id
+        Blake2_128Concat,
+        T::AccountId, // voter
+        bool,
+        ValueQuery,
+    >;
+
+    /// Next reporter proposal ID
+    #[pallet::storage]
+    pub type NextReporterProposalId<T: Config> = StorageValue<_, u32, ValueQuery>;
+
     // ==================== EVENTS ====================
 
     #[pallet::event]
@@ -318,6 +375,25 @@ pub mod pallet {
             feed: u8,
             price: u128,
         },
+        /// Reporter proposal created
+        ReporterProposalCreated {
+            proposal_id: u32,
+            candidate: T::AccountId,
+            proposer: T::AccountId,
+        },
+        /// Vote cast on reporter proposal
+        ReporterVoteCast {
+            proposal_id: u32,
+            voter: T::AccountId,
+            approve: bool,
+        },
+        /// Reporter proposal finalized
+        ReporterProposalFinalized {
+            proposal_id: u32,
+            approved: bool,
+            yes_votes: u32,
+            no_votes: u32,
+        },
     }
 
     impl PriceFeed {
@@ -369,6 +445,18 @@ pub mod pallet {
         AlreadySubmittedThisRound,
         /// Invalid feed value
         InvalidFeed,
+        /// Proposal not found
+        ProposalNotFound,
+        /// Already voted on this proposal
+        AlreadyVoted,
+        /// Voting period not ended
+        VotingPeriodNotEnded,
+        /// Proposal already finalized
+        ProposalAlreadyFinalized,
+        /// Not a validator (cannot vote)
+        NotValidator,
+        /// Proposal not approved
+        ProposalNotApproved,
     }
 
     // ==================== HOOKS ====================
@@ -665,6 +753,182 @@ pub mod pallet {
                 reporter: reporter_account,
                 amount: actual_slashed,
                 reason,
+            });
+
+            Ok(())
+        }
+
+        // ==================== REPORTER APPROVAL EXTRINSICS ====================
+
+        /// Propose a new reporter for validator approval.
+        ///
+        /// Anyone can propose a candidate. The candidate must stake tokens.
+        /// Validators vote to approve or reject the proposal.
+        #[pallet::call_index(7)]
+        #[pallet::weight(Weight::from_parts(50_000, 0))]
+        pub fn propose_reporter(
+            origin: OriginFor<T>,
+            candidate: T::AccountId,
+            stake: BalanceOf<T>,
+            supported_feeds_u8: Vec<u8>,
+        ) -> DispatchResult {
+            let proposer = ensure_signed(origin)?;
+
+            // Validate feed values
+            for feed_u8 in supported_feeds_u8.iter() {
+                ensure!(PriceFeed::from_u8(*feed_u8).is_some(), Error::<T>::InvalidFeed);
+            }
+
+            // Convert to BoundedVec
+            let supported_feeds: BoundedVec<u8, ConstU32<MAX_SUPPORTED_FEEDS>> =
+                supported_feeds_u8.try_into().map_err(|_| Error::<T>::TooManySubmissions)?;
+
+            ensure!(!Reporters::<T>::contains_key(&candidate), Error::<T>::AlreadyRegistered);
+            ensure!(stake >= T::MinReporterStake::get(), Error::<T>::InsufficientStake);
+            ensure!(!supported_feeds.is_empty(), Error::<T>::FeedNotSupported);
+
+            // Reserve stake from candidate
+            T::Currency::reserve(&candidate, stake)?;
+
+            let current_block = frame_system::Pallet::<T>::block_number();
+            let proposal_id = NextReporterProposalId::<T>::get();
+
+            let proposal = ReporterProposal {
+                candidate: candidate.clone(),
+                stake,
+                supported_feeds,
+                proposed_at: current_block,
+                proposer: proposer.clone(),
+                yes_votes: 0,
+                no_votes: 0,
+                finalized: false,
+                approved: false,
+            };
+
+            ReporterProposals::<T>::insert(proposal_id, proposal);
+            NextReporterProposalId::<T>::put(proposal_id.saturating_add(1));
+
+            Self::deposit_event(Event::ReporterProposalCreated {
+                proposal_id,
+                candidate,
+                proposer,
+            });
+
+            Ok(())
+        }
+
+        /// Vote on a reporter proposal.
+        ///
+        /// Only existing active reporters (validators) can vote.
+        #[pallet::call_index(8)]
+        #[pallet::weight(Weight::from_parts(30_000, 0))]
+        pub fn vote_on_reporter(
+            origin: OriginFor<T>,
+            proposal_id: u32,
+            approve: bool,
+        ) -> DispatchResult {
+            let voter = ensure_signed(origin)?;
+
+            // Only active reporters can vote
+            let voter_reporter = Reporters::<T>::get(&voter).ok_or(Error::<T>::NotValidator)?;
+            ensure!(voter_reporter.status == ReporterStatus::Active, Error::<T>::NotValidator);
+
+            let mut proposal = ReporterProposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
+            ensure!(!proposal.finalized, Error::<T>::ProposalAlreadyFinalized);
+
+            // Check voting period
+            let current_block = frame_system::Pallet::<T>::block_number();
+            let voting_end = proposal.proposed_at.saturating_add(REPORTER_VOTING_PERIOD.into());
+            ensure!(current_block <= voting_end, Error::<T>::VotingPeriodNotEnded);
+
+            // Check not already voted
+            ensure!(!ReporterVotes::<T>::get(proposal_id, &voter), Error::<T>::AlreadyVoted);
+
+            // Record vote
+            ReporterVotes::<T>::insert(proposal_id, &voter, true);
+
+            if approve {
+                proposal.yes_votes = proposal.yes_votes.saturating_add(1);
+            } else {
+                proposal.no_votes = proposal.no_votes.saturating_add(1);
+            }
+
+            ReporterProposals::<T>::insert(proposal_id, proposal);
+
+            Self::deposit_event(Event::ReporterVoteCast {
+                proposal_id,
+                voter,
+                approve,
+            });
+
+            Ok(())
+        }
+
+        /// Finalize a reporter proposal after voting period ends.
+        ///
+        /// If approved, registers the candidate as a reporter.
+        /// If rejected, returns the stake to the candidate.
+        #[pallet::call_index(9)]
+        #[pallet::weight(Weight::from_parts(60_000, 0))]
+        pub fn finalize_reporter_proposal(
+            origin: OriginFor<T>,
+            proposal_id: u32,
+        ) -> DispatchResult {
+            let _who = ensure_signed(origin)?;
+
+            let mut proposal = ReporterProposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
+            ensure!(!proposal.finalized, Error::<T>::ProposalAlreadyFinalized);
+
+            // Check voting period ended
+            let current_block = frame_system::Pallet::<T>::block_number();
+            let voting_end = proposal.proposed_at.saturating_add(REPORTER_VOTING_PERIOD.into());
+            ensure!(current_block > voting_end, Error::<T>::VotingPeriodNotEnded);
+
+            // Check minimum votes
+            let total_votes = proposal.yes_votes.saturating_add(proposal.no_votes);
+            let approved = total_votes >= MIN_VOTES_FOR_PROPOSAL && proposal.yes_votes > proposal.no_votes;
+
+            proposal.finalized = true;
+            proposal.approved = approved;
+
+            if approved {
+                // Register the reporter
+                let stake_u128: u128 = proposal.stake.try_into().map_err(|_| Error::<T>::Overflow)?;
+                let min_stake_u128: u128 = T::MinReporterStake::get().try_into().map_err(|_| Error::<T>::Overflow)?;
+                let stake_factor = (stake_u128.saturating_mul(50) / min_stake_u128).min(50) as u32;
+                let initial_priority = 50u32.saturating_add(stake_factor);
+
+                let reporter = Reporter {
+                    account: proposal.candidate.clone(),
+                    stake: proposal.stake,
+                    reputation: 50,
+                    priority: initial_priority,
+                    successful_submissions: 0,
+                    total_submissions: 0,
+                    registered_at: current_block,
+                    status: ReporterStatus::Active,
+                    supported_feeds: proposal.supported_feeds.clone(),
+                };
+
+                Reporters::<T>::insert(&proposal.candidate, reporter);
+                TotalReporters::<T>::mutate(|n| *n = n.saturating_add(1));
+
+                Self::deposit_event(Event::ReporterRegistered {
+                    reporter: proposal.candidate.clone(),
+                    stake: proposal.stake,
+                });
+            } else {
+                // Return stake to candidate
+                T::Currency::unreserve(&proposal.candidate, proposal.stake);
+            }
+
+            ReporterProposals::<T>::insert(proposal_id, proposal.clone());
+
+            Self::deposit_event(Event::ReporterProposalFinalized {
+                proposal_id,
+                approved,
+                yes_votes: proposal.yes_votes,
+                no_votes: proposal.no_votes,
             });
 
             Ok(())

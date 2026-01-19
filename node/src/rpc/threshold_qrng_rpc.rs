@@ -6,6 +6,8 @@
 //! 3. qrng_collectShares - Trigger leader share collection (dev mode)
 //! 4. qrng_getConfig - Get threshold configuration (K, M, devices)
 //! 5. qrng_getReconstructionHistory - Get recent entropy reconstructions
+//! 6. qrng_fetchFromKirqHub - Fetch entropy from Kirq Hub API
+//! 7. qrng_pushToQueue - Push signal to priority queue
 
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -18,6 +20,35 @@ use std::sync::Arc;
 use sp_runtime::traits::Block as BlockT;
 
 use crate::threshold_qrng::{DeviceId, DeviceShare, ThresholdConfig};
+
+/// Signal types for the priority queue
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SignalType {
+    /// QRNG entropy signal from kirq-hub
+    QrngEntropy,
+    /// Oracle price feed
+    OraclePrice,
+    /// Custom signal type
+    Custom(String),
+}
+
+/// Entropy fetched from Kirq Hub
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KirqHubEntropy {
+    pub entropy_hex: String,
+    pub sources_used: Vec<String>,
+    pub timestamp: u64,
+    pub proof: Option<Value>,
+}
+
+/// Signal to push to priority queue
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SignalEvent {
+    pub signal_type: SignalType,
+    pub data: String,
+    pub source: String,
+    pub timestamp: u64,
+}
 
 /// Device queue status for wallet display
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,6 +101,20 @@ pub trait ThresholdQrngApi {
     /// Get recent reconstruction history
     #[method(name = "qrng_getReconstructionHistory")]
     async fn get_reconstruction_history(&self, limit: u32) -> RpcResult<Vec<ReconstructionEvent>>;
+
+    /// Fetch entropy from Kirq Hub API
+    /// Returns mixed entropy from configured sources (crypto4a, quantum_vault, etc.)
+    #[method(name = "qrng_fetchFromKirqHub")]
+    async fn fetch_from_kirq_hub(&self, num_bytes: u32) -> RpcResult<KirqHubEntropy>;
+
+    /// Push a signal to the local priority queue
+    /// Signal will be propagated to other validators via gossip
+    #[method(name = "qrng_pushToQueue")]
+    async fn push_to_queue(&self, signal: SignalEvent, priority: i32) -> RpcResult<String>;
+
+    /// Get signals from priority queue by type
+    #[method(name = "qrng_getSignalsByType")]
+    async fn get_signals_by_type(&self, signal_type: String, limit: u32) -> RpcResult<Vec<SignalEvent>>;
 }
 
 /// Threshold QRNG RPC implementation
@@ -168,5 +213,172 @@ where
     async fn get_reconstruction_history(&self, limit: u32) -> RpcResult<Vec<ReconstructionEvent>> {
         // TODO: Return actual history from gadget
         Ok(vec![])
+    }
+
+    async fn fetch_from_kirq_hub(&self, num_bytes: u32) -> RpcResult<KirqHubEntropy> {
+        // Kirq Hub endpoint - configurable via env var
+        let kirq_url = std::env::var("KIRQ_HUB_URL")
+            .unwrap_or_else(|_| "http://localhost:8001".to_string());
+
+        let url = format!("{}/api/entropy/mixed", kirq_url);
+
+        // Build request body
+        let request_body = serde_json::json!({
+            "num_bytes": num_bytes,
+            "sources": ["crypto4a", "quantum_vault"],
+            "proof_required": true
+        });
+
+        // Make HTTP request to Kirq Hub
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&url)
+            .json(&request_body)
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+            .await
+            .map_err(|e| ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to reach Kirq Hub: {}", e),
+                None::<String>,
+            ))?;
+
+        if !response.status().is_success() {
+            return Err(ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Kirq Hub returned error: {}", response.status()),
+                None::<String>,
+            ));
+        }
+
+        let data: serde_json::Value = response.json().await.map_err(|e| {
+            ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to parse Kirq Hub response: {}", e),
+                None::<String>,
+            )
+        })?;
+
+        Ok(KirqHubEntropy {
+            entropy_hex: data["entropy"].as_str().unwrap_or("").to_string(),
+            sources_used: data["sources_used"]
+                .as_array()
+                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .unwrap_or_default(),
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            proof: data.get("proof").cloned(),
+        })
+    }
+
+    async fn push_to_queue(&self, signal: SignalEvent, priority: i32) -> RpcResult<String> {
+        // Priority queue endpoint - configurable via env var
+        let pq_port = std::env::var("PRIORITY_QUEUE_PORT")
+            .unwrap_or_else(|_| "5555".to_string());
+
+        let url = format!("http://127.0.0.1:{}", pq_port);
+
+        // Build JSON-RPC request
+        let request_body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "submit_event",
+            "params": [{
+                "id": signal.timestamp,
+                "data": serde_json::to_string(&signal).unwrap_or_default(),
+                "timestamp": signal.timestamp,
+                "block_height": 0  // Will be filled by the queue
+            }, priority]
+        });
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&url)
+            .json(&request_body)
+            .timeout(std::time::Duration::from_secs(2))
+            .send()
+            .await
+            .map_err(|e| ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to reach priority queue: {}", e),
+                None::<String>,
+            ))?;
+
+        if !response.status().is_success() {
+            return Err(ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Priority queue returned error: {}", response.status()),
+                None::<String>,
+            ));
+        }
+
+        Ok(format!(
+            "Signal pushed to queue with priority {} (type: {:?})",
+            priority, signal.signal_type
+        ))
+    }
+
+    async fn get_signals_by_type(&self, signal_type: String, limit: u32) -> RpcResult<Vec<SignalEvent>> {
+        // Priority queue endpoint
+        let pq_port = std::env::var("PRIORITY_QUEUE_PORT")
+            .unwrap_or_else(|_| "5555".to_string());
+
+        let url = format!("http://127.0.0.1:{}", pq_port);
+
+        // Build JSON-RPC request to list events
+        let request_body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "list_all_events",
+            "params": []
+        });
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&url)
+            .json(&request_body)
+            .timeout(std::time::Duration::from_secs(2))
+            .send()
+            .await
+            .map_err(|e| ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to reach priority queue: {}", e),
+                None::<String>,
+            ))?;
+
+        let data: serde_json::Value = response.json().await.map_err(|e| {
+            ErrorObject::owned(
+                ErrorCode::InternalError.code(),
+                format!("Failed to parse priority queue response: {}", e),
+                None::<String>,
+            )
+        })?;
+
+        // Parse events and filter by type
+        let events = data["result"]
+            .as_array()
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|event| {
+                        let data_str = event[0]["data"].as_str()?;
+                        let signal: SignalEvent = serde_json::from_str(data_str).ok()?;
+
+                        // Filter by type
+                        let type_matches = match &signal.signal_type {
+                            SignalType::QrngEntropy => signal_type == "qrng" || signal_type == "QrngEntropy",
+                            SignalType::OraclePrice => signal_type == "oracle" || signal_type == "OraclePrice",
+                            SignalType::Custom(t) => signal_type == *t || signal_type == "custom",
+                        };
+
+                        if type_matches { Some(signal) } else { None }
+                    })
+                    .take(limit as usize)
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Ok(events)
     }
 }

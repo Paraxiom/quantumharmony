@@ -19,6 +19,8 @@ members = [
 	"pallets/ricardian-contracts",
 	"pallets/notarial",
 	"pallets/mesh-forum",
+	"pallets/oracle",
+	"pallets/oracle-feeds",
 	"tools/runtime-upgrade",
 	# "wallet", # Temporarily excluded - missing warp dependency
 	# quantum-crypto and proof-of-coherence are in Paraxiom/polkadot-sdk fork
