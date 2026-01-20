@@ -10,6 +10,7 @@
 //! 7. qrng_pushToQueue - Push signal to priority queue
 //! 8. qrng_fetchFromCrypto4a - Fetch from local simulator, create Shamir share, push to queue
 //! 9. qrng_reconstructEntropy - Reconstruct from K collected shares
+//! 10. qrng_processRound - Process a complete round with turn coordination
 
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -26,6 +27,7 @@ use sharks::{Share, Sharks};
 use hex;
 
 use crate::threshold_qrng::{DeviceId, DeviceShare, ThresholdConfig};
+use crate::round_coordinator::{RoundCoordinator, RoundResult};
 
 /// Global share pool for collecting shares from multiple nodes
 /// In production this would be managed by the coherence gadget
@@ -316,6 +318,22 @@ pub trait ThresholdQrngApi {
     /// Get signals from priority queue by type
     #[method(name = "qrng_getSignalsByType")]
     async fn get_signals_by_type(&self, signal_type: String, limit: u32) -> RpcResult<Vec<SignalEvent>>;
+
+    /// Process a complete round with turn-based coordination
+    ///
+    /// This is the main entry point for the automatic share submission flow:
+    /// 1. Check if it's this node's turn based on block number
+    /// 2. Check if pool already has K shares (avoid over-collection)
+    /// 3. If it's our turn and pool needs shares, fetch from Crypto4A and submit
+    /// 4. If K shares collected, trigger reconstruction and gossip
+    ///
+    /// # Arguments
+    /// * `block_number` - Current block number for turn calculation
+    ///
+    /// # Returns
+    /// RoundResult indicating what action was taken
+    #[method(name = "qrng_processRound")]
+    async fn process_round(&self, block_number: u64) -> RpcResult<Value>;
 }
 
 /// Threshold QRNG RPC implementation
@@ -906,6 +924,212 @@ where
             .unwrap_or_default();
 
         Ok(events)
+    }
+
+    async fn process_round(&self, block_number: u64) -> RpcResult<Value> {
+        // Initialize round coordinator
+        let coordinator = RoundCoordinator::new(block_number);
+        let round_id = RoundCoordinator::get_round_id(block_number);
+        let my_node_id = std::env::var("NODE_ID")
+            .or_else(|_| std::env::var("VALIDATOR_NAME"))
+            .unwrap_or_else(|_| "unknown".to_string());
+
+        log::info!(
+            "Processing round {} (block {}) - my_index: {}, turn_index: {}",
+            round_id,
+            block_number,
+            coordinator.my_index,
+            coordinator.get_turn_index(block_number)
+        );
+
+        // 1. Check if pool already has K shares
+        if coordinator.can_reconstruct(&round_id) {
+            let share_count = coordinator.get_share_count(&round_id);
+            log::info!(
+                "Round {} already has {} shares (K={}), skipping submission",
+                round_id,
+                share_count,
+                coordinator.threshold_k
+            );
+            return Ok(serde_json::json!({
+                "status": "AlreadyHaveKShares",
+                "round_id": round_id,
+                "shares_collected": share_count,
+                "threshold_k": coordinator.threshold_k,
+            }));
+        }
+
+        // 2. Check if it's this node's turn
+        if !coordinator.is_my_turn(block_number) {
+            let turn_index = coordinator.get_turn_index(block_number);
+            let current_validator = coordinator.get_current_turn_validator(block_number)
+                .cloned()
+                .unwrap_or_else(|| "unknown".to_string());
+
+            log::debug!(
+                "Not my turn (turn={}, my_index={}). Current turn: {}",
+                turn_index,
+                coordinator.my_index,
+                current_validator
+            );
+
+            return Ok(serde_json::json!({
+                "status": "NotMyTurn",
+                "round_id": round_id,
+                "turn_index": turn_index,
+                "my_index": coordinator.my_index,
+                "current_validator": current_validator,
+            }));
+        }
+
+        // 3. Check if we've already submitted for this round
+        if coordinator.has_submitted(&round_id, &my_node_id) {
+            log::info!("Already submitted share for round {}", round_id);
+            return Ok(serde_json::json!({
+                "status": "AlreadySubmitted",
+                "round_id": round_id,
+                "node_id": my_node_id,
+            }));
+        }
+
+        // 4. Fetch entropy from Crypto4A and create Shamir share
+        log::info!("It's my turn! Fetching entropy from Crypto4A for round {}", round_id);
+
+        let share_index = coordinator.get_my_share_index();
+        let crypto4a_result = self.fetch_from_crypto4a(32, my_node_id.clone(), share_index).await?;
+
+        log::info!(
+            "Fetched entropy: share_index={}, qber={:.4}%, shares_collected={}",
+            crypto4a_result.share_index,
+            crypto4a_result.qber * 100.0,
+            crypto4a_result.shares_collected
+        );
+
+        // 5. Check again if K shares collected after our submission
+        let shares_after = coordinator.get_share_count(&round_id);
+        if shares_after >= coordinator.threshold_k as usize {
+            log::info!(
+                "K={} shares collected for round {}! Triggering reconstruction.",
+                coordinator.threshold_k,
+                round_id
+            );
+
+            // 6. Reconstruct entropy
+            let reconstructed = self.reconstruct_entropy(round_id.clone()).await?;
+
+            // 7. Gossip to all peers
+            let gossip_result = self.gossip_reconstructed_entropy(&reconstructed).await;
+            if let Err(e) = &gossip_result {
+                log::warn!("Failed to gossip entropy: {}", e);
+            }
+
+            return Ok(serde_json::json!({
+                "status": "ReconstructedAndBroadcast",
+                "round_id": round_id,
+                "entropy_hash": format!("{}...", &reconstructed.entropy_hex[..34.min(reconstructed.entropy_hex.len())]),
+                "shares_used": reconstructed.shares_used,
+                "contributors": reconstructed.contributors,
+                "average_qber": reconstructed.average_qber,
+                "gossip_status": if gossip_result.is_ok() { "success" } else { "failed" },
+            }));
+        }
+
+        // Return success - share submitted but waiting for more
+        Ok(serde_json::json!({
+            "status": "ShareSubmitted",
+            "round_id": round_id,
+            "node_id": my_node_id,
+            "share_index": crypto4a_result.share_index,
+            "shares_collected": shares_after,
+            "threshold_k": coordinator.threshold_k,
+            "queued": crypto4a_result.queued,
+        }))
+    }
+}
+
+impl<Block> ThresholdQrngRpc<Block>
+where
+    Block: BlockT,
+{
+    /// Gossip reconstructed entropy to all peer validators
+    async fn gossip_reconstructed_entropy(&self, entropy: &ReconstructedEntropy) -> Result<(), String> {
+        use crate::round_coordinator::canary_network;
+
+        let queue_endpoints = canary_network::get_all_queue_endpoints();
+        let client = reqwest::Client::new();
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
+        // Create signal event with reconstructed entropy
+        let signal = SignalEvent {
+            signal_type: SignalType::QrngEntropy,
+            data: serde_json::json!({
+                "entropy_hex": entropy.entropy_hex,
+                "round_id": entropy.round_id,
+                "shares_used": entropy.shares_used,
+                "contributors": entropy.contributors,
+                "average_qber": entropy.average_qber,
+                "source": "reconstructed",
+            }).to_string(),
+            source: "threshold_qrng_reconstruction".to_string(),
+            timestamp,
+        };
+
+        // High priority for reconstructed entropy
+        let priority = 100;
+
+        let mut success_count = 0;
+        let mut errors = Vec::new();
+
+        for (node_name, queue_url) in queue_endpoints {
+            let queue_id = format!("entropy-{}-{}", entropy.round_id, timestamp);
+            let request_body = serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "submit_event",
+                "params": [{
+                    "id": queue_id,
+                    "data": serde_json::to_string(&signal).unwrap_or_default(),
+                    "timestamp": timestamp,
+                    "block_height": 0
+                }, priority]
+            });
+
+            match client
+                .post(queue_url)
+                .json(&request_body)
+                .timeout(std::time::Duration::from_secs(2))
+                .send()
+                .await
+            {
+                Ok(response) if response.status().is_success() => {
+                    log::info!("Gossiped entropy to {} ({})", node_name, queue_url);
+                    success_count += 1;
+                }
+                Ok(response) => {
+                    let err = format!("{}: HTTP {}", node_name, response.status());
+                    log::warn!("Failed to gossip to {}: {}", node_name, err);
+                    errors.push(err);
+                }
+                Err(e) => {
+                    let err = format!("{}: {}", node_name, e);
+                    log::warn!("Failed to gossip to {}: {}", node_name, e);
+                    errors.push(err);
+                }
+            }
+        }
+
+        let total_endpoints = canary_network::get_all_queue_endpoints().len();
+
+        if success_count > 0 {
+            log::info!("Gossiped entropy to {}/{} peers", success_count, total_endpoints);
+            Ok(())
+        } else {
+            Err(format!("Failed to gossip to any peer: {:?}", errors))
+        }
     }
 }
 

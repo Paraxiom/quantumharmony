@@ -287,6 +287,174 @@ impl Signal {
 
 // ==================== END ISO 23631 SIGNAL FORMAT ====================
 
+/// Canary network validator queue endpoints
+pub mod canary_endpoints {
+    /// Alice (Montreal) priority queue
+    pub const ALICE_QUEUE: &str = "http://51.79.26.123:5555";
+    /// Bob (Beauharnois) priority queue
+    pub const BOB_QUEUE: &str = "http://51.79.26.168:5556";
+    /// Charlie (Frankfurt) priority queue
+    pub const CHARLIE_QUEUE: &str = "http://209.38.225.4:5557";
+
+    /// Get all peer queue endpoints with names
+    pub fn get_all_queue_endpoints() -> Vec<(&'static str, &'static str)> {
+        vec![
+            ("alice", ALICE_QUEUE),
+            ("bob", BOB_QUEUE),
+            ("charlie", CHARLIE_QUEUE),
+        ]
+    }
+}
+
+/// Reconstructed entropy data from threshold QRNG
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReconstructedEntropy {
+    /// Combined entropy from K shares (hex encoded)
+    pub entropy_hex: String,
+    /// Number of shares used in reconstruction
+    pub shares_used: usize,
+    /// Node IDs that contributed shares
+    pub contributors: Vec<String>,
+    /// Average QBER of contributing shares
+    pub average_qber: f64,
+    /// Timestamp of reconstruction
+    pub timestamp: u64,
+    /// Round identifier
+    pub round_id: String,
+}
+
+/// Gossip reconstructed entropy to all peer validators
+///
+/// This function broadcasts the reconstructed entropy to all known validators'
+/// priority queues. Each validator receives the entropy so they can use it
+/// for consensus or other purposes.
+///
+/// # Arguments
+/// * `entropy` - The reconstructed entropy to broadcast
+///
+/// # Returns
+/// Result with number of successful broadcasts or error
+pub async fn gossip_entropy_to_peers(entropy: &ReconstructedEntropy) -> Result<usize, String> {
+    let endpoints = canary_endpoints::get_all_queue_endpoints();
+    let client = reqwest::Client::new();
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    // Create ISO 23631 compliant signal
+    let node_id = std::env::var("NODE_ID")
+        .or_else(|_| std::env::var("VALIDATOR_NAME"))
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    // Hash the node ID to get a 32-byte identifier
+    let node_id_bytes: [u8; 32] = sp_core::blake2_256(node_id.as_bytes());
+
+    let signal = Signal::new_qrng_entropy(
+        node_id_bytes,
+        entropy.entropy_hex.clone(),
+        entropy.average_qber,
+        "threshold_reconstruction",
+    );
+
+    // Convert to JSON for transmission
+    let signal_json = signal.to_json()
+        .map_err(|e| format!("Failed to serialize signal: {}", e))?;
+
+    // High priority for reconstructed entropy (100)
+    let priority = 100;
+
+    let mut success_count = 0;
+    let mut errors = Vec::new();
+
+    for (node_name, queue_url) in endpoints {
+        let result = push_entropy_to_priority_queue_url(
+            queue_url,
+            &signal_json,
+            &entropy.round_id,
+            priority,
+        ).await;
+
+        match result {
+            Ok(()) => {
+                info!("Gossiped entropy to {} ({})", node_name, queue_url);
+                success_count += 1;
+            }
+            Err(e) => {
+                info!("Failed to gossip to {}: {}", node_name, e);
+                errors.push(format!("{}: {}", node_name, e));
+            }
+        }
+    }
+
+    let total_endpoints = canary_endpoints::get_all_queue_endpoints().len();
+
+    if success_count > 0 {
+        info!(
+            "Successfully gossiped entropy for round {} to {}/{} peers",
+            entropy.round_id,
+            success_count,
+            total_endpoints
+        );
+        Ok(success_count)
+    } else {
+        Err(format!(
+            "Failed to gossip entropy to any peer: {:?}",
+            errors
+        ))
+    }
+}
+
+/// Push entropy signal to a specific priority queue URL
+///
+/// # Arguments
+/// * `queue_url` - Full URL of the priority queue endpoint
+/// * `signal_json` - JSON-serialized signal to push
+/// * `round_id` - Round identifier for the entropy
+/// * `priority` - Priority level (higher = more urgent)
+async fn push_entropy_to_priority_queue_url(
+    queue_url: &str,
+    signal_json: &str,
+    round_id: &str,
+    priority: i32,
+) -> Result<(), String> {
+    let client = reqwest::Client::new();
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    let queue_id = format!("entropy-{}-{}", round_id, timestamp);
+
+    let request_body = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "submit_event",
+        "params": [{
+            "id": queue_id,
+            "data": signal_json,
+            "timestamp": timestamp,
+            "block_height": 0
+        }, priority]
+    });
+
+    let response = client
+        .post(queue_url)
+        .json(&request_body)
+        .timeout(std::time::Duration::from_secs(2))
+        .send()
+        .await
+        .map_err(|e| format!("Connection failed: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP error: {}", response.status()));
+    }
+
+    Ok(())
+}
+
 /// Push received entropy to the local priority queue
 ///
 /// This function is called when entropy is received via gossip from other validators.

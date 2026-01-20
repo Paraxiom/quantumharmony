@@ -12,7 +12,7 @@ mod coherence_gossip;
 mod coherence_inherent;
 mod coherence_justification;
 mod command;
-mod entropy_gossip;
+pub mod entropy_gossip;
 mod eth;
 mod falcon_crypto;
 mod pqtg_client;
@@ -38,3 +38,7 @@ pub mod parallel_proposer;
 pub mod high_perf_verify;
 pub mod sphincs_parallel_verify;
 pub mod optimistic_executor;
+
+// New modules for threshold QRNG network integration
+pub mod round_coordinator;
+pub mod test_account_setup;
