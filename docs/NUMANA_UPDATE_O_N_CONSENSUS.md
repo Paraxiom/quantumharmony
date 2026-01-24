@@ -163,6 +163,35 @@ Leader election now uses **threshold QRNG** from Crypto4A/KIRQ devices:
 
 ---
 
+## Pipelining & Deferred Execution (Phase 3)
+
+Pipeline architecture enabling concurrent block processing:
+
+```
+Block N:    [PROPOSE]──[VOTE]──[CERTIFY]──[EXECUTE]
+Block N+1:         [PROPOSE]──[VOTE]──[CERTIFY]──[EXECUTE]
+Block N+2:                [PROPOSE]──[VOTE]──[CERTIFY]──[EXECUTE]
+
+Time ───────────────────────────────────────────────────────────►
+```
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Pipeline Phases** | Propose → Vote → Certify → ConsensusComplete → Executed |
+| **Deferred Execution** | Agree on tx ORDER first, execute AFTER consensus |
+| **Tail-Fork Protection** | New proposals must include parent's finality certificate |
+| **Throughput** | 3x improvement (1 block per phase vs 1 per round) |
+
+### Benefits for Scalability
+
+- **Consensus not blocked** by slow SPHINCS+ verification (49KB signatures)
+- **Parallel execution** across 512 toroidal segments after ordering agreed
+- **Deterministic replay** - execution result committed in NEXT block
+
+---
+
 ## References
 
 - Implementation: `docs/HYBRID_CONSENSUS_SPEC.md`

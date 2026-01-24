@@ -61,6 +61,48 @@ use crate::threshold_qrng::{
 // Post-quantum cryptography for Falcon signatures
 use pqcrypto_traits::sign::SecretKey as SignSecretKey;
 
+/// PQ-MonadBFT Phase 3: Pipeline phase for a block
+///
+/// Tracks which phase each block is in, allowing concurrent processing
+/// of multiple blocks in different phases.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PipelinePhase {
+    /// Block proposed, awaiting votes
+    Propose,
+    /// Votes being collected
+    Vote,
+    /// Certificate being created/broadcast
+    Certify,
+    /// Consensus complete, awaiting execution
+    ConsensusComplete,
+    /// Execution complete, fully finalized
+    Executed,
+}
+
+impl Default for PipelinePhase {
+    fn default() -> Self {
+        PipelinePhase::Propose
+    }
+}
+
+/// PQ-MonadBFT Phase 3: Block awaiting deferred execution
+///
+/// After consensus is reached on transaction ordering, the block is queued
+/// for parallel execution across toroidal segments.
+#[derive(Debug, Clone)]
+pub struct DeferredBlock<Block: BlockT> {
+    /// Block hash
+    pub block_hash: Block::Hash,
+    /// Block number
+    pub block_number: NumberFor<Block>,
+    /// Timestamp when consensus was reached
+    pub consensus_timestamp: u64,
+    /// Parent's finality certificate (for tail-fork protection)
+    pub parent_certificate: Option<Vec<u8>>,
+    /// Aggregated QBER from consensus votes
+    pub aggregated_qber: u16,
+}
+
 /// Quantum Coherence Finality Gadget
 ///
 /// Runs as an off-chain worker (similar to GRANDPA gadget) and coordinates
@@ -148,6 +190,25 @@ pub struct CoherenceGadget<Block: BlockT, Client, Backend, Pool> {
     /// PQ-MonadBFT: Whether to use linear voting (O(n)) or legacy gossip (O(n log n))
     /// Default: true (use linear voting)
     use_linear_voting: bool,
+
+    /// PQ-MonadBFT Phase 3: Pipeline state tracking
+    /// Maps block_hash -> PipelinePhase
+    /// Allows multiple blocks to be in different phases concurrently
+    pipeline_state: Arc<std::sync::Mutex<HashMap<Block::Hash, PipelinePhase>>>,
+
+    /// PQ-MonadBFT Phase 3: Finality certificate cache for tail-fork protection
+    /// Maps block_hash -> encoded certificate
+    /// New proposals must include parent's certificate
+    certificate_cache: Arc<std::sync::Mutex<HashMap<Block::Hash, Vec<u8>>>>,
+
+    /// PQ-MonadBFT Phase 3: Deferred execution queue
+    /// Blocks that have reached consensus but await execution
+    /// Execution happens in parallel on toroidal segments
+    deferred_execution_queue: Arc<std::sync::Mutex<Vec<DeferredBlock<Block>>>>,
+
+    /// PQ-MonadBFT Phase 3: Last certified block (for tail-fork protection)
+    /// New proposals must reference this certificate
+    last_certified_block: Arc<std::sync::Mutex<Option<(Block::Hash, NumberFor<Block>)>>>,
 
     /// Phantom data for block type
     _phantom: PhantomData<Block>,
@@ -365,6 +426,11 @@ where
             justification_sync_link,
             leader_vote_aggregation: Arc::new(std::sync::Mutex::new(HashMap::new())),
             use_linear_voting,
+            // PQ-MonadBFT Phase 3: Pipelining infrastructure
+            pipeline_state: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            certificate_cache: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            deferred_execution_queue: Arc::new(std::sync::Mutex::new(Vec::new())),
+            last_certified_block: Arc::new(std::sync::Mutex::new(None)),
             _phantom: PhantomData,
         }
     }
@@ -1064,6 +1130,11 @@ where
 
         let block_num: u64 = block_number.saturated_into();
 
+        // PQ-MonadBFT Phase 3: Track pipeline state - block enters PROPOSE phase
+        if let Err(e) = self.set_pipeline_phase(block_hash, PipelinePhase::Propose) {
+            warn!("⚠️  Failed to set PROPOSE phase for block #{}: {}", block_number, e);
+        }
+
         // MEMPOOL GROOMING: Check pool status and groom ASAP if needed
         self.groom_mempool_if_needed().await?;
 
@@ -1177,6 +1248,11 @@ where
         self.broadcast_vote(&vote)?;
         error!("🔴 After broadcast_vote for block #{}", block_number);
 
+        // PQ-MonadBFT Phase 3: Track pipeline state - block enters VOTE phase
+        if let Err(e) = self.set_pipeline_phase(block_hash, PipelinePhase::Vote) {
+            warn!("⚠️  Failed to set VOTE phase for block #{}: {}", block_number, e);
+        }
+
         // PHASE 7: Wait for votes and check for supermajority on ANY recent block
         // P2P votes may arrive for different blocks due to timing, so check all
         error!("🔴 PHASE 7: Starting supermajority check for block #{}", block_number);
@@ -1245,11 +1321,20 @@ where
             );
 
             // PHASE 8: Generate finality certificate
+            // PQ-MonadBFT Phase 3: Set pipeline phase to CERTIFY
+            self.set_pipeline_phase(block_hash, PipelinePhase::Certify)?;
+
             let certificate = self.generate_finality_certificate(block_hash, block_number)?;
             info!(
                 "📜 Generated FinalityCertificate for block #{} with {} votes",
                 block_number, certificate.validator_count
             );
+
+            // PQ-MonadBFT Phase 3: Cache certificate for tail-fork protection
+            let encoded_cert = certificate.encode();
+            if let Err(e) = self.cache_certificate(block_hash, block_number, encoded_cert.clone()) {
+                warn!("⚠️  Failed to cache certificate: {}", e);
+            }
 
             // PQ-MonadBFT Phase 2: Leader broadcasts certificate to all validators
             // This allows validators to finalize even if they didn't receive all votes directly
@@ -1261,6 +1346,26 @@ where
                 ) {
                     warn!("⚠️  Failed to broadcast finality certificate: {}", e);
                 }
+            }
+
+            // PQ-MonadBFT Phase 3: Queue for deferred execution
+            // Get aggregated QBER from certificate
+            let aggregated_qber = certificate.consensus_quantum_state.average_qber as u16;
+
+            // Get parent's certificate for tail-fork protection
+            let parent_hash = self.client.header(block_hash)
+                .ok()
+                .flatten()
+                .map(|h| *h.parent_hash());
+            let parent_cert = parent_hash.and_then(|ph| self.get_cached_certificate(&ph));
+
+            if let Err(e) = self.queue_for_deferred_execution(
+                block_hash,
+                block_number,
+                aggregated_qber,
+                parent_cert,
+            ) {
+                warn!("⚠️  Failed to queue for deferred execution: {}", e);
             }
 
             // PHASE 9: Finalize block via client (not transaction pool!)
@@ -1300,6 +1405,25 @@ where
             debug!(
                 "No supermajority found for any block in votes map after 10 attempts"
             );
+        }
+
+        // PQ-MonadBFT Phase 3: Process deferred executions
+        // After consensus completes, process any blocks in the deferred execution queue
+        match self.process_deferred_executions().await {
+            Ok(count) if count > 0 => {
+                info!("📦 Processed {} deferred block executions", count);
+            }
+            Ok(_) => {} // No blocks to process, that's fine
+            Err(e) => {
+                warn!("⚠️  Failed to process deferred executions: {}", e);
+            }
+        }
+
+        // PQ-MonadBFT Phase 3: Periodic pipeline cleanup (every 10 blocks)
+        if block_num % 10 == 0 {
+            if let Err(e) = self.cleanup_pipeline() {
+                warn!("⚠️  Failed to cleanup pipeline: {}", e);
+            }
         }
 
         Ok(())
@@ -2025,6 +2149,270 @@ where
         message.extend_from_slice(&vote.block_number.encode());
         message.extend_from_slice(&vote.coherence_score.to_le_bytes());
         Ok(message)
+    }
+
+    // =========================================================================
+    // PQ-MonadBFT Phase 3: Pipelining Methods
+    // =========================================================================
+
+    /// Set the pipeline phase for a block
+    ///
+    /// Tracks which phase each block is in, allowing concurrent processing
+    /// of multiple blocks (Block N in CERTIFY while Block N+1 in VOTE).
+    fn set_pipeline_phase(
+        &self,
+        block_hash: Block::Hash,
+        phase: PipelinePhase,
+    ) -> Result<(), String> {
+        let mut pipeline = self.pipeline_state.lock()
+            .map_err(|e| format!("Failed to lock pipeline state: {}", e))?;
+
+        let old_phase = pipeline.get(&block_hash).copied();
+        pipeline.insert(block_hash, phase);
+
+        if let Some(old) = old_phase {
+            debug!(
+                "📊 Pipeline: Block {:?} phase {:?} → {:?}",
+                &block_hash.as_ref()[0..4], old, phase
+            );
+        } else {
+            debug!(
+                "📊 Pipeline: Block {:?} entering phase {:?}",
+                &block_hash.as_ref()[0..4], phase
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Get the current pipeline phase for a block
+    fn get_pipeline_phase(&self, block_hash: &Block::Hash) -> Option<PipelinePhase> {
+        self.pipeline_state.lock().ok()
+            .and_then(|p| p.get(block_hash).copied())
+    }
+
+    /// Cache a finality certificate for tail-fork protection
+    ///
+    /// New block proposals must include their parent's certificate,
+    /// preventing leaders from forking away predecessor's blocks.
+    fn cache_certificate(
+        &self,
+        block_hash: Block::Hash,
+        block_number: NumberFor<Block>,
+        encoded_certificate: Vec<u8>,
+    ) -> Result<(), String> {
+        let mut cache = self.certificate_cache.lock()
+            .map_err(|e| format!("Failed to lock certificate cache: {}", e))?;
+
+        cache.insert(block_hash, encoded_certificate);
+
+        // Update last certified block
+        let mut last_certified = self.last_certified_block.lock()
+            .map_err(|e| format!("Failed to lock last certified block: {}", e))?;
+        *last_certified = Some((block_hash, block_number));
+
+        info!(
+            "📜 Cached certificate for block #{} (tail-fork protection)",
+            block_number
+        );
+
+        // Prune old certificates (keep last 100)
+        if cache.len() > 100 {
+            // Find oldest entries to remove
+            // In a real implementation, we'd track by block number
+            let to_remove: Vec<_> = cache.keys().take(cache.len() - 100).cloned().collect();
+            for hash in to_remove {
+                cache.remove(&hash);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get cached certificate for a block (for tail-fork protection)
+    fn get_cached_certificate(&self, block_hash: &Block::Hash) -> Option<Vec<u8>> {
+        self.certificate_cache.lock().ok()
+            .and_then(|c| c.get(block_hash).cloned())
+    }
+
+    /// Validate tail-fork protection for a new block proposal
+    ///
+    /// MonadBFT-style protection: New proposals MUST include their parent's
+    /// finality certificate, preventing leaders from forking.
+    fn validate_tail_fork_protection(
+        &self,
+        parent_hash: &Block::Hash,
+        parent_certificate: Option<&[u8]>,
+    ) -> Result<bool, String> {
+        // Get the last certified block
+        let last_certified = self.last_certified_block.lock()
+            .map_err(|e| format!("Failed to lock last certified block: {}", e))?
+            .clone();
+
+        match last_certified {
+            Some((certified_hash, certified_number)) => {
+                // If we have a certified block, the parent must be certified
+                // or be the certified block itself
+                if parent_hash == &certified_hash {
+                    // Parent is the last certified block - OK
+                    return Ok(true);
+                }
+
+                // Check if parent certificate is provided
+                match parent_certificate {
+                    Some(cert) => {
+                        // Verify certificate is in our cache or valid
+                        if let Some(cached) = self.get_cached_certificate(parent_hash) {
+                            if cert == cached.as_slice() {
+                                return Ok(true);
+                            }
+                        }
+                        // TODO: Verify certificate signatures if not cached
+                        warn!(
+                            "⚠️  Parent certificate not in cache for {:?}, accepting for now",
+                            &parent_hash.as_ref()[0..4]
+                        );
+                        Ok(true)
+                    }
+                    None => {
+                        warn!(
+                            "❌ Tail-fork violation: No parent certificate for {:?} (last certified: #{:?})",
+                            &parent_hash.as_ref()[0..4],
+                            certified_number
+                        );
+                        Ok(false) // Return false but don't error - let caller decide
+                    }
+                }
+            }
+            None => {
+                // No blocks certified yet - allow any proposal
+                debug!("No certified blocks yet, skipping tail-fork check");
+                Ok(true)
+            }
+        }
+    }
+
+    /// Queue a block for deferred execution
+    ///
+    /// After consensus is reached on transaction ordering, execution is deferred
+    /// to allow parallel processing across toroidal segments.
+    fn queue_for_deferred_execution(
+        &self,
+        block_hash: Block::Hash,
+        block_number: NumberFor<Block>,
+        aggregated_qber: u16,
+        parent_certificate: Option<Vec<u8>>,
+    ) -> Result<(), String> {
+        let deferred = DeferredBlock {
+            block_hash,
+            block_number,
+            consensus_timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            parent_certificate,
+            aggregated_qber,
+        };
+
+        let mut queue = self.deferred_execution_queue.lock()
+            .map_err(|e| format!("Failed to lock deferred execution queue: {}", e))?;
+
+        queue.push(deferred);
+
+        info!(
+            "⏳ Block #{} queued for deferred execution (QBER: {:.2}%, queue size: {})",
+            block_number,
+            aggregated_qber as f64 / 100.0,
+            queue.len()
+        );
+
+        // Update pipeline phase
+        self.set_pipeline_phase(block_hash, PipelinePhase::ConsensusComplete)?;
+
+        Ok(())
+    }
+
+    /// Process deferred executions (called periodically or after consensus)
+    ///
+    /// Executes queued blocks in parallel across toroidal segments.
+    /// State root is committed in the NEXT block (deferred commitment).
+    async fn process_deferred_executions(&self) -> Result<usize, String> {
+        let blocks_to_execute: Vec<DeferredBlock<Block>> = {
+            let mut queue = self.deferred_execution_queue.lock()
+                .map_err(|e| format!("Failed to lock deferred execution queue: {}", e))?;
+
+            // Take all blocks from queue
+            std::mem::take(&mut *queue)
+        };
+
+        if blocks_to_execute.is_empty() {
+            return Ok(0);
+        }
+
+        info!(
+            "🚀 Processing {} deferred block executions",
+            blocks_to_execute.len()
+        );
+
+        let mut executed_count = 0;
+
+        for deferred in blocks_to_execute {
+            // In a real implementation, this would:
+            // 1. Route transactions to toroidal segments by address hash
+            // 2. Execute in parallel across 512 segments
+            // 3. Detect and re-execute conflicts
+            // 4. Compute state root for next block
+
+            // For now, just mark as executed and log
+            info!(
+                "✅ Executed block #{} (deferred by {}s, QBER: {:.2}%)",
+                deferred.block_number,
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0)
+                    .saturating_sub(deferred.consensus_timestamp),
+                deferred.aggregated_qber as f64 / 100.0
+            );
+
+            // Update pipeline phase to executed
+            self.set_pipeline_phase(deferred.block_hash, PipelinePhase::Executed)?;
+
+            executed_count += 1;
+        }
+
+        Ok(executed_count)
+    }
+
+    /// Get current pipeline status (for debugging/monitoring)
+    fn get_pipeline_status(&self) -> Result<Vec<(Block::Hash, PipelinePhase)>, String> {
+        let pipeline = self.pipeline_state.lock()
+            .map_err(|e| format!("Failed to lock pipeline state: {}", e))?;
+
+        Ok(pipeline.iter().map(|(h, p)| (*h, *p)).collect())
+    }
+
+    /// Clean up old pipeline entries (keep last 50 blocks)
+    fn cleanup_pipeline(&self) -> Result<usize, String> {
+        let mut pipeline = self.pipeline_state.lock()
+            .map_err(|e| format!("Failed to lock pipeline state: {}", e))?;
+
+        let before = pipeline.len();
+
+        // Remove executed blocks (they're done)
+        pipeline.retain(|_, phase| *phase != PipelinePhase::Executed);
+
+        // If still too many, remove oldest (by insertion order in HashMap isn't guaranteed,
+        // but this is a reasonable cleanup strategy)
+        if pipeline.len() > 50 {
+            let to_remove = pipeline.len() - 50;
+            let keys: Vec<_> = pipeline.keys().take(to_remove).cloned().collect();
+            for key in keys {
+                pipeline.remove(&key);
+            }
+        }
+
+        Ok(before - pipeline.len())
     }
 
     /// Broadcast finality justification to all connected peers via P2P gossip

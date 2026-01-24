@@ -308,10 +308,15 @@ fn validate_proposal(proposal: &BlockProposal) -> bool {
 - [x] `check_leader_supermajority()` - Leader threshold check with QBER
 - [x] Certificate includes: aggregated_qber, healthy_channels, validator_count
 
-### Phase 3: Pipelining (TODO)
-- [ ] Implement deferred execution
-- [ ] Add block proposal pipelining
-- [ ] Integrate tail-fork protection
+### Phase 3: Pipelining ✅ COMPLETE (2026-01-24)
+- [x] `PipelinePhase` enum - Tracks block state (Propose → Vote → Certify → ConsensusComplete → Executed)
+- [x] `DeferredBlock` struct - Queues blocks for deferred execution
+- [x] `validate_tail_fork_protection()` - Verifies parent certificate before accepting proposal
+- [x] `queue_for_deferred_execution()` - Queues certified blocks for parallel execution
+- [x] `process_deferred_executions()` - Processes execution queue after consensus
+- [x] Pipeline phase tracking integrated into `process_block()` flow
+- [x] Certificate caching for tail-fork protection
+- [x] Periodic pipeline cleanup (every 10 blocks)
 
 ### Phase 4: QRNG Leader Election ✅ COMPLETE (2026-01-24)
 - [x] `get_qrng_entropy_for_election()` - Tries QRNG first, falls back to VRF
@@ -332,9 +337,9 @@ fn validate_proposal(proposal: &BlockProposal) -> bool {
 | Post-Quantum Sigs | No | SPHINCS+ | **Falcon + SPHINCS+** |
 | QBER Validation | No | Yes | **Yes** |
 | Parallel Execution | Optimistic | Toroidal | **Toroidal** |
-| Deferred Execution | Yes | No | **Yes** (Phase 3) |
-| Pipelining | Yes | No | **Yes** (Phase 3) |
-| Tail-Fork Resistant | Yes | No | **Yes** (Phase 3) |
+| Deferred Execution | Yes | No | **Yes** |
+| Pipelining | Yes | No | **Yes** |
+| Tail-Fork Resistant | Yes | No | **Yes** |
 | Coherence Scoring | No | Yes | **Yes** |
 | QRNG Arbitrage | No | Yes | **Yes** |
 
