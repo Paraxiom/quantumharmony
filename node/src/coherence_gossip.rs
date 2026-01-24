@@ -31,7 +31,12 @@ pub const COHERENCE_PROTOCOL_NAME: &str = "/quantumharmony/coherence/1";
 
 /// Gossip message for coherence votes
 ///
-/// Phase 7B will use this for encoding/decoding votes over the network
+/// ## PQ-MonadBFT Hybrid Consensus (Phase 1)
+///
+/// Linear O(n) voting architecture:
+/// - Validators send votes ONLY to the current leader
+/// - Leader aggregates votes and broadcasts certificate
+/// - Total messages: 3N instead of O(N log N) gossip
 ///
 /// ## QPP Phase 4: Triple Ratchet Integration (Future Enhancement)
 ///
@@ -79,7 +84,7 @@ pub const COHERENCE_PROTOCOL_NAME: &str = "/quantumharmony/coherence/1";
 /// **Implementation Status**: Infrastructure ready, integration pending (LOW RISK)
 #[derive(Clone, Encode, Decode, Debug)]
 pub enum GossipMessage<Block: BlockT> {
-    /// A vote for a block
+    /// A vote for a block (legacy gossip - kept for backwards compatibility)
     Vote(pallet_proof_of_coherence::types::CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>),
 
     /// Request votes for a specific block
@@ -95,6 +100,35 @@ pub enum GossipMessage<Block: BlockT> {
         block_number: NumberFor<Block>,
         /// Encoded justification (CoherenceJustification struct)
         encoded_justification: Vec<u8>,
+    },
+
+    /// PQ-MonadBFT Phase 1: Direct vote to leader (O(n) complexity)
+    /// Validators send their vote directly to the elected leader only,
+    /// instead of gossiping to all peers
+    VoteToLeader {
+        /// The vote itself
+        vote: pallet_proof_of_coherence::types::CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
+        /// QBER measurement from validator's QKD channel (basis points, 0-10000)
+        qber_measurement: u16,
+        /// QKD channel ID measured
+        qkd_channel_id: u32,
+    },
+
+    /// PQ-MonadBFT Phase 1: Finality certificate broadcast from leader
+    /// After collecting 2/3+ votes, leader creates and broadcasts certificate
+    FinalityCertificateBroadcast {
+        /// Block hash finalized
+        block_hash: Block::Hash,
+        /// Block number finalized
+        block_number: NumberFor<Block>,
+        /// Aggregated QBER from all votes (weighted average, basis points)
+        aggregated_qber: u16,
+        /// Number of validators with QBER < threshold (11%)
+        healthy_channels: u32,
+        /// Total validators who voted
+        validator_count: u32,
+        /// Encoded finality certificate
+        encoded_certificate: Vec<u8>,
     },
 }
 
