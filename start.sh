@@ -11,7 +11,7 @@ docker run -d --name local-node \
   -p 9944:9944 -p 30333:30333 \
   -v "${DATA_DIR}:/data" \
   -v "${SCRIPT_DIR}/chainspec-production.json:/chainspec.json:ro" \
-  sylvaincormier/quantumharmony-node:mesh-forum \
+  sylvaincormier/quantumharmony-node:latest \
   --chain=/chainspec.json \
   --base-path=/data \
   --port=30333 \
