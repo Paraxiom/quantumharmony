@@ -68,6 +68,10 @@ use pqc_rpc::{PqcOracleRpc, PqcOracleApiServer};
 pub mod mesh_forum_rpc;
 use mesh_forum_rpc::{MeshForumRpc, MeshForumApiServer};
 
+// Devonomics RPC - On-chain quest & score tracking
+pub mod devonomics_rpc;
+use devonomics_rpc::{DevonomicsRpc, DevonomicsApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -95,6 +99,7 @@ where
     C::Api: quantumharmony_runtime::wallet_api::WalletApi<Block, AccountId, Balance>,
     C::Api: pallet_validator_rewards::runtime_api::ValidatorRewardsApi<Block, AccountId, Balance>,
     C::Api: pallet_mesh_forum::runtime_api::MeshForumApi<Block, AccountId>,
+    C::Api: pallet_devonomics::runtime_api::DevonomicsApi<Block, AccountId>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     Pool: TxPool<Block = Block> + 'static,
 {
@@ -207,6 +212,15 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ MeshForum RPC registered (forum_* - on-chain validator messaging)");
+
+    // Create Devonomics RPC instance for quest & score tracking
+    let devonomics_rpc = DevonomicsRpc::<_, Block>::new(deps.client.clone());
+
+    // Merge Devonomics RPC into module
+    module.merge(devonomics_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Devonomics RPC registered (devonomics_* - quest & score tracking)");
 
     Ok(module)
 }
