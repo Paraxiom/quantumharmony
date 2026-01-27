@@ -21,6 +21,7 @@ members = [
 	"pallets/mesh-forum",
 	"pallets/oracle",
 	"pallets/oracle-feeds",
+	"pallets/devonomics",
 	"tools/runtime-upgrade",
 	# "wallet", # Temporarily excluded - missing warp dependency
 	# quantum-crypto and proof-of-coherence are in Paraxiom/polkadot-sdk fork
@@ -180,6 +181,7 @@ pallet-dev-governance = { path = "pallets/dev-governance", default-features = fa
 pallet-academic-vouch = { path = "pallets/academic-vouch", default-features = false }
 pallet-ricardian-contracts = { path = "pallets/ricardian-contracts", default-features = false }
 pallet-notarial = { path = "pallets/notarial", default-features = false }
+pallet-devonomics = { path = "pallets/devonomics", default-features = false }
 pallet-babe = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 sp-consensus-babe = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 # Substrate Utility

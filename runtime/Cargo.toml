@@ -105,6 +105,9 @@ pallet-validator-rewards = { path = "../pallets/validator-rewards", default-feat
 # Consensus level tracking pallet
 pallet-consensus-level = { path = "../pallets/consensus-level", default-features = false }
 
+# Devonomics quest & reward tracking pallet
+pallet-devonomics = { path = "../pallets/devonomics", default-features = false }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -177,6 +180,7 @@ std = [
 	"pallet-fideicommis/std",
 	"pallet-stablecoin/std",
 	"pallet-consensus-level/std",
+	"pallet-devonomics/std",
 
 	# Governance pallets
 	"pallet-democracy/std",

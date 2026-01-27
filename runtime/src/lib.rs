@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 23,  // v23: Chain restart with fresh genesis
+    spec_version: 24,  // v24: Add pallet-devonomics (on-chain quest tracking)
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -529,6 +529,19 @@ impl pallet_consensus_level::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+// Devonomics quest & score tracking pallet configuration
+parameter_types! {
+    pub const DevonomicsMaxQuests: u32 = 16;
+    pub const MaxQuestIdLen: u32 = 8;
+}
+
+impl pallet_devonomics::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type AdminOrigin = EnsureRoot<AccountId>;
+    type MaxQuests = DevonomicsMaxQuests;
+    type MaxQuestIdLen = MaxQuestIdLen;
+}
+
 // Governance parameters
 parameter_types! {
     pub const LaunchPeriod: BlockNumber = 7 * DAYS;
@@ -744,6 +757,9 @@ construct_runtime!(
 
         // Adaptive consensus level tracking
         ConsensusLevel: pallet_consensus_level,
+
+        // Devonomics quest & reward tracking
+        Devonomics: pallet_devonomics,
     }
 );
 
@@ -961,6 +977,33 @@ impl_runtime_apis! {
 
         fn total_staked() -> Balance {
             ValidatorRewards::total_staked()
+        }
+    }
+
+    impl pallet_devonomics::runtime_api::DevonomicsApi<Block, AccountId> for Runtime {
+        fn get_score(account: AccountId) -> u32 {
+            pallet_devonomics::DevScore::<Runtime>::get(&account)
+        }
+
+        fn get_completed_quests(account: AccountId) -> sp_std::vec::Vec<(sp_std::vec::Vec<u8>, u32)> {
+            pallet_devonomics::QuestCompleted::<Runtime>::iter_prefix(&account)
+                .map(|(quest_id, block)| {
+                    let block_u32: u32 = block.try_into().unwrap_or(0u32);
+                    (quest_id.into_inner(), block_u32)
+                })
+                .collect()
+        }
+
+        fn get_tier(account: AccountId) -> u8 {
+            pallet_devonomics::TierUnlocked::<Runtime>::get(&account)
+        }
+
+        fn get_leaderboard(limit: u32) -> sp_std::vec::Vec<(AccountId, u32)> {
+            let mut entries: sp_std::vec::Vec<(AccountId, u32)> =
+                pallet_devonomics::DevScore::<Runtime>::iter().collect();
+            entries.sort_by(|a, b| b.1.cmp(&a.1));
+            entries.truncate(limit as usize);
+            entries
         }
     }
 
