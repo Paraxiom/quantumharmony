@@ -146,6 +146,56 @@
             box-shadow: 0 0 12px var(--accent-success);
         }
 
+        /* Node Endpoint Input */
+        .node-endpoint-container {
+            display: flex;
+            align-items: center;
+            margin-left: 24px;
+            gap: 8px;
+        }
+
+        .node-endpoint-input {
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--lcars-gold-dark);
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            width: 220px;
+            outline: none;
+        }
+
+        .node-endpoint-input:focus {
+            border-color: var(--lcars-gold);
+            box-shadow: 0 0 8px rgba(248, 161, 0, 0.3);
+        }
+
+        .node-endpoint-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .node-connect-btn {
+            padding: 6px 12px;
+            background: var(--lcars-gold-dark);
+            color: var(--text-on-color);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'Orbitron', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .node-connect-btn:hover {
+            background: var(--lcars-gold);
+        }
+
+        .node-connect-btn.connected {
+            background: var(--accent-success);
+        }
+
         /* Sidebar Navigation */
         .lcars-sidebar {
             background: var(--bg-primary);
@@ -430,6 +480,24 @@
 
         .info-row:last-child { border-bottom: none; }
 
+        /* Quest row styling for Devonomics */
+        .quest-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--bg-surface);
+            gap: 12px;
+        }
+        .quest-row:last-child { border-bottom: none; }
+        .quest-icon { font-size: 18px; width: 24px; text-align: center; }
+        .quest-name { color: var(--lcars-gold); font-weight: 600; min-width: 100px; }
+        .quest-desc { color: var(--text-secondary); font-size: 12px; flex: 1; }
+        .quest-reward { color: var(--accent-success); font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 80px; text-align: right; }
+        .quest-locked { color: var(--text-muted); font-size: 11px; font-style: italic; }
+        .quest-row.completed .quest-icon { color: var(--accent-success); }
+        .quest-row.completed .quest-name { color: var(--accent-success); }
+        .quest-row.completed .quest-reward { text-decoration: line-through; opacity: 0.5; }
+
         /* Recent block entry styling */
         .recent-block-entry {
             padding: 10px 0;
@@ -650,6 +718,15 @@
             </div>
             <div class="header-bar">
                 <span class="header-title">Node Operator</span>
+                <!-- Node Endpoint Input -->
+                <div class="node-endpoint-container">
+                    <input type="text"
+                           id="nodeEndpoint"
+                           class="node-endpoint-input"
+                           placeholder="localhost:9944 or /rpc"
+                           title="Enter node RPC endpoint (use QSSH tunnel for remote nodes)">
+                    <button class="node-connect-btn" id="connectBtn" onclick="connectToNode()">CONNECT</button>
+                </div>
                 <div id="accountBadge" class="account-badge" onclick="copyMyAddress()" title="Click to copy address for faucet" style="display: none; margin-left: 16px; padding: 4px 12px; background: var(--bg-surface); border-radius: 4px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--lcars-gold); border: 1px solid var(--lcars-gold-dim);">
                     <span id="accountBadgeAddress">No Account</span>
                     <span style="margin-left: 8px; font-size: 9px; color: var(--text-muted);">📋 COPY</span>
@@ -700,6 +777,7 @@
             <button class="nav-btn" onclick="showPanel('network')">NETWORK</button>
             <button class="nav-btn" onclick="showPanel('signals')">SIGNALS</button>
             <button class="nav-btn" onclick="showPanel('proofs')">PROOFS</button>
+            <button class="nav-btn" onclick="showPanel('devonomics')" style="background: linear-gradient(135deg, #f8a100, #ff6b00);">QUESTS</button>
             <div class="nav-spacer"></div>
             <button class="nav-btn" onclick="showPanel('settings')">SETTINGS</button>
         </div>
@@ -717,9 +795,6 @@
                     <h2 class="panel-title">Node Status</h2>
 
                     <div class="control-bar">
-                        <button class="btn btn-success" onclick="startNode()" id="startBtn">START</button>
-                        <button class="btn btn-danger" onclick="stopNode()" id="stopBtn">STOP</button>
-                        <button class="btn btn-primary" onclick="restartNode()" id="restartBtn">RESTART</button>
                         <div class="status-pill" id="nodeProcessStatus">
                             <div class="dot"></div>
                             <span class="status-pill-text" id="nodeProcessText">Unknown</span>
@@ -742,6 +817,7 @@
                         <div class="stat-card">
                             <div class="stat-label">Sync Status</div>
                             <div class="stat-value gold" id="syncStatus">---</div>
+                            <div class="stat-label" id="syncETA" style="font-size: 10px; margin-top: 4px; color: var(--text-muted);"></div>
                         </div>
                     </div>
 
@@ -779,13 +855,8 @@
                         </div>
                     </div>
 
-                    <div class="section-title">
-                        <span>Console Output</span>
-                        <button class="btn btn-secondary btn-sm" onclick="clearTerminal()">CLEAR</button>
-                    </div>
-                    <div class="terminal" id="terminal">
-                        <div class="terminal-line info">System initialized</div>
-                    </div>
+                    <!-- Console moved to Activity tab in bottom-right panel -->
+                    <div id="terminal" style="display: none;"></div>
                 </div>
 
                 <!-- TRANSFER PANEL -->
@@ -826,7 +897,10 @@
                     <div class="info-box" style="margin-bottom: 24px;">
                         <div class="form-group" style="margin-bottom: 12px;">
                             <label class="form-label">Your Secret Key</label>
-                            <input type="password" class="form-input" id="transferSecretKey" placeholder="Paste 48-byte seed (hex) or 128-byte secret key" onchange="updateSenderFromKey()">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="password" class="form-input" id="transferSecretKey" placeholder="Paste 48-byte seed (hex) or 128-byte secret key" onchange="updateSenderFromKey()" style="flex: 1;">
+                                <button class="btn btn-secondary btn-sm" onclick="toggleKeyVisibility()" id="keyVisibilityBtn" title="Show/Hide Key" style="padding: 8px 12px; font-size: 16px;">👁</button>
+                            </div>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
                                 Your key is used locally to sign transactions. Never share it.
                             </div>
@@ -916,7 +990,10 @@
                     <div class="info-box" style="margin-bottom: 24px;">
                         <div class="form-group" style="margin-bottom: 12px;">
                             <label class="form-label">Recipient Address (SS58)</label>
-                            <input type="text" class="form-input" id="faucetRecipient" placeholder="5CT4mnE7KMeGG6MqSyVLFa7CLkyRtb8FHCafW4zUHKYh4cg6">
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" class="form-input" id="faucetRecipient" placeholder="5CT4mnE7KMeGG6MqSyVLFa7CLkyRtb8FHCafW4zUHKYh4cg6" style="flex: 1;">
+                                <button class="btn btn-secondary" onclick="useMyAddressForFaucet()" title="Use your account address">MY ADDRESS</button>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                             <button class="btn btn-success" id="requestDripBtn" onclick="requestDrip()">REQUEST 100 QMHY</button>
@@ -924,6 +1001,32 @@
                         </div>
                         <div id="faucetOfflineWarning" style="display: none; margin-top: 12px; padding: 8px; background: rgba(239, 83, 80, 0.1); border-radius: 4px; font-size: 12px; color: var(--accent-danger);">
                             Faucet service is offline. Please try again later or contact the network operator.
+                        </div>
+                    </div>
+
+                    <div class="section-title">
+                        <span>Active Account</span>
+                    </div>
+                    <div class="info-box" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(35,134,54,0.1), rgba(99,102,241,0.1)); border: 1px solid var(--accent-primary);">
+                        <div id="activeAccountDisplay">
+                            <div style="color: var(--text-muted); font-size: 13px;">No account loaded. Generate one below or paste your key in TRANSFER section.</div>
+                        </div>
+                        <div id="activeAccountInfo" style="display: none;">
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">ADDRESS</label>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <code id="activeAddressDisplay" style="flex: 1; background: var(--bg-void); padding: 8px 12px; border-radius: 6px; font-size: 12px; word-break: break-all; color: var(--accent-primary);">-</code>
+                                    <button class="btn btn-secondary btn-sm" onclick="copyActiveAddress()" title="Copy Address">📋</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">SECRET KEY (click eye to reveal)</label>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <code id="activeKeyDisplay" style="flex: 1; background: var(--bg-void); padding: 8px 12px; border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--text-secondary); filter: blur(4px); transition: filter 0.2s;">-</code>
+                                    <button class="btn btn-secondary btn-sm" onclick="toggleActiveKeyVisibility()" id="activeKeyVisBtn" title="Show/Hide Key">👁</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="copyActiveKey()" title="Copy Key">📋</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -944,7 +1047,7 @@
                     </div>
                     <div class="terminal" id="faucetTerminal">
                         <div class="terminal-line info">Faucet panel initialized</div>
-                        <div class="terminal-line info">Faucet proxied via /faucet → 51.79.26.123</div>
+                        <div class="terminal-line info">Faucet ready - 10 QMHY per request</div>
                     </div>
                 </div>
 
@@ -2008,6 +2111,204 @@
                     </div>
                 </div>
 
+                <!-- DEVONOMICS PANEL - Gamified Onboarding Quests -->
+                <div id="panel-devonomics" class="panel">
+                    <h2 class="panel-title">Devonomics: Validator Quests</h2>
+
+                    <!-- Score Overview -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">YOUR SCORE</div>
+                            <div class="stat-value gold" id="devScore">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">QUESTS DONE</div>
+                            <div class="stat-value green" id="devQuestsCompleted">0/15</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">TIER</div>
+                            <div class="stat-value blue" id="devTier">BRONZE</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">RANK</div>
+                            <div class="stat-value" id="devRank">#--</div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="background: var(--bg-elevated); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: var(--text-secondary); font-size: 12px;">Progress to Silver Tier</span>
+                            <span style="color: var(--lcars-gold); font-size: 12px;" id="devProgressText">0/250 QMHY</span>
+                        </div>
+                        <div style="background: var(--bg-surface); border-radius: 4px; height: 12px; overflow: hidden;">
+                            <div id="devProgressBar" style="background: linear-gradient(90deg, #f8a100, #ff6b00); height: 100%; width: 0%; transition: width 0.5s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tier 1: Genesis Quests -->
+                    <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">🚀</span> Tier 1: Genesis Quests
+                        <span style="color: var(--text-muted); font-size: 11px; margin-left: auto;">250 QMHY Total</span>
+                    </div>
+                    <div class="info-box" style="margin-bottom: 24px;" id="questsTier1">
+                        <div class="quest-row" data-quest="G001">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Genesis</span>
+                            <span class="quest-desc">Node syncs to network</span>
+                            <span class="quest-reward">100 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkQuest('G001')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="G002">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Identity</span>
+                            <span class="quest-desc">Generate session keys</span>
+                            <span class="quest-reward">50 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkQuest('G002')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="G003">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Registered</span>
+                            <span class="quest-desc">Create account</span>
+                            <span class="quest-reward">25 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkQuest('G003')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="G004">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Connected</span>
+                            <span class="quest-desc">3+ peers connected</span>
+                            <span class="quest-reward">50 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkQuest('G004')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="G005">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Voice</span>
+                            <span class="quest-desc">Post to validator chat</span>
+                            <span class="quest-reward">25 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkQuest('G005')">CHECK</button>
+                        </div>
+                    </div>
+
+                    <!-- Tier 2: Validator Quests -->
+                    <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">⚡</span> Tier 2: Validator Quests
+                        <span style="color: var(--text-muted); font-size: 11px; margin-left: auto;">550 QMHY Total</span>
+                    </div>
+                    <div class="info-box" style="margin-bottom: 24px;" id="questsTier2">
+                        <div class="quest-row" data-quest="V001">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Candidate</span>
+                            <span class="quest-desc">Added to validator set</span>
+                            <span class="quest-reward">100 QMHY</span>
+                            <span class="quest-locked">Complete Tier 1</span>
+                        </div>
+                        <div class="quest-row" data-quest="V002">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Producer</span>
+                            <span class="quest-desc">Author first block</span>
+                            <span class="quest-reward">200 QMHY</span>
+                            <span class="quest-locked">Complete Tier 1</span>
+                        </div>
+                        <div class="quest-row" data-quest="V003">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Finalizer</span>
+                            <span class="quest-desc">Block finalized</span>
+                            <span class="quest-reward">100 QMHY</span>
+                            <span class="quest-locked">Complete Tier 1</span>
+                        </div>
+                        <div class="quest-row" data-quest="V004">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Uptime</span>
+                            <span class="quest-desc">24h continuous operation</span>
+                            <span class="quest-reward">150 QMHY</span>
+                            <span class="quest-locked">Complete Tier 1</span>
+                        </div>
+                    </div>
+
+                    <!-- Tier 3: Feature Quests -->
+                    <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">🔐</span> Tier 3: Feature Quests
+                        <span style="color: var(--text-muted); font-size: 11px; margin-left: auto;">400 QMHY Total</span>
+                    </div>
+                    <div class="info-box" style="margin-bottom: 24px;" id="questsTier3">
+                        <div class="quest-row" data-quest="F001">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Quantum</span>
+                            <span class="quest-desc">Use QRNG entropy</span>
+                            <span class="quest-reward">100 QMHY</span>
+                            <span class="quest-locked">Complete Tier 2</span>
+                        </div>
+                        <div class="quest-row" data-quest="F002">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Notary</span>
+                            <span class="quest-desc">Submit attestation</span>
+                            <span class="quest-reward">75 QMHY</span>
+                            <span class="quest-locked">Complete Tier 2</span>
+                        </div>
+                        <div class="quest-row" data-quest="F003">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Governor</span>
+                            <span class="quest-desc">Vote on proposal</span>
+                            <span class="quest-reward">50 QMHY</span>
+                            <span class="quest-locked">Complete Tier 2</span>
+                        </div>
+                        <div class="quest-row" data-quest="F004">
+                            <span class="quest-icon">🔒</span>
+                            <span class="quest-name">Transfer</span>
+                            <span class="quest-desc">Send tokens</span>
+                            <span class="quest-reward">25 QMHY</span>
+                            <span class="quest-locked">Complete Tier 2</span>
+                        </div>
+                    </div>
+
+                    <!-- Tier 4: Ongoing Rewards -->
+                    <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">🔄</span> Tier 4: Ongoing Rewards
+                        <span style="color: var(--text-muted); font-size: 11px; margin-left: auto;">Recurring</span>
+                    </div>
+                    <div class="info-box" style="margin-bottom: 24px;" id="questsTier4">
+                        <div class="quest-row" data-quest="R001">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Daily Active</span>
+                            <span class="quest-desc">Any on-chain activity today</span>
+                            <span class="quest-reward">10 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkOngoingQuest('R001')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="R002">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Block Reward</span>
+                            <span class="quest-desc">Author a block</span>
+                            <span class="quest-reward">5 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkOngoingQuest('R002')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="R003">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Forum Active</span>
+                            <span class="quest-desc">Post to forum today</span>
+                            <span class="quest-reward">2 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkOngoingQuest('R003')">CHECK</button>
+                        </div>
+                        <div class="quest-row" data-quest="R004">
+                            <span class="quest-icon">⬜</span>
+                            <span class="quest-name">Attestation</span>
+                            <span class="quest-desc">Process an attestation</span>
+                            <span class="quest-reward">10 QMHY</span>
+                            <button class="btn btn-sm" onclick="checkOngoingQuest('R004')">CHECK</button>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard -->
+                    <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">🏆</span> Leaderboard
+                        <button class="btn btn-sm" onclick="refreshLeaderboard()" style="margin-left: auto;">REFRESH</button>
+                    </div>
+                    <div class="info-box" id="devLeaderboard">
+                        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                            Loading leaderboard...
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -2021,7 +2322,7 @@
         </div>
     </div>
 
-    <!-- VOTE SYNC WIDGET - Bottom right corner -->
+    <!-- ACTIVITY PANEL - Bottom right corner (Tabbed: Chat/Activity/Alerts) -->
     <div id="voteSync" style="
         position: fixed;
         bottom: 20px;
@@ -2044,73 +2345,353 @@
             align-items: center;
             border-radius: 9px 9px 0 0;
         ">
-            <span style="color: #000; font-weight: bold; font-size: 14px;">VOTE SYNC</span>
+            <span style="color: #000; font-weight: bold; font-size: 14px;">ACTIVITY</span>
             <div style="display: flex; align-items: center; gap: 6px;">
                 <span id="chatUnread" style="background: #ff0000; color: white; font-size: 9px; padding: 1px 5px; border-radius: 8px; display: none;">0</span>
+                <span id="alertsBadge" style="background: #ff4444; color: white; font-size: 9px; padding: 1px 5px; border-radius: 8px; display: none;">0</span>
                 <span id="chatToggleIcon" style="color: #000; font-size: 10px;">▼</span>
             </div>
         </div>
 
         <!-- Collapsible Body -->
         <div id="chatBody" style="display: block;">
-            <!-- Messages Area -->
-            <div id="chatMessages" style="
-                height: 400px;
-                overflow-y: auto;
-                padding: 12px;
-                background: #08080c;
-                font-size: 14px;
-                line-height: 1.6;
-            ">
-                <div style="color: #666; text-align: center; padding: 10px;">Click INIT to enable</div>
+            <!-- Tab Bar -->
+            <div style="display: flex; background: #12121a; border-bottom: 1px solid #333;">
+                <button onclick="showActivityTab('chat')" id="tabChat" class="activity-tab active" style="
+                    flex: 1; padding: 8px; border: none; background: transparent; color: #ff9900;
+                    font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 2px solid #ff9900;
+                ">💬 Chat</button>
+                <button onclick="showActivityTab('activity')" id="tabActivity" class="activity-tab" style="
+                    flex: 1; padding: 8px; border: none; background: transparent; color: #888;
+                    font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent;
+                ">📊 Activity</button>
+                <button onclick="showActivityTab('alerts')" id="tabAlerts" class="activity-tab" style="
+                    flex: 1; padding: 8px; border: none; background: transparent; color: #888;
+                    font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 2px solid transparent;
+                ">⚠️ Alerts <span id="alertsCount" style="background: #ff4444; color: white; font-size: 9px; padding: 1px 5px; border-radius: 8px; display: none;">0</span></button>
             </div>
 
-            <!-- Validator List -->
-            <div style="padding: 6px; background: #12121a; border-top: 1px solid #333;">
-                <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
-                    <span id="chatFingerprint" onclick="showChatBundle()" style="color: #6699ff; font-size: 10px; padding: 3px 8px; background: rgba(100,150,255,0.15); border-radius: 4px; cursor: pointer;" title="Your ID">--</span>
-                    <button onclick="initChatMessaging()" id="chatInitBtn" style="background: #ff9900; border: none; color: #000; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">INIT</button>
+            <!-- Chat Tab Content -->
+            <div id="panelChat" style="display: block;">
+                <div id="chatMessages" style="
+                    height: 350px;
+                    overflow-y: auto;
+                    padding: 12px;
+                    background: #08080c;
+                    font-size: 14px;
+                    line-height: 1.6;
+                ">
+                    <div style="color: #666; text-align: center; padding: 10px;">Loading on-chain messages...</div>
                 </div>
-                <select id="chatRecipient" style="
-                    width: 100%;
-                    background: #0a0a0f;
-                    border: 1px solid #ff9900;
-                    color: #fff;
-                    padding: 6px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    margin-bottom: 8px;
-                ">
-                    <option value="">Select validator...</option>
-                    <option value="ALL">ALL VALIDATORS</option>
-                    <option value="97e3988b8c7e6f40">Alice</option>
-                    <option value="6bafb1037350eebd">Bob</option>
-                </select>
+                <!-- Input Area -->
+                <div style="padding: 8px; background: #12121a; display: flex; gap: 6px;">
+                    <input type="text" id="chatInput" placeholder="Message to all validators..." onkeypress="if(event.key==='Enter')postToChainForum()" style="
+                        flex: 1;
+                        background: #0a0a0f;
+                        border: 1px solid #444;
+                        color: #fff;
+                        padding: 8px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                    ">
+                    <button onclick="postToChainForum()" style="background: #238636; border: none; color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">POST</button>
+                </div>
             </div>
 
-            <!-- Input Area -->
-            <div style="padding: 8px; background: #12121a; display: flex; gap: 6px;">
-                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')sendChatMessage()" style="
-                    flex: 1;
-                    background: #0a0a0f;
-                    border: 1px solid #444;
-                    color: #fff;
-                    padding: 8px;
-                    border-radius: 4px;
+            <!-- Activity Tab Content -->
+            <div id="panelActivity" style="display: none;">
+                <div id="activityMessages" style="
+                    height: 400px;
+                    overflow-y: auto;
+                    padding: 12px;
+                    background: #08080c;
                     font-size: 12px;
+                    line-height: 1.5;
                 ">
-                <select id="chatMsgType" style="background: #0a0a0f; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 4px; font-size: 11px; width: 55px;">
-                    <option value="text">TXT</option>
-                    <option value="vote">VOTE</option>
-                    <option value="alert">ALT</option>
-                </select>
-                <button onclick="sendChatMessage()" style="background: #00cc66; border: none; color: #000; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">SEND</button>
-                <button onclick="postToChainForum()" style="background: #ff9900; border: none; color: #000; padding: 8px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer;" title="Post to on-chain forum (visible to all validators)">CHAIN</button>
+                    <div class="activity-line info">[System] Dashboard initialized</div>
+                </div>
+            </div>
+
+            <!-- Alerts Tab Content -->
+            <div id="panelAlerts" style="display: none;">
+                <div id="alertMessages" style="
+                    height: 400px;
+                    overflow-y: auto;
+                    padding: 12px;
+                    background: #08080c;
+                    font-size: 12px;
+                    line-height: 1.5;
+                ">
+                    <div style="color: #666; text-align: center; padding: 20px;">No alerts. Everything is running smoothly! ✓</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // SS58 ADDRESS ENCODING
+        // ==========================================
+
+        // Base58 alphabet used by Substrate
+        const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        const SS58_PREFIX = new TextEncoder().encode('SS58PRE');
+
+        // Simple Base58 encode
+        function base58Encode(bytes) {
+            const digits = [0];
+            for (const byte of bytes) {
+                let carry = byte;
+                for (let j = 0; j < digits.length; ++j) {
+                    carry += digits[j] << 8;
+                    digits[j] = carry % 58;
+                    carry = (carry / 58) | 0;
+                }
+                while (carry > 0) {
+                    digits.push(carry % 58);
+                    carry = (carry / 58) | 0;
+                }
+            }
+            let str = '';
+            for (let i = 0; i < bytes.length && bytes[i] === 0; i++) str += BASE58_ALPHABET[0];
+            for (let i = digits.length - 1; i >= 0; --i) str += BASE58_ALPHABET[digits[i]];
+            return str;
+        }
+
+        // Blake2b-512 implementation (simplified for checksum)
+        // This is a minimal implementation for SS58 checksum calculation
+        const BLAKE2B_IV = new BigUint64Array([
+            0x6a09e667f3bcc908n, 0xbb67ae8584caa73bn, 0x3c6ef372fe94f82bn, 0xa54ff53a5f1d36f1n,
+            0x510e527fade682d1n, 0x9b05688c2b3e6c1fn, 0x1f83d9abfb41bd6bn, 0x5be0cd19137e2179n
+        ]);
+        const BLAKE2B_SIGMA = [
+            [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], [14,10,4,8,9,15,13,6,1,12,0,2,11,7,5,3],
+            [11,8,12,0,5,2,15,13,10,14,3,6,7,1,9,4], [7,9,3,1,13,12,11,14,2,6,5,10,4,0,15,8],
+            [9,0,5,7,2,4,10,15,14,1,11,12,6,8,3,13], [2,12,6,10,0,11,8,3,4,13,7,5,15,14,1,9],
+            [12,5,1,15,14,13,4,10,0,7,6,3,9,2,8,11], [13,11,7,14,12,1,3,9,5,0,15,4,8,6,2,10],
+            [6,15,14,9,11,3,0,8,12,2,13,7,1,4,10,5], [10,2,8,4,7,6,1,5,15,11,9,14,3,12,13,0]
+        ];
+
+        function blake2b512(data) {
+            const h = new BigUint64Array(BLAKE2B_IV);
+            h[0] ^= 0x01010040n; // param: fanout=1, depth=1, digestlen=64
+
+            const v = new BigUint64Array(16);
+            const m = new BigUint64Array(16);
+            const buf = new Uint8Array(128);
+            let pos = 0, t = 0n;
+
+            function G(a, b, c, d, x, y) {
+                v[a] = v[a] + v[b] + x; v[d] = ((v[d] ^ v[a]) >> 32n) | ((v[d] ^ v[a]) << 32n);
+                v[c] = v[c] + v[d]; v[b] = ((v[b] ^ v[c]) >> 24n) | ((v[b] ^ v[c]) << 40n);
+                v[a] = v[a] + v[b] + y; v[d] = ((v[d] ^ v[a]) >> 16n) | ((v[d] ^ v[a]) << 48n);
+                v[c] = v[c] + v[d]; v[b] = ((v[b] ^ v[c]) >> 63n) | ((v[b] ^ v[c]) << 1n);
+            }
+
+            function compress(last) {
+                for (let i = 0; i < 16; i++) {
+                    m[i] = BigInt(buf[i*8]) | (BigInt(buf[i*8+1])<<8n) | (BigInt(buf[i*8+2])<<16n) | (BigInt(buf[i*8+3])<<24n) |
+                           (BigInt(buf[i*8+4])<<32n) | (BigInt(buf[i*8+5])<<40n) | (BigInt(buf[i*8+6])<<48n) | (BigInt(buf[i*8+7])<<56n);
+                }
+                for (let i = 0; i < 8; i++) { v[i] = h[i]; v[i+8] = BLAKE2B_IV[i]; }
+                v[12] ^= t & 0xffffffffffffffffn;
+                v[13] ^= t >> 64n;
+                if (last) v[14] = ~v[14];
+                for (let r = 0; r < 12; r++) {
+                    const s = BLAKE2B_SIGMA[r % 10];
+                    G(0,4,8,12,m[s[0]],m[s[1]]); G(1,5,9,13,m[s[2]],m[s[3]]);
+                    G(2,6,10,14,m[s[4]],m[s[5]]); G(3,7,11,15,m[s[6]],m[s[7]]);
+                    G(0,5,10,15,m[s[8]],m[s[9]]); G(1,6,11,12,m[s[10]],m[s[11]]);
+                    G(2,7,8,13,m[s[12]],m[s[13]]); G(3,4,9,14,m[s[14]],m[s[15]]);
+                }
+                for (let i = 0; i < 8; i++) h[i] ^= v[i] ^ v[i+8];
+            }
+
+            for (const byte of data) {
+                if (pos === 128) { t += 128n; compress(false); pos = 0; }
+                buf[pos++] = byte;
+            }
+            buf.fill(0, pos);
+            t += BigInt(pos);
+            compress(true);
+
+            const out = new Uint8Array(64);
+            for (let i = 0; i < 8; i++) {
+                out[i*8] = Number(h[i] & 0xffn); out[i*8+1] = Number((h[i]>>8n) & 0xffn);
+                out[i*8+2] = Number((h[i]>>16n) & 0xffn); out[i*8+3] = Number((h[i]>>24n) & 0xffn);
+                out[i*8+4] = Number((h[i]>>32n) & 0xffn); out[i*8+5] = Number((h[i]>>40n) & 0xffn);
+                out[i*8+6] = Number((h[i]>>48n) & 0xffn); out[i*8+7] = Number((h[i]>>56n) & 0xffn);
+            }
+            return out;
+        }
+
+        // Convert public key to SS58 address (network prefix 42 = generic Substrate)
+        function publicKeyToSS58(publicKeyHex, prefix = 42) {
+            const pubKey = new Uint8Array(publicKeyHex.replace(/^0x/, '').match(/.{2}/g).map(h => parseInt(h, 16)));
+
+            // For 64-byte public keys, we use the first 32 bytes for SS58
+            const keyBytes = pubKey.length > 32 ? pubKey.slice(0, 32) : pubKey;
+
+            // Build payload: prefix + public_key
+            const payload = new Uint8Array(1 + keyBytes.length);
+            payload[0] = prefix;
+            payload.set(keyBytes, 1);
+
+            // Compute checksum: blake2b(SS58_PREFIX + payload)
+            const checksumInput = new Uint8Array(SS58_PREFIX.length + payload.length);
+            checksumInput.set(SS58_PREFIX);
+            checksumInput.set(payload, SS58_PREFIX.length);
+            const hash = blake2b512(checksumInput);
+
+            // Final: payload + first 2 bytes of hash
+            const full = new Uint8Array(payload.length + 2);
+            full.set(payload);
+            full[payload.length] = hash[0];
+            full[payload.length + 1] = hash[1];
+
+            return base58Encode(full);
+        }
+
+        // ==========================================
+        // UNIFIED KEY MANAGEMENT
+        // ==========================================
+
+        let activeSphincsKey = localStorage.getItem('sphincsSecretKey') || '';
+        let activeAddress = localStorage.getItem('sphincsAddress') || '';
+
+        function saveActiveKey(secretKey, address) {
+            activeSphincsKey = secretKey.replace(/^0x/, '').replace(/\s/g, '');
+            activeAddress = address || '';
+            localStorage.setItem('sphincsSecretKey', activeSphincsKey);
+            if (address) localStorage.setItem('sphincsAddress', activeAddress);
+
+            // Auto-populate all key fields
+            const keyEl = document.getElementById('transferSecretKey');
+            if (keyEl) keyEl.value = activeSphincsKey;
+
+            // Auto-populate address
+            if (activeAddress) {
+                const addrEl = document.getElementById('transferSenderAddress');
+                if (addrEl) addrEl.value = activeAddress;
+                const faucetEl = document.getElementById('faucetAddress');
+                if (faucetEl) faucetEl.value = activeAddress;
+                const faucetRecipEl = document.getElementById('faucetRecipient');
+                if (faucetRecipEl) faucetRecipEl.value = activeAddress;
+            }
+
+            // Update the active account display
+            updateActiveAccountDisplay();
+
+            console.log('Active key saved:', activeSphincsKey.substring(0, 16) + '...');
+        }
+
+        function updateActiveAccountDisplay() {
+            const displayDiv = document.getElementById('activeAccountDisplay');
+            const infoDiv = document.getElementById('activeAccountInfo');
+            const addrDisplay = document.getElementById('activeAddressDisplay');
+            const keyDisplay = document.getElementById('activeKeyDisplay');
+
+            if (activeSphincsKey) {
+                if (displayDiv) displayDiv.style.display = 'none';
+                if (infoDiv) infoDiv.style.display = 'block';
+                if (addrDisplay) addrDisplay.textContent = activeAddress || '(address not yet derived)';
+                if (keyDisplay) keyDisplay.textContent = '0x' + activeSphincsKey;
+            } else {
+                if (displayDiv) displayDiv.style.display = 'block';
+                if (infoDiv) infoDiv.style.display = 'none';
+            }
+        }
+
+        function toggleKeyVisibility() {
+            const keyEl = document.getElementById('transferSecretKey');
+            const btn = document.getElementById('keyVisibilityBtn');
+            if (keyEl) {
+                if (keyEl.type === 'password') {
+                    keyEl.type = 'text';
+                    if (btn) btn.textContent = '🙈';
+                } else {
+                    keyEl.type = 'password';
+                    if (btn) btn.textContent = '👁';
+                }
+            }
+        }
+
+        function toggleActiveKeyVisibility() {
+            const keyDisplay = document.getElementById('activeKeyDisplay');
+            const btn = document.getElementById('activeKeyVisBtn');
+            if (keyDisplay) {
+                if (keyDisplay.style.filter === 'none') {
+                    keyDisplay.style.filter = 'blur(4px)';
+                    if (btn) btn.textContent = '👁';
+                } else {
+                    keyDisplay.style.filter = 'none';
+                    if (btn) btn.textContent = '🙈';
+                }
+            }
+        }
+
+        function copyActiveAddress() {
+            if (activeAddress) {
+                navigator.clipboard.writeText(activeAddress);
+                alert('Address copied!');
+            }
+        }
+
+        function copyActiveKey() {
+            if (activeSphincsKey) {
+                navigator.clipboard.writeText('0x' + activeSphincsKey);
+                alert('Secret key copied! Keep it safe!');
+            }
+        }
+
+        function loadActiveKey() {
+            if (activeSphincsKey) {
+                const keyEl = document.getElementById('transferSecretKey');
+                if (keyEl) keyEl.value = activeSphincsKey;
+                if (activeAddress) {
+                    const addrEl = document.getElementById('transferSenderAddress');
+                    if (addrEl) addrEl.value = activeAddress;
+                    const faucetRecipEl = document.getElementById('faucetRecipient');
+                    if (faucetRecipEl) faucetRecipEl.value = activeAddress;
+                }
+                console.log('Loaded saved key:', activeSphincsKey.substring(0, 16) + '...');
+
+                // Trigger key status and balance update
+                setTimeout(() => {
+                    updateSenderFromKey();
+                }, 100);
+            }
+            // Always update display on load
+            updateActiveAccountDisplay();
+        }
+
+        async function generateAndSaveKey() {
+            try {
+                // Generate 128 random bytes for SPHINCS+ secret key
+                const keyBytes = new Uint8Array(128);
+                crypto.getRandomValues(keyBytes);
+                const secretKey = Array.from(keyBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                // Save the key immediately
+                saveActiveKey(secretKey, '');
+                
+                alert('New SPHINCS+ key generated and saved!\n\nKey starts with: 0x' + secretKey.substring(0, 32) + '...\n\nGo to FAUCET tab and click REQUEST to fund your account.');
+                
+                return secretKey;
+            } catch (e) {
+                alert('Failed to generate key: ' + e.message);
+                return null;
+            }
+        }
+
+        // Auto-load key on relevant section clicks
+        function ensureKeyLoaded() {
+            if (activeSphincsKey && !document.getElementById('transferSecretKey')?.value) {
+                loadActiveKey();
+            }
+        }
+
+
         // Configuration - auto-detect RPC endpoint based on page location
         // Force clear bad cache if ?reset in URL
         if (window.location.search.includes('reset')) {
@@ -2118,17 +2699,81 @@
             window.location.href = window.location.pathname;
         }
 
-        // Use nginx proxy to avoid CORS issues
-        const RPC_URL = '/rpc';
+        // Load saved endpoint or use default nginx proxy
+        const DEFAULT_RPC = '/rpc';
+        const savedEndpoint = localStorage.getItem('nodeEndpoint') || DEFAULT_RPC;
 
         let config = {
-            rpc: RPC_URL,
-            qkd: 'http://localhost:8181',
-            hub: 'http://localhost:8180',
-            controller: window.location.origin
+            rpc: localStorage.getItem('rpc') || savedEndpoint,
+            qkd: localStorage.getItem('qkd') || 'http://localhost:8181',
+            hub: localStorage.getItem('hub') || 'http://localhost:8180',
+            controller: localStorage.getItem('controller') || 'http://localhost:9955'
         };
 
         let connected = false;
+
+        // Initialize endpoint input on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('nodeEndpoint');
+            if (input) {
+                input.value = savedEndpoint === DEFAULT_RPC ? '' : savedEndpoint;
+                input.placeholder = 'localhost:9944 or /rpc';
+            }
+        });
+
+        // Connect to specified node endpoint
+        function connectToNode() {
+            const input = document.getElementById('nodeEndpoint');
+            const btn = document.getElementById('connectBtn');
+            let endpoint = input.value.trim();
+
+            // Default to /rpc if empty
+            if (!endpoint) {
+                endpoint = DEFAULT_RPC;
+            }
+
+            // Normalize endpoint format
+            if (endpoint !== DEFAULT_RPC && !endpoint.startsWith('http') && !endpoint.startsWith('/')) {
+                // Assume it's host:port, convert to URL
+                endpoint = 'http://' + endpoint;
+            }
+
+            // Save to localStorage
+            localStorage.setItem('nodeEndpoint', endpoint);
+            config.rpc = endpoint;
+
+            // Update UI
+            btn.textContent = 'CONNECTING...';
+            btn.disabled = true;
+
+            // Log connection attempt
+            log(`Connecting to ${endpoint}...`, 'info');
+
+            // Reconnect with new endpoint
+            fetchNodeInfo().then(() => {
+                btn.textContent = 'CONNECTED';
+                btn.classList.add('connected');
+                btn.disabled = false;
+                log(`Connected to ${endpoint}`, 'success');
+            }).catch(err => {
+                btn.textContent = 'CONNECT';
+                btn.classList.remove('connected');
+                btn.disabled = false;
+                log(`Failed to connect: ${err.message}`, 'error');
+            });
+        }
+
+        // Handle Enter key in endpoint input
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('nodeEndpoint');
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        connectToNode();
+                    }
+                });
+            }
+        });
         let selectedWasm = null;
         let sudoAccount = null;
         let agentModeEnabled = localStorage.getItem('agentMode') === 'true';
@@ -2201,6 +2846,10 @@
 
         let myAccountAddress = null;
 
+        function getMyAccount() {
+            return myAccountAddress || localStorage.getItem('myAccount') || null;
+        }
+
         // Set and display the current account address
         function setMyAccount(ss58Address) {
             myAccountAddress = ss58Address;
@@ -2230,13 +2879,40 @@
             }
 
             log(`Account loaded: ${ss58Address}`, 'info');
+
+            // Auto-drip: fund new accounts from faucet on first creation
+            if (!localStorage.getItem('devonomics_autodrip_' + ss58Address)) {
+                autoFaucetDrip(ss58Address);
+            }
+        }
+
+        async function autoFaucetDrip(address) {
+            try {
+                const response = await fetch('/faucet/drip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.setItem('devonomics_autodrip_' + address, Date.now().toString());
+                    log(`Auto-funded account with 100 QMHY from faucet`, 'info');
+                }
+            } catch (_) {
+                // Faucet offline — user can manually request later
+            }
         }
 
         // Load account from localStorage on init
         function loadMyAccount() {
             const saved = localStorage.getItem('myAccount');
-            if (saved) {
+            // Validate it's a real SS58 address (starts with 5, 46-48 chars)
+            if (saved && saved.startsWith('5') && saved.length >= 46 && saved.length <= 50) {
                 setMyAccount(saved);
+            } else if (saved) {
+                // Invalid value in localStorage - clear it
+                console.warn('Invalid account in localStorage, clearing:', saved);
+                localStorage.removeItem('myAccount');
             }
         }
 
@@ -2314,46 +2990,54 @@
         // Generate a new account (keypair) for receiving tokens
         async function generateAccount() {
             try {
-                // Wait for crypto to be ready
-                if (window.polkadotUtilCrypto && window.polkadotUtilCrypto.cryptoWaitReady) {
-                    await window.polkadotUtilCrypto.cryptoWaitReady();
+                const rpcUrl = 'http://localhost:9944';
+
+                // Use node's pqc_generateTestKeypair to get a properly formatted SPHINCS+ keypair
+                const res = await fetch(rpcUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'pqc_generateTestKeypair',
+                        params: []
+                    })
+                });
+                const data = await res.json();
+
+                if (!data.result || !data.result.secret_key || !data.result.public_key) {
+                    throw new Error('Failed to generate keypair from node');
                 }
 
-                // Get Keyring class - bundles export it differently
-                const KeyringClass = window.polkadotKeyring?.Keyring || window.polkadotKeyring || window.Keyring;
+                const secretKey = data.result.secret_key.replace(/^0x/, '');
+                const publicKey = data.result.public_key;
 
-                if (!KeyringClass) {
-                    throw new Error('Keyring class not found. Try refreshing the page.');
-                }
+                // Derive SS58 address from public key
+                const derivedAddress = publicKeyToSS58(publicKey, 42);
+                console.log('Generated SPHINCS+ keypair');
+                console.log('Public key:', publicKey.substring(0, 40) + '...');
+                console.log('SS58 address:', derivedAddress);
 
-                if (!window.polkadotUtilCrypto?.mnemonicGenerate) {
-                    throw new Error('Crypto utilities not loaded. Try refreshing the page.');
-                }
+                // Save to unified key management
+                saveActiveKey(secretKey, derivedAddress);
 
-                // Create keyring and generate mnemonic
-                const keyring = new KeyringClass({ type: 'sr25519', ss58Format: 42 });
-                const mnemonic = window.polkadotUtilCrypto.mnemonicGenerate();
-                const pair = keyring.addFromMnemonic(mnemonic);
+                // Update the transfer secret key field
+                const keyEl = document.getElementById('transferSecretKey');
+                if (keyEl) keyEl.value = secretKey;
 
-                const address = pair.address;
-                setMyAccount(address);
+                setMyAccount(derivedAddress);
+                const faucetEl = document.getElementById('faucetRecipient');
+                if (faucetEl) faucetEl.value = derivedAddress;
 
-                // Show mnemonic ONCE - user must save it
-                alert(`NEW ACCOUNT CREATED!\n\n` +
-                      `Address (for faucet):\n${address}\n\n` +
-                      `SAVE THIS MNEMONIC - IT WILL NOT BE SHOWN AGAIN:\n${mnemonic}\n\n` +
-                      `Your address is now shown in the header. Click to copy for faucet.`);
+                alert('NEW SPHINCS+ ACCOUNT CREATED!\n\n' +
+                      'Address: ' + derivedAddress + '\n\n' +
+                      'Your key is saved. Click REQUEST 100 QMHY to fund it.');
 
-                log(`New account created: ${address}`, 'info');
-                return address;
+                log('New SPHINCS+ account created', 'info');
+                return secretKey;
             } catch (e) {
                 console.error('generateAccount error:', e);
-                console.log('Available globals:', {
-                    polkadotKeyring: typeof window.polkadotKeyring,
-                    polkadotUtilCrypto: typeof window.polkadotUtilCrypto,
-                    Keyring: typeof window.Keyring
-                });
-                alert(`Error generating account: ${e.message}\n\nCheck browser console for details.`);
+                alert('Failed to generate account: ' + e.message + '\n\nMake sure local node is running.');
                 return null;
             }
         }
@@ -2408,12 +3092,10 @@
             log(`Log level set to ${['errors', 'info', 'verbose'][level]}`, 'info');
         }
 
-        // RPC endpoint - same pattern as working wallet
-        const RPC = '/rpc';
-
+        // RPC endpoint - uses config.rpc for dynamic endpoint support
         async function rpc(method, params = []) {
             try {
-                const res = await fetch(RPC, {
+                const res = await fetch(config.rpc, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
@@ -2497,8 +3179,13 @@
                 document.getElementById('peerCount').textContent = health.peers;
                 document.getElementById('networkPeers').textContent = health.peers;
 
-                // Set sync status
-                document.getElementById('syncStatus').textContent = health.isSyncing ? 'Syncing' : 'Synced';
+                // Set sync status with ETA - let updateSyncETA set the percentage
+                if (health.isSyncing) {
+                    updateSyncETA(); // This sets "Syncing X%"
+                } else {
+                    document.getElementById('syncStatus').textContent = 'Synced';
+                    document.getElementById('syncETA').textContent = '';
+                }
 
                 // Update connected status
                 connected = true;
@@ -2518,6 +3205,86 @@
 
         // Small delay helper
         const delay = ms => new Promise(r => setTimeout(r, ms));
+
+        // Sync ETA tracking
+        let lastSyncBlock = 0;
+        let lastSyncTime = 0;
+        let syncRate = 0; // blocks per second
+        let syncStuckCount = 0; // Track how long sync is stuck
+
+        async function updateSyncETA() {
+            try {
+                // Get local node block (direct to localhost, not proxy)
+                const localRes = await fetch('http://localhost:9944', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'chain_getHeader' })
+                });
+                const localData = await localRes.json();
+                const localBlock = parseInt(localData.result?.number || '0x0', 16);
+
+                // Get target block from network (via proxy)
+                const targetRes = await fetch('/rpc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'chain_getHeader' })
+                });
+                const targetData = await targetRes.json();
+                const targetBlock = parseInt(targetData.result?.number || '0x0', 16);
+
+                const blocksRemaining = targetBlock - localBlock;
+                const now = Date.now();
+
+                // Calculate sync rate
+                if (lastSyncBlock > 0 && lastSyncTime > 0) {
+                    const blocksDiff = localBlock - lastSyncBlock;
+                    const timeDiff = (now - lastSyncTime) / 1000; // seconds
+                    if (timeDiff > 0 && blocksDiff > 0) {
+                        syncRate = blocksDiff / timeDiff;
+                    }
+                }
+
+                lastSyncBlock = localBlock;
+                lastSyncTime = now;
+
+                // Calculate percentage and ETA
+                const etaEl = document.getElementById('syncETA');
+                const statusEl = document.getElementById('syncStatus');
+                const percent = targetBlock > 0 ? ((localBlock / targetBlock) * 100).toFixed(1) : 0;
+
+                // Detect stuck sync (no progress after multiple checks)
+                if (lastSyncBlock > 0 && localBlock === lastSyncBlock) {
+                    syncStuckCount++;
+                } else {
+                    syncStuckCount = 0;
+                }
+
+                if (blocksRemaining <= 0) {
+                    statusEl.textContent = 'Synced';
+                    statusEl.style.color = '';
+                    etaEl.textContent = '';
+                } else if (syncStuckCount >= 3) {
+                    // Stuck for 3+ checks
+                    statusEl.textContent = `Stuck #${localBlock.toLocaleString()}`;
+                    statusEl.style.color = '#ff6b6b';
+                    etaEl.textContent = `Runtime mismatch? Try amd64 image`;
+                } else {
+                    statusEl.style.color = '';
+                    statusEl.textContent = `Syncing ${percent}%`;
+                    if (syncRate > 0) {
+                        const etaSeconds = blocksRemaining / syncRate;
+                        const etaStr = etaSeconds < 60 ? `~${Math.round(etaSeconds)}s` :
+                                       etaSeconds < 3600 ? `~${Math.round(etaSeconds / 60)}m` :
+                                       `~${(etaSeconds / 3600).toFixed(1)}h`;
+                        etaEl.textContent = `${blocksRemaining.toLocaleString()} blocks left (${etaStr})`;
+                    } else {
+                        etaEl.textContent = `${blocksRemaining.toLocaleString()} blocks left`;
+                    }
+                }
+            } catch (e) {
+                console.log('Sync ETA error:', e);
+            }
+        }
 
         // Debug function to test RPC directly
         async function debugRPC() {
@@ -2592,7 +3359,7 @@
 
             document.getElementById('rpcEndpoint').textContent = url;
 
-            log('DEBUG: Complete. Check Console Output above.', 'warning');
+            log('DEBUG: Complete. Check Activity tab for details.', 'warning');
             alert('DEBUG Results:\\n\\n' + results.join('\\n') + '\\n\\nRPC URL: ' + url);
         }
 
@@ -2638,19 +3405,133 @@
             }
         }
 
-        // Terminal
+        // Activity Panel - Tabbed logging system
+        let alertCount = 0;
+
         function log(message, type = 'info') {
-            const terminal = document.getElementById('terminal');
+            const activityPanel = document.getElementById('activityMessages');
+            const alertPanel = document.getElementById('alertMessages');
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Color coding based on type
+            const colors = {
+                info: '#58a6ff',
+                success: '#3fb950',
+                warning: '#d29922',
+                error: '#f85149'
+            };
+            const color = colors[type] || colors.info;
+
+            // Create activity line
             const line = document.createElement('div');
-            line.className = `terminal-line ${type}`;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            terminal.appendChild(line);
-            terminal.scrollTop = terminal.scrollHeight;
-            while (terminal.children.length > 100) terminal.removeChild(terminal.firstChild);
+            line.style.cssText = `margin-bottom: 4px; padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.03);`;
+            line.innerHTML = `<span style="color: #666; font-size: 10px;">[${timestamp}]</span> <span style="color: ${color};">${message}</span>`;
+
+            if (activityPanel) {
+                activityPanel.appendChild(line);
+                activityPanel.scrollTop = activityPanel.scrollHeight;
+                while (activityPanel.children.length > 100) activityPanel.removeChild(activityPanel.firstChild);
+            }
+
+            // Route errors and warnings to Alerts tab
+            if (type === 'error' || type === 'warning') {
+                const alertLine = line.cloneNode(true);
+                alertLine.style.background = type === 'error' ? 'rgba(248,81,73,0.1)' : 'rgba(210,153,34,0.1)';
+                alertLine.style.borderLeft = `3px solid ${color}`;
+
+                if (alertPanel) {
+                    // Remove "no alerts" message if present
+                    if (alertPanel.children.length === 1 && alertPanel.firstChild.textContent.includes('No alerts')) {
+                        alertPanel.innerHTML = '';
+                    }
+                    alertPanel.appendChild(alertLine);
+                    alertPanel.scrollTop = alertPanel.scrollHeight;
+
+                    // Update alert count badge
+                    alertCount++;
+                    updateAlertBadge();
+                }
+
+                // Governance/node alerts also appear in Chat as system messages
+                if (message.startsWith('GOVERNANCE:') || message.startsWith('NODE SYNC:') || message.startsWith('LOW PEERS:')) {
+                    const chatPanel = document.getElementById('chatMessages');
+                    if (chatPanel) {
+                        const sysMsg = document.createElement('div');
+                        sysMsg.style.cssText = 'margin-bottom: 8px; padding: 8px; background: rgba(210,153,34,0.12); border-radius: 6px; border-left: 3px solid #d29922; text-align: center;';
+                        sysMsg.innerHTML = `<span style="color: #d29922; font-size: 11px; font-weight: bold;">${message}</span>`;
+                        chatPanel.appendChild(sysMsg);
+                        chatPanel.scrollTop = chatPanel.scrollHeight;
+                    }
+                }
+            }
+
+            // Also log to legacy terminal if it exists (for backwards compat)
+            const terminal = document.getElementById('terminal');
+            if (terminal) {
+                const termLine = document.createElement('div');
+                termLine.className = `terminal-line ${type}`;
+                termLine.textContent = `[${timestamp}] ${message}`;
+                terminal.appendChild(termLine);
+                terminal.scrollTop = terminal.scrollHeight;
+                while (terminal.children.length > 100) terminal.removeChild(terminal.firstChild);
+            }
+        }
+
+        function updateAlertBadge() {
+            const badge = document.getElementById('alertsCount');
+            const headerBadge = document.getElementById('alertsBadge');
+            if (alertCount > 0) {
+                if (badge) { badge.style.display = 'inline'; badge.textContent = alertCount; }
+                if (headerBadge) { headerBadge.style.display = 'inline'; headerBadge.textContent = alertCount; }
+            } else {
+                if (badge) badge.style.display = 'none';
+                if (headerBadge) headerBadge.style.display = 'none';
+            }
+        }
+
+        function showActivityTab(tabName) {
+            // Hide all panels
+            document.getElementById('panelChat').style.display = 'none';
+            document.getElementById('panelActivity').style.display = 'none';
+            document.getElementById('panelAlerts').style.display = 'none';
+
+            // Reset all tab styles
+            ['tabChat', 'tabActivity', 'tabAlerts'].forEach(id => {
+                const tab = document.getElementById(id);
+                if (tab) {
+                    tab.style.color = '#888';
+                    tab.style.borderBottom = '2px solid transparent';
+                }
+            });
+
+            // Show selected panel and activate tab
+            const panelId = 'panel' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+            const tabId = 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+
+            document.getElementById(panelId).style.display = 'block';
+            const activeTab = document.getElementById(tabId);
+            if (activeTab) {
+                activeTab.style.color = '#ff9900';
+                activeTab.style.borderBottom = '2px solid #ff9900';
+            }
+
+            // Clear alert badge when viewing alerts
+            if (tabName === 'alerts') {
+                alertCount = 0;
+                updateAlertBadge();
+            }
         }
 
         function clearTerminal() {
-            document.getElementById('terminal').innerHTML = '<div class="terminal-line info">Console cleared</div>';
+            const activityPanel = document.getElementById('activityMessages');
+            if (activityPanel) {
+                activityPanel.innerHTML = '<div class="activity-line info" style="color: #666;">[System] Activity cleared</div>';
+            }
+            // Legacy terminal support
+            const terminal = document.getElementById('terminal');
+            if (terminal) {
+                terminal.innerHTML = '<div class="terminal-line info">Console cleared</div>';
+            }
         }
 
         // Navigation
@@ -2677,7 +3558,11 @@
                     document.getElementById('footerStatus').textContent = 'Connected';
                     document.getElementById('peerCount').textContent = health.peers || 0;
                     document.getElementById('networkPeers').textContent = health.peers || 0;
-                    document.getElementById('syncStatus').textContent = health.isSyncing ? 'Syncing' : 'Synced';
+                    if (health.isSyncing) {
+                        updateSyncETA();
+                    } else {
+                        document.getElementById('syncStatus').textContent = 'Synced';
+                    }
                 } else {
                     connected = false;
                     document.getElementById('statusDot').classList.remove('connected');
@@ -3078,7 +3963,7 @@
 
             try {
                 // Create UpgradeManager instance
-                const upgradeManager = new UpgradeManager(RPC);
+                const upgradeManager = new UpgradeManager(config.rpc);
 
                 runtimeLog('Starting runtime upgrade...', 'info');
                 runtimeLog(`WASM file: ${selectedWasm.name}`, 'info');
@@ -3129,7 +4014,7 @@
         // KEYSTORE MANAGEMENT V2 - Using KeystoreManager
         // ============================================
 
-        const keystoreManager = new KeystoreManager(RPC);
+        const keystoreManager = new KeystoreManager(config.rpc);
 
         async function checkKeystore() {
             keysLog('Checking keystore via RPC...', 'info');
@@ -3335,7 +4220,7 @@
         // GOVERNANCE V2 - Using GovernanceManager
         // ============================================
 
-        const govManager = new GovernanceManager(RPC);
+        const govManager = new GovernanceManager(config.rpc);
 
         async function refreshGovernanceStats() {
             try {
@@ -3429,6 +4314,7 @@
 
                 if (result.success) {
                     govLog(`Vote submitted! TX: ${result.txHash}`, 'info');
+                    localStorage.setItem('devonomics_voted', 'true');
                     alert(`Vote submitted!\n\nTransaction: ${result.txHash}`);
                     await refreshGovernanceStats();
                 }
@@ -3469,6 +4355,64 @@
             govLog('Refresh complete', 'info');
         }
 
+        // ============================================
+        // GOVERNANCE & HEALTH NOTIFICATION SYSTEM
+        // Pushes actionable alerts into the Activity panel
+        // ============================================
+
+        let lastKnownProposalCount = -1;
+        let lastSyncWarning = 0;
+        let lastPeerWarning = 0;
+        const NOTIFICATION_COOLDOWN_MS = 120000; // 2 min between repeated warnings
+
+        async function checkGovernanceNotifications() {
+            try {
+                // 1. Check for active proposals needing votes
+                const storageKey = '0x' +
+                    '5c41d26de442c8c2bb8a08df2fdc0ab3' + // twox128("ValidatorGovernance")
+                    'f485e09e76a76c90df1caaab2dcc87f5';   // twox128("NextProposalId")
+                const result = await rpc('state_getStorage', [storageKey]);
+                if (result) {
+                    const proposalCount = parseInt(result.slice(2), 16);
+                    if (lastKnownProposalCount >= 0 && proposalCount > lastKnownProposalCount) {
+                        const newCount = proposalCount - lastKnownProposalCount;
+                        log(`GOVERNANCE: ${newCount} new proposal(s) submitted - vote required`, 'warning');
+                        // Flash the alerts tab if not currently viewing it
+                        flashActivityHeader();
+                    }
+                    lastKnownProposalCount = proposalCount;
+                }
+            } catch (e) {
+                // Governance query failed silently - node may not support it
+            }
+
+            try {
+                // 2. Check sync status - warn if node is behind
+                const health = await rpc('system_health');
+                if (health && health.isSyncing && Date.now() - lastSyncWarning > NOTIFICATION_COOLDOWN_MS) {
+                    log('NODE SYNC: Your node is still syncing - blocks may be delayed', 'warning');
+                    lastSyncWarning = Date.now();
+                }
+
+                // 3. Check peer count - warn if low
+                if (health && health.peers < 2 && Date.now() - lastPeerWarning > NOTIFICATION_COOLDOWN_MS) {
+                    log(`LOW PEERS: Only ${health.peers} peer(s) connected - check network connectivity`, 'warning');
+                    lastPeerWarning = Date.now();
+                }
+            } catch (e) {
+                // Health check failed - node may be offline, fetchAllData handles that
+            }
+        }
+
+        function flashActivityHeader() {
+            const header = document.querySelector('#voteSync > div:first-child');
+            if (!header) return;
+            header.style.background = 'linear-gradient(90deg, #ff4444, #ff6600)';
+            setTimeout(() => {
+                header.style.background = 'linear-gradient(90deg, #ff9900, #ff6600)';
+            }, 3000);
+        }
+
         // Keystore source toggle
         function onKeystoreSourceChange() {
             const source = document.getElementById('keystoreSource').value;
@@ -3496,6 +4440,7 @@
                     document.getElementById('crypto4aStatus').textContent = 'Online';
                     document.getElementById('crypto4aStatus').style.color = 'var(--accent-success)';
                     document.getElementById('crypto4aEntropy').textContent = '0x' + hex;
+                    localStorage.setItem('lastQrngEntropy', Date.now().toString());
                     log(`Crypto4A QRNG online - received: 0x${hex}`, 'info');
                 } else {
                     throw new Error(`HTTP ${res.status}`);
@@ -3517,6 +4462,7 @@
                     const data = await res.arrayBuffer();
                     const hex = Array.from(new Uint8Array(data)).map(b => b.toString(16).padStart(2, '0')).join('');
                     document.getElementById('crypto4aEntropy').textContent = '0x' + hex.substring(0, 48) + (hex.length > 48 ? '...' : '');
+                    localStorage.setItem('lastQrngEntropy', Date.now().toString());
                     log(`Received ${bytes} bytes: 0x${hex.substring(0, 32)}...`, 'info');
                 } else {
                     throw new Error(`HTTP ${res.status}`);
@@ -3651,7 +4597,7 @@
             return key;
         }
 
-        // Derive address from secret key using gateway RPC
+        // Derive address from secret key using RPC
         async function updateSenderFromKey() {
             const secretKey = getTransferSecretKey();
             const keyStatusEl = document.getElementById('keyStatus');
@@ -3683,19 +4629,31 @@
             transferLog('Deriving address from key...', 'info');
 
             try {
-                // Use gateway to derive address from key
-                const result = await rpc('gateway_deriveAddress', ['0x' + secretKey]);
-                if (result) {
-                    document.getElementById('transferSenderAddress').value = result;
-                    transferLog(`Address: ${result.substring(0, 20)}...`, 'info');
+                // Use quantumharmony_getTestPublicKey to get public key, then SS58 encode
+                const pubKey = await rpc('quantumharmony_getTestPublicKey', ['0x' + secretKey]);
+                if (pubKey) {
+                    const address = publicKeyToSS58(pubKey, 42);
+                    document.getElementById('transferSenderAddress').value = address;
+                    transferLog(`Address: ${address.substring(0, 20)}...`, 'info');
+
+                    // Save to unified key management
+                    if (address.startsWith('5')) {
+                        saveActiveKey(secretKey, address);
+                    }
+
                     // Now fetch balance for this address
                     await updateSenderBalance();
                 }
             } catch (e) {
-                // If gateway_deriveAddress doesn't exist, show message
-                transferLog(`Address derivation: ${e.message}`, 'warning');
-                transferLog('Enter address manually or check balance after first tx', 'info');
-                document.getElementById('transferSenderAddress').value = 'Unable to derive - submit tx to see address';
+                // If RPC fails, check if we have a saved address
+                if (activeAddress && activeAddress.startsWith('5')) {
+                    document.getElementById('transferSenderAddress').value = activeAddress;
+                    transferLog(`Using saved address: ${activeAddress.substring(0, 20)}...`, 'info');
+                    await updateSenderBalance();
+                } else {
+                    transferLog(`Address derivation failed: ${e.message}`, 'warning');
+                    document.getElementById('transferSenderAddress').value = '';
+                }
             }
         }
 
@@ -3907,6 +4865,57 @@
             }
         }
 
+        async function useMyAddressForFaucet() {
+            // First check if we have a saved address
+            if (activeAddress) {
+                document.getElementById('faucetRecipient').value = activeAddress;
+                faucetLog('Using saved address: ' + activeAddress.substring(0, 15) + '...', 'info');
+                return;
+            }
+            
+            // Try to get from transfer section
+            const transferAddr = document.getElementById('transferSenderAddress')?.value?.trim();
+            if (transferAddr && transferAddr.startsWith('5')) {
+                document.getElementById('faucetRecipient').value = transferAddr;
+                saveActiveKey(activeSphincsKey, transferAddr);
+                faucetLog('Using address from TRANSFER section', 'info');
+                return;
+            }
+            
+            // Try to derive from key via a test call
+            if (activeSphincsKey) {
+                faucetLog('Deriving address from your key...', 'warning');
+                try {
+                    // Use gateway_submit with 0 amount to derive address
+                    const result = await rpc('gateway_submit', [{
+                        from: '',
+                        to: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+                        amount: '0',
+                        nonce: 0,
+                        genesisHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+                        secretKey: '0x' + activeSphincsKey
+                    }]);
+                    if (result && result.from) {
+                        document.getElementById('faucetRecipient').value = result.from;
+                        saveActiveKey(activeSphincsKey, result.from);
+                        faucetLog('Derived address: ' + result.from.substring(0, 15) + '...', 'info');
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore - may fail due to nonce/balance but might return address in error
+                    console.log('Derive attempt:', e);
+                }
+            }
+            
+            // Fallback to old behavior
+            if (myAccountAddress) {
+                document.getElementById('faucetRecipient').value = myAccountAddress;
+                faucetLog(`Using your address: ${myAccountAddress.substring(0, 10)}...`, 'info');
+            } else {
+                faucetLog('No account set. Go to KEYS tab to create one, or generate one below.', 'error');
+            }
+        }
+
         async function requestDrip() {
             const recipient = document.getElementById('faucetRecipient').value.trim();
 
@@ -3958,36 +4967,33 @@
             }
         }
 
-        async function generateAccount() {
-            faucetLog('Generating new SPHINCS+ account...', 'warning');
+        async function generateSphincsSeeed() {
+            // This is a SPHINCS+ specific seed generator for advanced users
+            // For regular account creation, use the main generateAccount() function
+            faucetLog('Generating new SPHINCS+ seed...', 'warning');
 
             // Generate random 48-byte seed
             const seedArray = new Uint8Array(48);
             crypto.getRandomValues(seedArray);
             const seedHex = Array.from(seedArray).map(b => b.toString(16).padStart(2, '0')).join('');
 
-            // For a proper address we'd need to derive the SPHINCS+ public key and hash it
-            // This is a simplified version - the real address would come from the node
-            // For demo purposes, show the seed and note that proper derivation is needed
-
             const resultDiv = document.getElementById('generatedAccount');
-            resultDiv.innerHTML = `
-                <div style="background: var(--bg-elevated); padding: 12px; border-radius: 8px; margin-top: 12px;">
-                    <div style="margin-bottom: 8px;">
-                        <span style="color: var(--text-muted); font-size: 11px;">SEED (SAVE SECURELY!)</span>
-                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; word-break: break-all; color: var(--accent-warning); margin-top: 4px;">
-                            ${seedHex}
+            if (resultDiv) {
+                resultDiv.innerHTML = `
+                    <div style="background: var(--bg-elevated); padding: 12px; border-radius: 8px; margin-top: 12px;">
+                        <div style="margin-bottom: 8px;">
+                            <span style="color: var(--text-muted); font-size: 11px;">SPHINCS+ SEED (SAVE SECURELY!)</span>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; word-break: break-all; color: var(--accent-warning); margin-top: 4px;">
+                                ${seedHex}
+                            </div>
                         </div>
+                        <button class="btn btn-secondary btn-sm" style="margin-top: 8px;" onclick="navigator.clipboard.writeText('${seedHex}')">COPY SEED</button>
                     </div>
-                    <div style="color: var(--accent-danger); font-size: 11px; margin-top: 8px;">
-                        ⚠ Use this seed with gateway_submit to derive your address on first transaction
-                    </div>
-                    <button class="btn btn-secondary btn-sm" style="margin-top: 8px;" onclick="navigator.clipboard.writeText('${seedHex}')">COPY SEED</button>
-                </div>
-            `;
+                `;
+            }
 
             faucetLog('Generated 48-byte SPHINCS+ seed', 'info');
-            faucetLog('Use seed with first transaction to derive address', 'info');
+            return seedHex;
         }
 
         // ===========================================
@@ -4205,9 +5211,8 @@
 
             try {
                 // First try the new RPC endpoint
-                const rewardsInfo = await rpc('quantumharmony_getRewardsInfo', [
-                    document.getElementById('settingsController')?.value || '0x0000000000000000000000000000000000000000'
-                ]);
+                const rewardsAccount = getMyAccount() || '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
+                const rewardsInfo = await rpc('quantumharmony_getRewardsInfo', [rewardsAccount]);
 
                 if (rewardsInfo) {
                     document.getElementById('pendingRewards').textContent = rewardsInfo.pending_rewards || '0 QMHY';
@@ -4840,6 +5845,7 @@
 
         // Init
         async function init() {
+            loadActiveKey();
             console.log('init() starting');
             try {
                 loadSettings();
@@ -4849,7 +5855,7 @@
             } catch(e) {
                 console.error('init setup error:', e);
             }
-            log('Connecting to ' + RPC, 'info');
+            log('Connecting to ' + config.rpc, 'info');
 
             console.log('Calling fetchAllData...');
             // Fetch all data immediately
@@ -4871,6 +5877,9 @@
             // Check quantum status
             updateQuantumStatus();
 
+            // Load on-chain forum messages
+            loadChainForumMessages();
+
             // Update every 5 seconds
             setInterval(fetchAllData, 5000);
             setInterval(updateQuantumStatus, 15000);
@@ -4878,6 +5887,13 @@
 
             // Refresh governance every 30 seconds
             setInterval(refreshProposals, 30000);
+
+            // Governance & health notifications every 30 seconds
+            checkGovernanceNotifications();
+            setInterval(checkGovernanceNotifications, 30000);
+
+            // Refresh on-chain forum messages every 30 seconds
+            setInterval(loadChainForumMessages, 30000);
 
             log('Dashboard initialized - all panels active', 'info');
         }
@@ -4907,7 +5923,11 @@
                 $('statusDot')?.classList.add('connected');
                 $('peerCount') && ($('peerCount').textContent = health.peers);
                 $('networkPeers') && ($('networkPeers').textContent = health.peers);
-                $('syncStatus') && ($('syncStatus').textContent = health.isSyncing ? 'Syncing' : 'Synced');
+                if (health.isSyncing) {
+                    updateSyncETA();
+                } else {
+                    $('syncStatus') && ($('syncStatus').textContent = 'Synced');
+                }
 
                 // 2. Block height
                 const header = await rpc('chain_getHeader');
@@ -4932,7 +5952,7 @@
                     $('runtimeVersion') && ($('runtimeVersion').textContent = 'v' + runtime.specVersion);
                 }
 
-                $('rpcEndpoint') && ($('rpcEndpoint').textContent = RPC);
+                $('rpcEndpoint') && ($('rpcEndpoint').textContent = config.rpc);
 
                 // 4. Recent blocks
                 await loadRecentBlocks();
@@ -5172,6 +6192,400 @@
         }
 
         // ===========================================
+        // DEVONOMICS FUNCTIONS - Gamified Onboarding
+        // ===========================================
+        const QUESTS = {
+            G001: { name: 'Genesis', reward: 100, tier: 1, desc: 'Node syncs to network' },
+            G002: { name: 'Identity', reward: 50, tier: 1, desc: 'Generate session keys' },
+            G003: { name: 'Registered', reward: 25, tier: 1, desc: 'Create account' },
+            G004: { name: 'Connected', reward: 50, tier: 1, desc: '3+ peers connected' },
+            G005: { name: 'Voice', reward: 25, tier: 1, desc: 'Post to validator chat' },
+            V001: { name: 'Candidate', reward: 100, tier: 2, desc: 'Added to validator set' },
+            V002: { name: 'Producer', reward: 200, tier: 2, desc: 'Author first block' },
+            V003: { name: 'Finalizer', reward: 100, tier: 2, desc: 'Block finalized' },
+            V004: { name: 'Uptime', reward: 150, tier: 2, desc: '24h continuous operation' },
+            F001: { name: 'Quantum', reward: 100, tier: 3, desc: 'Use QRNG entropy' },
+            F002: { name: 'Notary', reward: 75, tier: 3, desc: 'Submit attestation' },
+            F003: { name: 'Governor', reward: 50, tier: 3, desc: 'Vote on proposal' },
+            F004: { name: 'Transfer', reward: 25, tier: 3, desc: 'Send tokens' }
+        };
+
+        const ONGOING_QUESTS = {
+            R001: { name: 'Daily Active', reward: 10, desc: 'Any on-chain activity today' },
+            R002: { name: 'Block Reward', reward: 5, desc: 'Author a block' },
+            R003: { name: 'Forum Active', reward: 2, desc: 'Post to forum today', maxPerDay: 10 },
+            R004: { name: 'Attestation', reward: 10, desc: 'Process an attestation' }
+        };
+
+        function getOngoingRewardsToday() {
+            const today = new Date().toISOString().slice(0, 10);
+            return JSON.parse(localStorage.getItem('devonomics_ongoing_' + today) || '{}');
+        }
+
+        function recordOngoingReward(questId, reward) {
+            const today = new Date().toISOString().slice(0, 10);
+            const rewards = getOngoingRewardsToday();
+            if (!rewards[questId]) rewards[questId] = { count: 0, total: 0 };
+            rewards[questId].count++;
+            rewards[questId].total += reward;
+            localStorage.setItem('devonomics_ongoing_' + today, JSON.stringify(rewards));
+        }
+
+        function getTotalOngoingScore() {
+            let total = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('devonomics_ongoing_')) {
+                    const dayData = JSON.parse(localStorage.getItem(key) || '{}');
+                    Object.values(dayData).forEach(d => { total += d.total || 0; });
+                }
+            }
+            return total;
+        }
+
+        async function checkOngoingQuest(questId) {
+            const quest = ONGOING_QUESTS[questId];
+            if (!quest) return;
+
+            const todayRewards = getOngoingRewardsToday();
+            const btn = document.querySelector(`.quest-row[data-quest="${questId}"] button`);
+            if (btn) btn.textContent = '...';
+
+            let completed = false;
+
+            try {
+                switch (questId) {
+                    case 'R001': { // Daily Active - any nonce increase today
+                        const acct = getMyAccount();
+                        if (acct) {
+                            const nonce = await rpc('gateway_nonce', [acct]);
+                            completed = nonce !== null && nonce > 0;
+                        }
+                        break;
+                    }
+                    case 'R002': { // Block Reward - authored a block
+                        try {
+                            const r002Addr = getMyAccount();
+                            const rewards = r002Addr ? await rpc('quantumharmony_getRewardsInfo', [r002Addr]) : null;
+                            completed = rewards && rewards.pending_rewards && rewards.pending_rewards !== '0' && rewards.pending_rewards !== '0.00 QMHY';
+                        } catch (_) {
+                            const addr = getMyAccount();
+                            if (addr) {
+                                const validators = await govManager.getValidatorSet();
+                                completed = validators && validators.some(v =>
+                                    (typeof v === 'string' ? v : v.address || v.accountId) === addr
+                                );
+                            }
+                        }
+                        break;
+                    }
+                    case 'R003': { // Forum Active - posted today
+                        const acct = getMyAccount();
+                        if (acct) {
+                            const messages = await rpc('forum_getMessages', [100, 0]);
+                            if (messages) {
+                                const today = new Date().toISOString().slice(0, 10);
+                                completed = messages.some(m =>
+                                    m.sender === acct && m.timestamp && new Date(m.timestamp).toISOString().slice(0, 10) === today
+                                );
+                            }
+                        }
+                        break;
+                    }
+                    case 'R004': { // Attestation - processed attestation
+                        const hashEl = document.getElementById('proofDocHash');
+                        completed = hashEl && hashEl.textContent !== '---' && hashEl.textContent.length > 4;
+                        break;
+                    }
+                }
+
+                if (completed) {
+                    const maxPerDay = quest.maxPerDay || 1;
+                    const existing = todayRewards[questId];
+                    if (existing && existing.count >= maxPerDay) {
+                        alert(`"${quest.name}" already claimed today (${existing.count}/${maxPerDay}).`);
+                    } else {
+                        recordOngoingReward(questId, quest.reward);
+                        updateDevonomicsUI();
+                        alert(`🎉 "${quest.name}" +${quest.reward} QMHY\n\n(Recurring — claim again tomorrow!)`);
+                    }
+                } else {
+                    alert(`"${quest.name}" not yet complete.\n\n${quest.desc}`);
+                }
+            } catch (e) {
+                console.error('Ongoing quest check error:', e);
+                alert(`Error checking quest: ${e.message}`);
+            }
+
+            if (btn) btn.textContent = 'CHECK';
+        }
+
+        let completedQuests = JSON.parse(localStorage.getItem('devonomics_completed') || '[]');
+
+        function getDevScore() {
+            return completedQuests.reduce((sum, qid) => sum + (QUESTS[qid]?.reward || 0), 0) + getTotalOngoingScore();
+        }
+
+        function getDevTier() {
+            const score = getDevScore();
+            if (score >= 1000) return 'PLATINUM';
+            if (score >= 550) return 'GOLD';
+            if (score >= 250) return 'SILVER';
+            return 'BRONZE';
+        }
+
+        function updateDevonomicsUI() {
+            const score = getDevScore();
+            const tier = getDevTier();
+
+            document.getElementById('devScore').textContent = score;
+            document.getElementById('devQuestsCompleted').textContent = `${completedQuests.length}/${Object.keys(QUESTS).length}`;
+            document.getElementById('devTier').textContent = tier;
+
+            // Progress bar
+            const nextTierScore = tier === 'BRONZE' ? 250 : tier === 'SILVER' ? 550 : tier === 'GOLD' ? 1000 : 1200;
+            const progress = Math.min(100, (score / nextTierScore) * 100);
+            document.getElementById('devProgressBar').style.width = progress + '%';
+            document.getElementById('devProgressText').textContent = `${score}/${nextTierScore} QMHY`;
+
+            // Update quest rows
+            completedQuests.forEach(qid => {
+                const row = document.querySelector(`.quest-row[data-quest="${qid}"]`);
+                if (row) {
+                    row.classList.add('completed');
+                    row.querySelector('.quest-icon').textContent = '✅';
+                    const btn = row.querySelector('button');
+                    if (btn) btn.textContent = 'CLAIMED';
+                }
+            });
+
+            // Tier unlock logic
+            const tier1Quests = ['G001', 'G002', 'G003', 'G004', 'G005'];
+            const tier2Quests = ['V001', 'V002', 'V003', 'V004'];
+            const tier1Done = tier1Quests.every(q => completedQuests.includes(q));
+            const tier2Done = tier2Quests.every(q => completedQuests.includes(q));
+
+            function unlockTierRows(containerId, questIds) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                questIds.forEach(qid => {
+                    const row = container.querySelector(`.quest-row[data-quest="${qid}"]`);
+                    if (!row || completedQuests.includes(qid)) return;
+                    const icon = row.querySelector('.quest-icon');
+                    if (icon && icon.textContent === '🔒') icon.textContent = '⬜';
+                    const locked = row.querySelector('.quest-locked');
+                    if (locked) {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn btn-sm';
+                        btn.textContent = 'CHECK';
+                        btn.onclick = () => checkQuest(qid);
+                        locked.replaceWith(btn);
+                    }
+                });
+            }
+
+            if (tier1Done) unlockTierRows('questsTier2', tier2Quests);
+            if (tier2Done) unlockTierRows('questsTier3', ['F001', 'F002', 'F003', 'F004']);
+        }
+
+        async function checkQuest(questId) {
+            if (completedQuests.includes(questId)) {
+                alert(`Quest ${QUESTS[questId].name} already completed!`);
+                return;
+            }
+
+            let completed = false;
+            const btn = document.querySelector(`.quest-row[data-quest="${questId}"] button`);
+            if (btn) btn.textContent = '...';
+
+            try {
+                switch(questId) {
+                    case 'G001': // Genesis - Node synced
+                        const health = await rpc('system_health');
+                        completed = health && health.isSyncing === false;
+                        break;
+                    case 'G002': // Identity - Session keys
+                        const keys = await rpc('author_rotateKeys');
+                        completed = keys && keys.length > 0;
+                        break;
+                    case 'G003': // Registered - Account exists
+                        completed = !!getMyAccount();
+                        break;
+                    case 'G004': // Connected - 3+ peers
+                        const peers = await rpc('system_peers');
+                        completed = peers && peers.length >= 3;
+                        break;
+                    case 'G005': // Voice - Forum post
+                        const myAccount = getMyAccount();
+                        if (myAccount) {
+                            const messages = await rpc('forum_getMessages', [100, 0]);
+                            completed = messages && messages.some(m => m.sender === myAccount);
+                        }
+                        break;
+                    case 'V001': { // Candidate - In validator set
+                        const addr = getMyAccount();
+                        if (addr) {
+                            const validators = await govManager.getValidatorSet();
+                            completed = validators && validators.some(v =>
+                                v === addr || v.address === addr || v.accountId === addr
+                            );
+                        }
+                        break;
+                    }
+                    case 'V002': { // Producer - Authored blocks
+                        try {
+                            const v002Addr = getMyAccount();
+                            const rewards = v002Addr ? await rpc('quantumharmony_getRewardsInfo', [v002Addr]) : null;
+                            if (rewards && rewards.pending_rewards && rewards.pending_rewards !== '0' && rewards.pending_rewards !== '0.00 QMHY') {
+                                completed = true;
+                            }
+                        } catch (_) {
+                            // Fallback: check if validator + chain has progressed
+                            const addr = getMyAccount();
+                            if (addr) {
+                                const validators = await govManager.getValidatorSet();
+                                const isValidator = validators && validators.some(v =>
+                                    v === addr || v.address === addr || v.accountId === addr
+                                );
+                                const header = await rpc('chain_getHeader');
+                                if (isValidator && header && parseInt(header.number, 16) > 0) {
+                                    completed = true;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case 'V003': { // Finalizer - Finalized block exists
+                        const finHead = await rpc('chain_getFinalizedHead');
+                        completed = !!finHead && finHead !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+                        break;
+                    }
+                    case 'V004': { // Uptime 24h
+                        const startTime = localStorage.getItem('devonomics_uptime_start');
+                        if (startTime) {
+                            const elapsed = Date.now() - parseInt(startTime, 10);
+                            const twentyFourHours = 24 * 60 * 60 * 1000;
+                            if (elapsed >= twentyFourHours) {
+                                const h = await rpc('system_health');
+                                completed = h && h.isSyncing === false;
+                            }
+                        }
+                        break;
+                    }
+                    case 'F001': { // Quantum - QRNG entropy fetched
+                        const entropyEl = document.getElementById('crypto4aEntropy');
+                        const hasEntropy = (entropyEl && entropyEl.textContent !== '---' && entropyEl.textContent.startsWith('0x'));
+                        const lsEntropy = localStorage.getItem('lastQrngEntropy');
+                        completed = hasEntropy || !!lsEntropy;
+                        break;
+                    }
+                    case 'F002': { // Notary - Document hash computed
+                        const hashEl = document.getElementById('proofDocHash');
+                        completed = hashEl && hashEl.textContent !== '---' && hashEl.textContent.length > 4;
+                        break;
+                    }
+                    case 'F003': { // Governor - Voted on proposal
+                        completed = localStorage.getItem('devonomics_voted') === 'true';
+                        break;
+                    }
+                    case 'F004': { // Transfer - Sent a transaction
+                        const acct = getMyAccount();
+                        if (acct) {
+                            const nonce = await rpc('gateway_nonce', [acct]);
+                            completed = nonce !== null && nonce !== undefined && nonce > 0;
+                        }
+                        break;
+                    }
+                }
+
+                if (completed) {
+                    completedQuests.push(questId);
+                    localStorage.setItem('devonomics_completed', JSON.stringify(completedQuests));
+                    updateDevonomicsUI();
+                    alert(`🎉 Quest "${QUESTS[questId].name}" completed!\n\n+${QUESTS[questId].reward} QMHY`);
+                } else {
+                    alert(`Quest "${QUESTS[questId].name}" not yet complete.\n\n${QUESTS[questId].desc}`);
+                }
+            } catch (e) {
+                console.error('Quest check error:', e);
+                alert(`Error checking quest: ${e.message}`);
+            }
+
+            if (btn) btn.textContent = 'CHECK';
+        }
+
+        async function refreshLeaderboard() {
+            const lb = document.getElementById('devLeaderboard');
+            const myScore = getDevScore();
+            const myTier = getDevTier();
+            const myAddr = getMyAccount();
+
+            let entries = [];
+
+            try {
+                const validators = await govManager.getValidatorSet();
+                if (validators && validators.length > 0) {
+                    for (const v of validators) {
+                        const addr = typeof v === 'string' ? v : (v.account || v.address || v.accountId || '');
+                        const truncated = addr.substring(0, 6) + '...' + addr.substring(addr.length - 4);
+                        let score = 0;
+                        try {
+                            const rewards = await rpc('quantumharmony_getRewardsInfo', [addr]);
+                            if (rewards && rewards.pending_rewards) {
+                                score = Math.round(parseFloat(rewards.pending_rewards) || 0);
+                            }
+                        } catch (_) {
+                            score = 0;
+                        }
+                        const isMe = myAddr && (addr === myAddr);
+                        if (!isMe) {
+                            entries.push({ name: truncated, score, tier: score >= 1000 ? 'PLATINUM' : score >= 550 ? 'GOLD' : score >= 250 ? 'SILVER' : 'BRONZE', isLocal: false });
+                        }
+                    }
+                }
+            } catch (_) {
+                // RPC failed — local-only display
+            }
+
+            entries.push({ name: 'You', score: myScore, tier: myTier, isLocal: true });
+            entries.sort((a, b) => b.score - a.score);
+
+            const myRank = entries.findIndex(e => e.isLocal) + 1;
+            const rankEl = document.getElementById('devRank');
+            if (rankEl) rankEl.textContent = `#${myRank} of ${entries.length}`;
+
+            lb.innerHTML = entries.map((e, i) => `
+                <div class="info-row" style="${e.isLocal ? 'background: rgba(248,161,0,0.1);' : ''}">
+                    <span style="color: ${i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : 'var(--text-secondary)'}; width: 30px;">#${i + 1}</span>
+                    <span style="color: var(--lcars-gold); flex: 1;">${e.name}</span>
+                    <span style="color: var(--text-muted); margin-right: 16px;">${e.tier}</span>
+                    <span style="color: var(--accent-success); font-family: 'JetBrains Mono', monospace;">${e.score} QMHY</span>
+                </div>
+            `).join('');
+        }
+
+        // Initialize Devonomics on panel switch
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(async () => {
+                updateDevonomicsUI();
+                refreshLeaderboard();
+
+                // Auto-start uptime tracker if node is synced
+                if (!localStorage.getItem('devonomics_uptime_start')) {
+                    try {
+                        const health = await rpc('system_health');
+                        if (health && health.isSyncing === false) {
+                            localStorage.setItem('devonomics_uptime_start', Date.now().toString());
+                            console.log('[Devonomics] Uptime tracker started');
+                        }
+                    } catch (_) {
+                        // Node not reachable — skip uptime start
+                    }
+                }
+            }, 1000);
+        });
+
+        // ===========================================
         // REPORTER FUNCTIONS
         // ===========================================
         let currentReporterId = localStorage.getItem('reporterId') || null;
@@ -5371,13 +6785,14 @@
         // MESSAGING FUNCTIONS (Post-Quantum Encrypted)
         // ===========================================
 
-        const MESSAGING_URL = window.location.protocol + '//' + window.location.hostname + ':9955';
+        // Use config.controller for messaging (supports QSSH tunnels)
+        function getMessagingUrl() { return config.controller; }
         let messagingInitialized = false;
         let myFingerprint = null;
 
         async function checkMessagingStatus() {
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                const response = await fetch(getMessagingUrl() + '/messaging/bundle');
                 if (response.ok) {
                     const data = await response.json();
                     messagingInitialized = true;
@@ -5414,7 +6829,7 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/init', {
+                const response = await fetch(getMessagingUrl() + '/messaging/init', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -5448,7 +6863,7 @@
             }
 
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/inbox');
+                const response = await fetch(getMessagingUrl() + '/messaging/inbox');
                 if (!response.ok) throw new Error('Failed to fetch inbox');
 
                 const messages = await response.json();
@@ -5489,7 +6904,7 @@
 
         async function refreshPeers() {
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/peers');
+                const response = await fetch(getMessagingUrl() + '/messaging/peers');
                 if (!response.ok) return;
 
                 const peers = await response.json();
@@ -5528,7 +6943,7 @@
             }
 
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/send', {
+                const response = await fetch(getMessagingUrl() + '/messaging/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -5565,7 +6980,7 @@
 
             try {
                 // Try both field names for compatibility
-                const response = await fetch(MESSAGING_URL + '/messaging/peers', {
+                const response = await fetch(getMessagingUrl() + '/messaging/peers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ bundle: bundleBase64, bundle_base64: bundleBase64 })
@@ -5593,7 +7008,7 @@
             }
 
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                const response = await fetch(getMessagingUrl() + '/messaging/bundle');
                 if (!response.ok) throw new Error('Failed to fetch bundle');
 
                 const data = await response.json();
@@ -5647,7 +7062,7 @@
             if (chatExpanded) {
                 body.style.display = 'block';
                 icon.textContent = '▼';
-                refreshChatMessages();
+                loadChainForumMessages();
             } else {
                 body.style.display = 'none';
                 icon.textContent = '▲';
@@ -5656,16 +7071,21 @@
 
         async function initChatMessaging() {
             const btn = document.getElementById('chatInitBtn');
+            // If button doesn't exist, skip legacy messaging init
+            if (!btn) {
+                console.log('Chat init button not found - using chain forum instead');
+                return;
+            }
             btn.textContent = '...';
             btn.disabled = true;
 
             try {
                 // First try to get existing bundle
-                let response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                let response = await fetch(getMessagingUrl() + '/messaging/bundle');
 
                 if (!response.ok) {
                     // Initialize if not exists
-                    response = await fetch(MESSAGING_URL + '/messaging/init', {
+                    response = await fetch(getMessagingUrl() + '/messaging/init', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
                     });
@@ -5718,8 +7138,8 @@
 
                 // Fetch local inbox and outbox
                 const [inboxResp, outboxResp] = await Promise.all([
-                    fetch(MESSAGING_URL + '/messaging/inbox'),
-                    fetch(MESSAGING_URL + '/messaging/outbox')
+                    fetch(getMessagingUrl() + '/messaging/inbox'),
+                    fetch(getMessagingUrl() + '/messaging/outbox')
                 ]);
 
                 if (inboxResp.ok) {
@@ -5824,7 +7244,7 @@
             let sentCount = 0;
             for (const fp of recipients) {
                 try {
-                    const response = await fetch(MESSAGING_URL + '/messaging/send', {
+                    const response = await fetch(getMessagingUrl() + '/messaging/send', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -5869,7 +7289,7 @@
             }
 
             try {
-                const response = await fetch(MESSAGING_URL + '/messaging/bundle');
+                const response = await fetch(getMessagingUrl() + '/messaging/bundle');
                 if (!response.ok) throw new Error('Failed');
 
                 const data = await response.json();
@@ -5893,71 +7313,116 @@
         async function postToChainForum() {
             const content = document.getElementById('chatInput').value.trim();
             if (!content) {
-                alert('Please enter a message');
+                return;
+            }
+
+            // Use unified key management
+            let signerKey = activeSphincsKey || document.getElementById('transferSecretKey')?.value?.trim();
+            if (signerKey && signerKey.startsWith('0x')) {
+                signerKey = signerKey.substring(2);
+            }
+            
+            if (!signerKey || (signerKey.length !== 96 && signerKey.length !== 256)) {
+                alert('No SPHINCS+ key found. Click GENERATE SPHINCS+ ACCOUNT in the FAUCET section first.');
                 return;
             }
 
             const chatArea = document.getElementById('chatMessages');
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const postBtn = document.querySelector('button[onclick="postToChainForum()"]');
+
+            // Disable button during posting
+            if (postBtn) {
+                postBtn.disabled = true;
+                postBtn.textContent = '...';
+            }
 
             try {
-                // Encode message content as hex
-                const contentHex = '0x' + Array.from(new TextEncoder().encode(content))
-                    .map(b => b.toString(16).padStart(2, '0')).join('');
+                // Post to Alice validator via nginx proxy (avoids browser CORS issues)
+                const validatorRpc = window.location.origin + '/rpc/alice';
+                const forumParams = { content: content };
+                const res = await fetch(validatorRpc, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'forum_postMessage',
+                        params: [forumParams]
+                    })
+                });
+                const data = await res.json();
+                const result = data.error ? { success: false, error: data.error.message } : data.result;
 
-                // Create the extrinsic call for MeshForum.post_message
-                const call = await rpc('state_call', ['MeshForum_post_message', contentHex]);
-
-                if (call.error) {
-                    throw new Error(call.error.message || 'RPC error');
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to post message');
                 }
 
-                // For now, show as pending - actual submission requires signing
+                // Show pending message
                 chatArea.innerHTML += `
-                    <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.15); border-radius: 4px; border-left: 2px solid #ff9900;">
-                        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
-                            <span style="color: #ff9900;">ON-CHAIN</span>
-                            <span style="color: #666;">${time}</span>
+                    <div style="margin-bottom: 8px; padding: 8px; background: rgba(35,134,54,0.15); border-radius: 6px; border-left: 3px solid #238636;">
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px;">
+                            <span style="color: #238636; font-weight: bold;">⏳ Pending...</span>
+                            <span style="color: #888;">You</span>
                         </div>
-                        <div style="color: #ddd; font-size: 11px;">${escapeHtml(content)}</div>
-                        <div style="font-size: 9px; color: #888; margin-top: 4px;">Message will appear after block finalization</div>
+                        <div style="color: #eee; font-size: 12px;">${escapeHtml(content)}</div>
                     </div>
                 `;
                 chatArea.scrollTop = chatArea.scrollHeight;
                 document.getElementById('chatInput').value = '';
 
-                // Also load latest on-chain messages
-                loadChainForumMessages();
+                // Refresh on-chain messages after a delay for block inclusion
+                setTimeout(() => loadChainForumMessages(), 12000);
             } catch (e) {
                 console.error('Chain forum error:', e);
-                alert('Failed to post to chain: ' + e.message + '\\n\\nNote: This requires the MeshForum pallet and a connected wallet.');
+                alert('Failed to post: ' + e.message);
+            } finally {
+                if (postBtn) {
+                    postBtn.disabled = false;
+                    postBtn.textContent = 'POST';
+                }
             }
         }
 
         async function loadChainForumMessages() {
+            const chatArea = document.getElementById('chatMessages');
             try {
-                // Query MeshForum storage prefix
-                const prefix = '0x' + Array.from(new TextEncoder().encode('MeshForumMessages'))
-                    .map(b => b.toString(16).padStart(2, '0')).join('');
+                // Use forum_getMessages RPC to fetch on-chain messages
+                const messages = await rpc('forum_getMessages', [50, 0]);
 
-                const keys = await rpc('state_getKeys', [prefix]);
-                if (!keys.result || keys.result.length === 0) return;
-
-                const chatArea = document.getElementById('chatMessages');
-                for (const key of keys.result.slice(-5)) {
-                    const value = await rpc('state_getStorage', [key]);
-                    if (value.result) {
-                        // Parse and display (simplified - adjust for actual encoding)
-                        chatArea.innerHTML += `
-                            <div style="margin-bottom: 6px; padding: 6px; background: rgba(255,153,0,0.1); border-radius: 4px; border-left: 2px solid #ff9900;">
-                                <div style="font-size: 9px; color: #ff9900;">CHAIN MESSAGE</div>
-                                <div style="color: #ddd; font-size: 11px;">[Stored on-chain]</div>
-                            </div>
-                        `;
-                    }
+                if (!messages || messages.length === 0) {
+                    chatArea.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No messages yet. Be the first to post!</div>';
+                    return;
                 }
+
+                // Estimate timestamps from block numbers
+                // Block time is ~6 seconds; compute relative to current block
+                const header = await rpc('chain_getHeader', []);
+                const currentBlock = parseInt(header.number, 16);
+                const now = Date.now();
+                const BLOCK_TIME_MS = 6000;
+
+                // Clear and render messages
+                chatArea.innerHTML = '';
+
+                // Display on-chain messages
+                messages.forEach(msg => {
+                    const senderShort = msg.sender.substring(0, 8) + '...' + msg.sender.substring(msg.sender.length - 4);
+                    const estimatedTime = new Date(now - (currentBlock - msg.block) * BLOCK_TIME_MS);
+                    const timeStr = estimatedTime.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    chatArea.innerHTML += `
+                        <div style="margin-bottom: 8px; padding: 8px; background: rgba(255,153,0,0.08); border-radius: 6px; border-left: 3px solid #ff9900;">
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px;">
+                                <span style="color: #ff9900; font-weight: bold;">Block #${msg.block}</span>
+                                <span style="color: #888;" title="${timeStr}">${senderShort} &middot; ${timeStr}</span>
+                            </div>
+                            <div style="color: #eee; font-size: 12px;">${escapeHtml(msg.content)}</div>
+                        </div>
+                    `;
+                });
+                chatArea.scrollTop = chatArea.scrollHeight;
             } catch (e) {
                 console.warn('Failed to load chain messages:', e);
+                chatArea.innerHTML = '<div style="color: #ff6666; text-align: center; padding: 20px;">Failed to load messages. Check RPC connection.</div>';
             }
         }
 
@@ -6451,3 +7916,5 @@
     </script>
 </body>
 </html>
+
+<!-- This will be inserted but we need to modify existing code -->
