@@ -7658,6 +7658,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-devonomics"
+version = "1.0.0"
+dependencies = [
+ "frame-support 28.0.0",
+ "frame-system 28.0.0",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api 26.0.0",
+ "sp-core 28.0.0",
+ "sp-io 30.0.0",
+ "sp-runtime 31.0.1",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
+]
+
+[[package]]
 name = "pallet-fideicommis"
 version = "1.0.0"
 dependencies = [
@@ -8060,6 +8075,23 @@ dependencies = [
  "sp-runtime 31.0.1",
  "sp-storage 19.0.0",
  "sp-timestamp",
+]
+
+[[package]]
+name = "pallet-topological-coherence"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking 28.0.0",
+ "frame-support 28.0.0",
+ "frame-system 28.0.0",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core 28.0.0",
+ "sp-io 30.0.0",
+ "sp-runtime 31.0.1",
+ "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
+ "topological-coherence",
 ]
 
 [[package]]
@@ -9382,6 +9414,7 @@ dependencies = [
  "log",
  "num_cpus",
  "once_cell",
+ "pallet-devonomics",
  "pallet-im-online",
  "pallet-mesh-forum",
  "pallet-notarial",
@@ -9477,6 +9510,7 @@ dependencies = [
  "pallet-consensus-level",
  "pallet-democracy",
  "pallet-dev-governance",
+ "pallet-devonomics",
  "pallet-fideicommis",
  "pallet-identity",
  "pallet-mesh-forum",
@@ -9494,6 +9528,7 @@ dependencies = [
  "pallet-stablecoin",
  "pallet-sudo",
  "pallet-timestamp",
+ "pallet-topological-coherence",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
@@ -15531,6 +15566,15 @@ name = "toml_write"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
+
+[[package]]
+name = "topological-coherence"
+version = "0.1.0"
+dependencies = [
+ "libm",
+ "parity-scale-codec",
+ "scale-info",
+]
 
 [[package]]
 name = "tower"

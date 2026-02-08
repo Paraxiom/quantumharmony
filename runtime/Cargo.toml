@@ -108,6 +108,9 @@ pallet-consensus-level = { path = "../pallets/consensus-level", default-features
 # Devonomics quest & reward tracking pallet
 pallet-devonomics = { path = "../pallets/devonomics", default-features = false }
 
+# Topological coherence pallet
+pallet-topological-coherence = { path = "../pallets/topological-coherence", default-features = false }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -181,6 +184,7 @@ std = [
 	"pallet-stablecoin/std",
 	"pallet-consensus-level/std",
 	"pallet-devonomics/std",
+	"pallet-topological-coherence/std",
 
 	# Governance pallets
 	"pallet-democracy/std",

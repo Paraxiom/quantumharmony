@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 24,  // v24: Add pallet-devonomics (on-chain quest tracking)
+    spec_version: 25,  // v25: Add pallet-topological-coherence (Tonnetz torus validation)
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -529,6 +529,16 @@ impl pallet_consensus_level::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+// Topological coherence pallet configuration
+parameter_types! {
+    pub const MaxEntitiesPerAccount: u32 = 64;
+}
+
+impl pallet_topological_coherence::Config for Runtime {
+    type MaxEntitiesPerAccount = MaxEntitiesPerAccount;
+    type WeightInfo = pallet_topological_coherence::weights::SubstrateWeight<Runtime>;
+}
+
 // Devonomics quest & score tracking pallet configuration
 parameter_types! {
     pub const DevonomicsMaxQuests: u32 = 16;
@@ -760,6 +770,9 @@ construct_runtime!(
 
         // Devonomics quest & reward tracking
         Devonomics: pallet_devonomics,
+
+        // Topological coherence - Tonnetz torus validation for inference systems
+        TopologicalCoherence: pallet_topological_coherence,
     }
 );
 
