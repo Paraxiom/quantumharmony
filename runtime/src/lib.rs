@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 25,  // v25: Add pallet-topological-coherence (Tonnetz torus validation)
+    spec_version: 26,  // v26: Rolling window forum chat (10k messages, auto-evict oldest)
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -468,7 +468,7 @@ impl pallet_notarial::Config for Runtime {
 // Mesh Forum pallet configuration
 parameter_types! {
     pub const MaxMessageLength: u32 = 512;
-    pub const MaxMessages: u32 = 1000;
+    pub const MaxMessages: u32 = 10_000;
 }
 
 impl pallet_mesh_forum::Config for Runtime {
