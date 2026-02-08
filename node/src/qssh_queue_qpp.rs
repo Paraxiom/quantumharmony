@@ -39,7 +39,7 @@
 
 use crate::qpp::{
     NoClone, EntropySource,
-    // TODO: SyncResult and AsyncResult don't exist in qpp module yet
+    // NOTE: SyncResult/AsyncResult types planned for QPP v2; sync_async module not yet implemented
     // sync_async::{SyncOp, AsyncOp, SyncResult, AsyncResult},
 };
 use crate::qssh_queue_manager::{

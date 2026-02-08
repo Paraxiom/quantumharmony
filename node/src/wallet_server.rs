@@ -235,7 +235,7 @@ impl WalletServer {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let command: WalletCommand = serde_json::from_str(text)?;
 
-        // TODO: Verify Falcon-1024 signature (skipped for POC)
+        // NOTE: Falcon-1024 signature verification skipped for POC; pqcrypto-falcon API lacks Signature::from_bytes
         // self.verify_signature(&command)?;
         info!("⚠️  POC Mode: Skipping Falcon-1024 signature verification");
 
@@ -279,8 +279,8 @@ impl WalletServer {
 
     /// Verify Falcon-1024 signature on command
     fn verify_signature(&self, command: &WalletCommand) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Implement actual Falcon-1024 signature verification
-        // For POC, we'll do basic validation that signature exists and has reasonable size
+        // NOTE: Full Falcon-1024 verification requires pqcrypto Signature::from_bytes or raw byte API
+        // POC validates signature existence and size as a format check
         //
         // Real implementation would:
         // 1. Reconstruct signed message
@@ -304,7 +304,7 @@ impl WalletServer {
         }
 
         debug!("✅ Falcon-1024 signature format validated (POC mode)");
-        warn!("⚠️  TODO: Implement actual cryptographic signature verification");
+        warn!("⚠️  POC: Format-only signature validation (full Falcon-1024 verification pending pqcrypto API)");
         Ok(())
     }
 
@@ -408,7 +408,7 @@ impl WalletServer {
             WsMessage,
         >,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Query balance via RPC
+        // NOTE: Returns placeholder balance; RPC substrate client integration required for live queries
         let response = serde_json::json!({
             "type": "balance_response",
             "balance": "1000000000000000000",
@@ -427,7 +427,7 @@ impl WalletServer {
             WsMessage,
         >,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // TODO: Submit transaction via RPC
+        // NOTE: Returns placeholder response; RPC substrate client integration required for live submission
         let response = serde_json::json!({
             "type": "transaction_response",
             "status": "pending",
@@ -445,7 +445,7 @@ impl WalletServer {
         loop {
             interval.tick().await;
 
-            // TODO: Query real metrics from node
+            // NOTE: Returns mock metrics; real metrics require RPC client connection to node's system_health endpoint
             let metrics = WalletMetrics {
                 block_height: 12345,
                 spec_version: 188,

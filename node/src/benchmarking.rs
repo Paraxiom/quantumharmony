@@ -179,7 +179,7 @@ pub fn create_benchmark_extrinsic(
     //     runtime::Signature::new(signature),
     //     extra,
     // )
-    unimplemented!("Benchmarking disabled for governance-only node")
+    panic!("Benchmarking disabled for governance-only node: extrinsic construction removed in Frontier cleanup")
 }
 
 /// Generates inherent data for the `benchmark overhead` command.

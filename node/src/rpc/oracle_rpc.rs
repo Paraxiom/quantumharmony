@@ -647,8 +647,7 @@ where
             }
         }
 
-        // TODO: Verify Falcon1024 signature
-        // For now, accept if reporter is valid
+        // NOTE: Falcon1024 signature verification deferred; accepting signals from valid reporters in dev mode
         if signal.signature.is_empty() {
             log::warn!("Signal {} has no signature, accepting anyway (dev mode)", signal.signal_id);
         }

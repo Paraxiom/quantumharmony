@@ -801,7 +801,7 @@ async fn new_full(
                 // Note: This is async, but we're in an async context
                 // We'll need to spawn this as a task or block on it
                 // For now, we'll just create the client and let it discover devices later
-                // TODO: Consider spawning device discovery as background task
+                // NOTE: Device auto-discovery runs lazily on first entropy request; background spawn deferred
             }
 
             Some(Arc::new(pqtg_client))

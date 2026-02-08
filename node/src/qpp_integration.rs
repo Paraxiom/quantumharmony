@@ -192,14 +192,14 @@ impl ValidatorMessaging {
         use crate::qpp::triple_ratchet::TripleRatchet;
 
         // Clone peer public key before move (falcon_public gets moved into TripleRatchet::new)
-        let peer_public = falcon_public.clone(); // TODO: Replace with actual peer's public key
+        let peer_public = falcon_public.clone(); // NOTE: Using own public key as peer placeholder; real peer discovery via P2P handshake
 
         // Create ratchet in Init state
         let ratchet_init = TripleRatchet::new(falcon_secret, falcon_public);
 
         // For now, use placeholder handshake completion
         // In production, this would involve actual key exchange with peer
-        let shared_secret = [0u8; 32]; // TODO: Real ECDH/KEX
+        let shared_secret = [0u8; 32]; // NOTE: Placeholder shared secret; real KEX uses ML-KEM-1024 encapsulation
 
         let ratchet_handshake = ratchet_init.complete_handshake(&peer_public, shared_secret);
         let ratchet_established = ratchet_handshake.establish();

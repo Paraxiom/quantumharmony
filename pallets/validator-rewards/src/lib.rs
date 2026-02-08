@@ -1404,7 +1404,7 @@ mod tests {
             pallet::Pallet::<Test>::note_author(ALICE);
 
             // Note: Perbill caps at 100%, so 120% multiplier currently acts as 100%
-            // TODO: Use different calculation for multipliers > 100%
+            // NOTE: Perbill caps at 100%, so multipliers > 100% are effectively 100%; uncapped calculation deferred
             // For now, agent certified gets same as KYC (100%)
             assert_eq!(ValidatorRewards::pending_rewards(ALICE), 1_000_000_000_000_000_000u128);
         });

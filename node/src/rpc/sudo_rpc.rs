@@ -78,7 +78,7 @@ where
         log::warn!("   Reason: Complex type issues with RuntimeCall::Sudo construction");
         log::warn!("   Alternative: Use polkadot-js apps to submit sudo.setCode manually");
 
-        // TODO: Complete implementation requires:
+        // NOTE: Complete implementation requires:
         // 1. Export SudoCall from runtime
         // 2. Construct RuntimeCall::Sudo properly
         // 3. Sign with Alice's SPHINCS+ key

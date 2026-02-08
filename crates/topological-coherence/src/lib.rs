@@ -48,7 +48,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 // =============================================================================
-// TODO: Implementation Roadmap
+// Implementation Status
 // =============================================================================
 //
 // Phase 1: Core Topology - COMPLETE

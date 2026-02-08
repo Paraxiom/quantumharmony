@@ -510,10 +510,10 @@ pub mod pallet {
                 return Ok(());
             }
 
-            // Simple aggregation: use first report's data (TODO: implement median/mode)
+            // Simple aggregation: use first report's data (NOTE: median/mode aggregation planned for multi-reporter feeds)
             // In production, this would compare all reports and find consensus
             let first_report = &reports[0];
-            let agreement_percent = 100u8; // TODO: Calculate actual agreement
+            let agreement_percent = 100u8; // NOTE: Assumes full agreement with single-reporter aggregation; multi-reporter consensus pending
 
             let aggregated = AggregatedData {
                 feed_id,

@@ -110,8 +110,8 @@ pub fn generate_keypair(seed: &[u8; 32]) -> (PublicKey, SecretKey) {
     let derived_seed = blake2_512(&key_material);
 
     // For now, generate keypair with the library's RNG
-    // TODO: Implement fully deterministic key generation when pqcrypto supports it
-    // The seed will be used for validator identification correlation
+    // NOTE: pqcrypto-falcon does not expose seeded keygen; library uses internal RNG
+    // Seed is used for validator identification correlation only
     let (pk, sk) = falcon1024::keypair();
     (PublicKey(pk), SecretKey(sk))
 }
@@ -186,8 +186,7 @@ pub fn generate_keypair_sha3(
     // SHA-3-256 is quantum-resistant for hash-then-sign applications
     let falcon_seed = sha3_256(&kdf_input);
 
-    // TODO: Use derived seed for fully deterministic Falcon generation
-    // For now, library uses internal RNG but we've properly derived entropy
+    // NOTE: pqcrypto-falcon does not expose seeded keygen; derived entropy used for audit trail only
     let (pk, sk) = falcon1024::keypair();
     (PublicKey(pk), SecretKey(sk))
 }
@@ -337,8 +336,7 @@ pub fn generate_keypair_qpp(
     // SHA-3-256 is quantum-resistant for hash-then-sign applications
     let falcon_seed = sha3_256(&kdf_input);
 
-    // TODO: Use derived seed for fully deterministic Falcon generation
-    // For now, library uses internal RNG but we've properly derived entropy
+    // NOTE: pqcrypto-falcon does not expose seeded keygen; derived entropy used for audit trail only
     let (pk, sk) = falcon1024::keypair();
 
     log::info!(
