@@ -36,6 +36,11 @@ test-data/
 # Node operator dashboard (separate image)
 node-operator-dashboard/
 
+# Chain data (can be 18GB+)
+production-data/
+chains/
+data/
+
 # Misc
 *.bak
 *.tmp
