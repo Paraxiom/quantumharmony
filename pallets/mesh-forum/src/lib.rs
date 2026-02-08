@@ -96,6 +96,10 @@ pub mod pallet {
             };
             
             Messages::<T>::try_mutate(|messages| {
+                if messages.is_full() {
+                    // Rolling window: drop oldest message to make room
+                    messages.remove(0);
+                }
                 messages.try_push(message).map_err(|_| Error::<T>::ForumFull)
             })?;
             
