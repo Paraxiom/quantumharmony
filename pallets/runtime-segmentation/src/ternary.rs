@@ -220,7 +220,7 @@ impl BalancedTrit {
             -1 => 2,
             0 => 0,
             1 => 1,
-            _ => unreachable!(),
+            _ => panic!("BalancedTrit invariant violation: value must be -1, 0, or 1"),
         }
     }
 }

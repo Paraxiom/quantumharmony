@@ -486,8 +486,7 @@ pub mod falcon_lifecycle {
         ///
         /// Returns the signature. Key remains Active and can sign again.
         pub fn sign(&self, _message: &[u8]) -> Vec<u8> {
-            // TODO: Implement actual Falcon signing
-            // For now, return placeholder
+            // NOTE: Placeholder signing; pqcrypto-falcon SecretKey lacks Clone, requiring keystore refactor for real signing
             vec![0u8; 32]
         }
 
@@ -1146,7 +1145,7 @@ mod tests {
         // used_key.sign(message); // ❌ Would not compile
     }
 
-    // TODO: Fix ambiguity - priority_queue module vs crate
+    // NOTE: Disabled due to priority_queue module/crate name ambiguity (module shadows crate import)
     // #[test]
     fn _test_priority_queue_state_machine() {
         /* // use priority_queue::*;

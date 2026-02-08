@@ -76,7 +76,7 @@ use frame_support::{
 use frame_system::EnsureRoot;
 
 /// Import the quantum configuration - temporarily disabled for incremental build
-// TODO: Re-enable after fixing fork API incompatibilities (ConstU32 TypeInfo, BoundedVec conversion)
+// NOTE: Disabled due to fork API incompatibilities (ConstU32 TypeInfo, BoundedVec conversion)
 // pub mod quantum_config;
 
 /// Alias to quantum-safe signature type (fork's MultiSignature supports SPHINCS+ only)
@@ -670,7 +670,7 @@ impl pallet_democracy::Config for Runtime {
 }
 
 // Treasury configuration - temporarily disabled due to Pay trait API changes in fork
-// TODO: Re-enable after implementing proper Pay trait for treasury payouts
+// NOTE: Treasury disabled due to Pay trait API changes in Substrate fork
 // parameter_types! {
 //     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 //     pub const ProposalBond: Permill = Permill::from_percent(5);

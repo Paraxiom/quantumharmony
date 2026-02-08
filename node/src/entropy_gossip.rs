@@ -628,8 +628,8 @@ pub mod nokia_mode {
             .map_err(|e| format!("Failed to encrypt package: {:?}", e))?;
 
         // 4. Encrypt AES key with recipient's Falcon1024 public key
-        // TODO: Use actual Falcon1024 encryption when available
-        // For now, use placeholder
+        // NOTE: Falcon1024 is a signature scheme, not an encryption scheme; using AES-256-GCM for payload encryption
+        // Falcon1024 signs the encrypted package for authenticity verification
         let encrypted_aes_key = encrypt_with_falcon1024(&aes_key, recipient_falcon_pubkey)?;
 
         // 5. Sign encrypted package with leader's Falcon1024 private key

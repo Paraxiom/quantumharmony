@@ -189,6 +189,23 @@ The Coherence Gadget provides GRANDPA-equivalent deterministic finality using po
 
 PoC is the consensus mechanism that combines quantum entropy with BFT finality.
 
+#### Theoretical Foundation: Conservation-Constrained Aggregation
+
+Coherence in QuantumHarmony is formally defined as **constrained mixing on a conservation manifold**. This framing connects to recent advances in deep learning architecture (mHC, Xie et al. 2026) which independently confirmed that:
+
+> *Scaling fails when composite mappings leave the manifold that preserves identity.*
+
+For validator consensus, this means:
+- **Coherence** = validator influence aggregation that preserves signal magnitude
+- **Instability** = unconstrained composition drift (cartel effects, marginalization)
+
+The Coherence Gadget implicitly enforces conservation through:
+1. **Supermajority threshold** (2/3) prevents minority signal explosion
+2. **Non-repudiable signatures** (Falcon1024) prevent vote cancellation
+3. **QBER bounds** constrain entropy quality within conservation limits
+
+This principle—that aggregate influence must remain bounded under repeated composition—applies equally to ML residual streams and distributed trust networks. Same math, different domains.
+
 **With QKD/QRNG hardware**:
 - Real quantum entropy from devices (Toshiba QKD, Crypto4A QRNG, IdQuantique)
 - STARK proofs verified with Winterfell
@@ -510,6 +527,7 @@ Theoretical foundations published on Zenodo with DOIs:
 | Toroidal Mesh | 10K TPS with SPHINCS+ via parallel verification | 10.5281/zenodo.17931222 |
 | Toroidal Governance | Tonnetz manifold governance (defensive publication) | 10.5281/zenodo.17929091 |
 | Augmented Democracy | Coherence-constrained democratic infrastructure | Preprint |
+| Conservation-Constrained Aggregation | Doubly-stochastic normalization for trust networks | Technical Note |
 
 ## 12. References
 

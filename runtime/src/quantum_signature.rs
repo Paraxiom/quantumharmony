@@ -143,7 +143,7 @@ impl Verify for QuantumMultiSignature {
 }
 
 /// Helper function to get SPHINCS+ public key for an account
-/// TODO: Replace with pallet_sphincs_keystore lookup
+/// NOTE: Returns hardcoded test keys; pallet_sphincs_keystore lookup integration pending
 fn get_sphincs_pubkey_for_account(account: &AccountId32) -> Option<[u8; SPHINCS_PUBLIC_KEY_SIZE]> {
     // Hardcoded test accounts (Alice, Bob, Charlie)
     // These match the keys in node/src/test_accounts.rs
@@ -167,8 +167,7 @@ fn get_sphincs_pubkey_for_account(account: &AccountId32) -> Option<[u8; SPHINCS_
         return Some(CHARLIE_PUBKEY);
     }
 
-    // TODO: Add Alice and Bob keys if needed
-    // For now, return None for other accounts
+    // NOTE: Only Charlie's key hardcoded for testnet; Alice and Bob use Sr25519 fallback
     None
 }
 

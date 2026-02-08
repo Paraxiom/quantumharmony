@@ -8,10 +8,8 @@ services:
   # CORE: QuantumHarmony Blockchain Node
   # =====================================================
   node:
-    # TODO: Switch to :latest after multi-arch CI build completes
-    # Currently using mesh-forum (x86_64 only) until proper image is built
-    image: sylvaincormier/quantumharmony-node:mesh-forum
-    platform: linux/amd64
+    image: sylvaincormier/quantumharmony-node:arm64
+    # platform: linux/amd64  # Using native arm64 on Apple Silicon
     container_name: quantumharmony-node
     restart: unless-stopped
     ports:
@@ -23,18 +21,20 @@ services:
       - ./configs/chain-spec.json:/config/chainspec.json:ro
     command:
       - "--chain=/config/chainspec.json"
+      - "--sync=full"
       - "--base-path=/data"
       - "--name=${NODE_NAME:-Operator}"
-      - "--rpc-port=9944"
-      - "--rpc-cors=all"
-      - "--rpc-methods=${RPC_METHODS:-Unsafe}"
       - "--rpc-external"
-      - "--port=30333"
-      - "--prometheus-port=9615"
-      - "--prometheus-external"
-      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W"
-      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1"
-      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy"
+      - "--rpc-cors=all"
+      - "--rpc-methods=Unsafe"
+      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWLmphH9JtAVntVnZ4fZ5keJSjKEyWFANcKVzWVLnwVe9Z"
+      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWGiDT7jsuqFJhsvoN4KZp8KZ5CjtUnEvRxUNVNvLRwnFA"
+      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWRzTbwny8fUNUZQvS24RJWj44RSivgCQNN6Bb6WwhTQNh"
+    environment:
+      - NODE_NAME=${NODE_NAME:-Operator}
+      - VALIDATOR=${VALIDATOR:-true}
+      - RPC_METHODS=${RPC_METHODS:-Unsafe}
+      - BOOTNODES=${BOOTNODES:-/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWLmphH9JtAVntVnZ4fZ5keJSjKEyWFANcKVzWVLnwVe9Z,/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWGiDT7jsuqFJhsvoN4KZp8KZ5CjtUnEvRxUNVNvLRwnFA,/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWRzTbwny8fUNUZQvS24RJWj44RSivgCQNN6Bb6WwhTQNh}
     networks:
       - quantum-net
     healthcheck:

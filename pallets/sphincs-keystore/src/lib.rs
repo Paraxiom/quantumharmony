@@ -309,7 +309,8 @@ pub mod pallet {
         const IDENTIFIER: &'static str = "AutoRegisterKey";
 
         fn additional_signed(&self) -> Result<Self::AdditionalSigned, sp_runtime::transaction_validity::TransactionValidityError> {
-            Ok(())
+            // No additional signed data required for auto-registration extension
+            Ok(()) // Intentionally returns unit — no extra chain state needed for signing
         }
 
         fn pre_dispatch(

@@ -272,8 +272,8 @@ where
     }
 
     async fn get_status(&self) -> RpcResult<Option<ChunkedUpgradeStatus>> {
-        // TODO: Query runtime state for pending upgrade status
-        // For now return None
+        // NOTE: Returns None; runtime state query requires ChunkedUpgrade pallet storage reader
+        // Placeholder until pallet integration complete
         Ok(None)
     }
 

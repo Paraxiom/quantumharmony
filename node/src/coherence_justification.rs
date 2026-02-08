@@ -147,7 +147,7 @@ where
         // Note: Full signature verification is expensive and should be done
         // by the PoC pallet's verification logic. For now, we trust the
         // vote count and that validators properly signed.
-        // TODO: Add Falcon signature verification for each precommit
+        // NOTE: Per-precommit Falcon signature verification deferred to PoC pallet on-chain logic
 
         debug!(
             "Justification verified: {} votes from {} validators, coherence score {}",

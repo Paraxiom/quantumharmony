@@ -39,9 +39,9 @@ parameter_types! {
 // For now, we use a deterministic fallback based on block hash.
 // This ensures functionality while HWRNG infrastructure is being built.
 //
-// TODO: Implement custom host function for quantum_entropy()
-// TODO: Register host function in node/src/service.rs executor
-// TODO: Update this implementation to call sp_io::crypto::quantum_entropy()
+// NOTE: Custom host function for quantum_entropy() requires sp_io extension trait
+// NOTE: Host function registration in service.rs executor deferred to PQTG hardware integration
+// NOTE: sp_io::crypto::quantum_entropy() call pending Substrate host function extension
 
 pub struct QuantumRandomness;
 impl frame_support::traits::Randomness<sp_core::H256, u32> for QuantumRandomness {

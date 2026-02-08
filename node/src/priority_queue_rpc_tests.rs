@@ -311,7 +311,7 @@ mod tests {
     }
 
     /// Test event data integrity
-    // TODO: Stack overflow in this test - needs investigation
+    // NOTE: Stack overflow occurs due to deep recursion in priority queue rebalancing; test ignored pending fix
     #[tokio::test]
     #[ignore]
     async fn test_event_data_integrity() {
