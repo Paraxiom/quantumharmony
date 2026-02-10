@@ -20,7 +20,7 @@ services:
       --base-path=/data
       --unsafe-rpc-external
       --rpc-cors=all
-      --rpc-methods=unsafe
+      --rpc-methods=safe
       --unsafe-ws-external
       --port=30333
       --rpc-port=9944
@@ -50,7 +50,7 @@ services:
       --base-path=/data
       --unsafe-rpc-external
       --rpc-cors=all
-      --rpc-methods=unsafe
+      --rpc-methods=safe
       --unsafe-ws-external
       --port=30333
       --rpc-port=9944
@@ -83,7 +83,7 @@ services:
       --base-path=/data
       --unsafe-rpc-external
       --rpc-cors=all
-      --rpc-methods=unsafe
+      --rpc-methods=safe
       --unsafe-ws-external
       --port=30333
       --rpc-port=9944
