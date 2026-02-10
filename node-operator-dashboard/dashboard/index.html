@@ -5713,7 +5713,7 @@
                     <div class="info-row" style="padding: 8px 0; border-bottom: 1px solid var(--bg-surface); opacity: ${peer.directConnection ? '1' : '0.7'};">
                         <div style="display: flex; justify-content: space-between; width: 100%;">
                             <span style="font-size: 12px; font-family: 'Orbitron', monospace;">
-                                <span style="color: ${peer.color}; font-weight: 600;">${peer.name}</span>
+                                <span style="color: ${peer.color}; font-weight: 600;">${escapeHtml(String(peer.name))}</span>
                                 ${!peer.directConnection ? '<span style="color: var(--text-muted); font-size: 9px; margin-left: 4px;">(via network)</span>' : ''}
                             </span>
                             <span style="color: ${peer.role === 'Validator' ? 'var(--accent-success)' : 'var(--text-muted)'}; font-size: 10px; font-weight: ${peer.role === 'Validator' ? 'bold' : 'normal'};">
@@ -5721,14 +5721,14 @@
                             </span>
                         </div>
                         <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
-                            📍 ${peer.location} • Block #${peer.bestBlock.toLocaleString()}
+                            📍 ${escapeHtml(String(peer.location))} • Block #${peer.bestBlock.toLocaleString()}
                         </div>
                     </div>
                 `).join('');
 
             } catch (e) {
                 discoveredPeers = [];
-                container.innerHTML = `<div class="info-row"><span class="info-label" style="color: var(--accent-danger);">Error: ${e.message}</span></div>`;
+                container.innerHTML = `<div class="info-row"><span class="info-label" style="color: var(--accent-danger);">Error: ${escapeHtml(String(e.message))}</span></div>`;
             }
         }
 
@@ -7449,7 +7449,7 @@
                     topSubnets.forEach(s => {
                         const emissionPct = (s.emission * 100).toFixed(1);
                         html += `<div class="stat-card" style="padding: 8px;">
-                            <div class="stat-label" style="font-size: 9px;">SN${s.netuid} ${s.name.split(' ')[0]}</div>
+                            <div class="stat-label" style="font-size: 9px;">SN${escapeHtml(String(s.netuid))} ${escapeHtml(String(s.name.split(' ')[0]))}</div>
                             <div class="stat-value" style="font-size: 14px; color: var(--accent-success);">${emissionPct}%</div>
                         </div>`;
                     });
@@ -7554,8 +7554,8 @@
                     const color = status.healthy ? 'var(--accent-success)' : 'var(--accent-danger)';
                     const statusText = status.healthy ? `${status.bytes_available || 32} bytes` : 'Offline';
                     html += `<div class="info-row">
-                        <span class="info-label">${name}</span>
-                        <span class="info-value" style="color: ${color};">${statusText}</span>
+                        <span class="info-label">${escapeHtml(String(name))}</span>
+                        <span class="info-value" style="color: ${color};">${escapeHtml(String(statusText))}</span>
                     </div>`;
                 }
                 document.getElementById('qrngSharesList').innerHTML = html || '<div class="info-row"><span class="info-label">No sources</span></div>';
