@@ -27,6 +27,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod runtime_api;
+
 pub use pallet::*;
 
 #[frame_support::pallet]

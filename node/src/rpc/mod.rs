@@ -100,6 +100,7 @@ where
     C::Api: pallet_validator_rewards::runtime_api::ValidatorRewardsApi<Block, AccountId, Balance>,
     C::Api: pallet_mesh_forum::runtime_api::MeshForumApi<Block, AccountId>,
     C::Api: pallet_devonomics::runtime_api::DevonomicsApi<Block, AccountId>,
+    C::Api: pallet_notarial::runtime_api::NotarialRuntimeApi<Block, AccountId>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     Pool: TxPool<Block = Block> + 'static,
 {

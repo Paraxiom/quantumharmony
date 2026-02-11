@@ -34,6 +34,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use substrate_frame_rpc_system::AccountNonceApi as SystemAccountNonceApi;
+use pallet_notarial::runtime_api::NotarialRuntimeApi as NotarialStorageApi;
 
 /// Document attestation request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -233,7 +234,8 @@ where
     C::Api: sp_block_builder::BlockBuilder<Block>
         + sp_api::Core<Block>
         + substrate_frame_rpc_system::AccountNonceApi<Block, AccountId32, u32>
-        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId32, u32>,
+        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId32, u32>
+        + NotarialStorageApi<Block, AccountId32>,
     P: TransactionPool<Block = Block> + 'static,
 {
     async fn attest_document(&self, request: AttestDocumentRequest) -> RpcResult<Value> {
@@ -486,34 +488,74 @@ where
     async fn get_attestation(&self, attestation_id: u64) -> RpcResult<Option<AttestationInfo>> {
         log::info!("📜 Notarial RPC: Getting attestation {}", attestation_id);
 
-        // For now return placeholder - full implementation would query storage
-        // Storage key: twox128("Notarial") + twox128("Attestations") + Blake2_128Concat(attestation_id)
-
-        Ok(None)
+        let best_hash = self.client.info().best_hash;
+        match self.client.runtime_api().get_attestation(best_hash, attestation_id) {
+            Ok(Some((id, doc_hash, category, description, attester, attested_at, expires_at, status, witness_count, certified))) => {
+                Ok(Some(AttestationInfo {
+                    id,
+                    document_hash: format!("0x{}", hex::encode(doc_hash)),
+                    category: self.category_name(category),
+                    description: String::from_utf8_lossy(&description).to_string(),
+                    attester: format!("{}", attester),
+                    attested_at,
+                    expires_at,
+                    status: self.status_name(status),
+                    witness_count,
+                    certified,
+                }))
+            }
+            Ok(None) => Ok(None),
+            Err(_) => {
+                log::warn!("Notarial runtime API not available - runtime upgrade required");
+                Ok(None)
+            }
+        }
     }
 
     async fn verify_document(&self, document_hash: String) -> RpcResult<VerificationResult> {
         log::info!("📜 Notarial RPC: Verifying document {}", &document_hash[..std::cmp::min(20, document_hash.len())]);
 
-        // Parse and validate hash
-        let _hash = self.parse_document_hash(&document_hash)
+        let hash = self.parse_document_hash(&document_hash)
             .map_err(|e| ErrorObject::owned(
                 ErrorCode::InvalidParams.code(),
                 e,
                 None::<()>
             ))?;
 
-        // Query storage: AttestationByHash
-        // Full implementation would query on-chain storage
-
-        Ok(VerificationResult {
-            exists: false,
-            attestation_id: None,
-            attested_at: None,
-            status: None,
-            certified: None,
-            witness_count: None,
-        })
+        let best_hash = self.client.info().best_hash;
+        match self.client.runtime_api().verify_document(best_hash, hash) {
+            Ok(Some((attestation_id, attested_at, status, certified, witness_count))) => {
+                Ok(VerificationResult {
+                    exists: true,
+                    attestation_id: Some(attestation_id),
+                    attested_at: Some(attested_at),
+                    status: Some(self.status_name(status)),
+                    certified: Some(certified),
+                    witness_count: Some(witness_count),
+                })
+            }
+            Ok(None) => {
+                Ok(VerificationResult {
+                    exists: false,
+                    attestation_id: None,
+                    attested_at: None,
+                    status: None,
+                    certified: None,
+                    witness_count: None,
+                })
+            }
+            Err(_) => {
+                log::warn!("Notarial runtime API not available - runtime upgrade required");
+                Ok(VerificationResult {
+                    exists: false,
+                    attestation_id: None,
+                    attested_at: None,
+                    status: None,
+                    certified: None,
+                    witness_count: None,
+                })
+            }
+        }
     }
 
     async fn generate_certificate(&self, attestation_id: u64, signer_key: String) -> RpcResult<Value> {
@@ -613,14 +655,42 @@ where
     async fn get_certificate(&self, certificate_id: u64) -> RpcResult<Option<CertificateInfo>> {
         log::info!("📜 Notarial RPC: Getting certificate {}", certificate_id);
 
-        // Full implementation would query storage
-        Ok(None)
+        let best_hash = self.client.info().best_hash;
+        match self.client.runtime_api().get_certificate(best_hash, certificate_id) {
+            Ok(Some((id, attestation_id, generated_at, cert_hash, issuer))) => {
+                Ok(Some(CertificateInfo {
+                    id,
+                    attestation_id,
+                    generated_at,
+                    certificate_hash: format!("0x{}", hex::encode(cert_hash)),
+                    issuer: format!("{}", issuer),
+                }))
+            }
+            Ok(None) => Ok(None),
+            Err(_) => {
+                log::warn!("Notarial runtime API not available - runtime upgrade required");
+                Ok(None)
+            }
+        }
     }
 
     async fn get_attestations_by_owner(&self, account: String) -> RpcResult<Vec<u64>> {
         log::info!("📜 Notarial RPC: Getting attestations for {}", account);
 
-        // Full implementation would query storage
-        Ok(vec![])
+        let account_id: AccountId32 = account.parse()
+            .map_err(|_| ErrorObject::owned(
+                ErrorCode::InvalidParams.code(),
+                "Invalid SS58 account address",
+                None::<()>
+            ))?;
+
+        let best_hash = self.client.info().best_hash;
+        match self.client.runtime_api().get_attestations_by_owner(best_hash, account_id) {
+            Ok(ids) => Ok(ids),
+            Err(_) => {
+                log::warn!("Notarial runtime API not available - runtime upgrade required");
+                Ok(vec![])
+            }
+        }
     }
 }

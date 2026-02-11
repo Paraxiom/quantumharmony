@@ -1045,6 +1045,50 @@ impl_runtime_apis! {
             pallet_mesh_forum::MessageCount::<Runtime>::get()
         }
     }
+
+    impl pallet_notarial::runtime_api::NotarialRuntimeApi<Block, AccountId> for Runtime {
+        fn get_attestation(id: u64) -> Option<(u64, [u8; 32], u8, sp_std::vec::Vec<u8>, AccountId, u32, Option<u32>, u8, u32, bool)> {
+            pallet_notarial::Attestations::<Runtime>::get(id).map(|a| (
+                a.id,
+                a.document_hash,
+                a.category as u8,
+                a.description.into_inner(),
+                a.attester,
+                a.attested_at.try_into().unwrap_or(0u32),
+                a.expires_at.map(|e| e.try_into().unwrap_or(0u32)),
+                a.status as u8,
+                a.witness_count,
+                a.certified,
+            ))
+        }
+
+        fn verify_document(hash: [u8; 32]) -> Option<(u64, u32, u8, bool, u32)> {
+            pallet_notarial::AttestationByHash::<Runtime>::get(&hash)
+                .and_then(|id| pallet_notarial::Attestations::<Runtime>::get(id)
+                    .map(|a| (
+                        id,
+                        a.attested_at.try_into().unwrap_or(0u32),
+                        a.status as u8,
+                        a.certified,
+                        a.witness_count,
+                    )))
+        }
+
+        fn get_attestations_by_owner(account: AccountId) -> sp_std::vec::Vec<u64> {
+            pallet_notarial::AttestationsByOwner::<Runtime>::get(&account).into_inner()
+        }
+
+        fn get_certificate(id: u64) -> Option<(u64, u64, u32, [u8; 32], AccountId)> {
+            pallet_notarial::Certificates::<Runtime>::get(id)
+                .map(|c| (
+                    c.id,
+                    c.attestation_id,
+                    c.generated_at.try_into().unwrap_or(0u32),
+                    c.certificate_hash,
+                    c.issuer,
+                ))
+        }
+    }
 }
 
 #[cfg(feature = "std")]
