@@ -3258,6 +3258,79 @@ where
         Ok(is_leader)
     }
 
+    /// Reconstruct QRNG entropy from collected shares using Shamir secret sharing
+    ///
+    /// Converts CollectedShare (network type) to DeviceShare (cryptographic type) and
+    /// performs Shamir reconstruction to recover the combined entropy.
+    ///
+    /// ## Type Conversion
+    /// - `node_id` (String) → `DeviceId` (Vec<u8> wrapper)
+    /// - `qber` (f64) → (u32 basis points) via multiply by 10000.0
+    /// - `share_bytes` (Vec<u8>) → cloned as-is
+    ///
+    /// ## Output
+    /// Returns the reconstructed 32-byte entropy array from Shamir shares
+    fn reconstruct_qrng_entropy(
+        &self,
+        shares: &[crate::rpc::threshold_qrng_rpc::CollectedShare],
+    ) -> Result<[u8; 32], String> {
+        // 1. Get threshold K from configuration
+        let threshold_k = {
+            self.threshold_config
+                .lock()
+                .map_err(|e| format!("Failed to lock threshold config: {}", e))?
+                .threshold_k
+        };
+
+        // 2. Convert CollectedShare → DeviceShare
+        let device_shares: Vec<DeviceShare> = shares
+            .iter()
+            .map(|collected| {
+                // Convert node_id (String) to DeviceId (Vec<u8> wrapper)
+                let device_id = DeviceId(collected.node_id.as_bytes().to_vec());
+
+                // Convert qber from f64 (0.008 = 0.8%) to u32 basis points (80 = 0.8%)
+                let qber_basis_points = (collected.qber * 10000.0) as u32;
+
+                DeviceShare {
+                    device_id,
+                    share: collected.share_bytes.clone(),
+                    qber: qber_basis_points,
+                    stark_proof: vec![0u8; 32], // Placeholder - actual proof already verified
+                    timestamp: std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs())
+                        .unwrap_or(0),
+                }
+            })
+            .collect();
+
+        // 3. Verify we have at least K shares
+        if device_shares.len() < threshold_k as usize {
+            return Err(format!(
+                "Insufficient shares for reconstruction: {} < {}",
+                device_shares.len(),
+                threshold_k
+            ));
+        }
+
+        // 4. Call the threshold QRNG free function to reconstruct
+        let reconstructed = reconstruct_entropy(&device_shares, threshold_k as u8)
+            .map_err(|e| format!("Shamir reconstruction failed: {}", e))?;
+
+        // 5. Convert Vec<u8> to fixed [u8; 32] array
+        if reconstructed.len() != 32 {
+            return Err(format!(
+                "Reconstructed entropy has invalid length: {} (expected 32)",
+                reconstructed.len()
+            ));
+        }
+
+        let mut entropy_array = [0u8; 32];
+        entropy_array.copy_from_slice(&reconstructed);
+        Ok(entropy_array)
+    }
+
     /// Get entropy for leader election - tries QRNG first, falls back to VRF
     ///
     /// Returns (entropy_bytes, source_description)
