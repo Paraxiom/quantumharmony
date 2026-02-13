@@ -16,32 +16,13 @@ use sp_std::vec::Vec;
 use scale_codec::{Encode, Decode};
 use serde::{Serialize, Deserialize};
 
-// Note: std::hash::Hasher not needed - using hash256_std_hasher instead
-
 /// Quantum-resistant hasher using Keccak-256 (SHA3)
 #[derive(Clone, Debug, Eq, PartialEq, TypeInfo, Encode, Decode, Serialize, Deserialize)]
 pub struct QuantumHasher;
 
-/// Dummy hasher for no_std environment
-#[cfg(not(feature = "std"))]
-#[derive(Default)]
-pub struct DummyHasher;
-
-#[cfg(not(feature = "std"))]
-impl core::hash::Hasher for DummyHasher {
-    fn finish(&self) -> u64 {
-        0
-    }
-
-    fn write(&mut self, _bytes: &[u8]) {}
-}
-
 impl Hasher for QuantumHasher {
     type Out = H256;
-    #[cfg(feature = "std")]
     type StdHasher = hash256_std_hasher::Hash256StdHasher;
-    #[cfg(not(feature = "std"))]
-    type StdHasher = DummyHasher;
     const LENGTH: usize = 32;
 
     fn hash(data: &[u8]) -> Self::Out {

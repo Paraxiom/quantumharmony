@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 26,  // v26: Rolling window forum chat (10k messages, auto-evict oldest)
+    spec_version: 27,  // v27: Fix WASM DummyHasher divergence (use Hash256StdHasher unconditionally)
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
