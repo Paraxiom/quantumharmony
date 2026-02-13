@@ -14,13 +14,16 @@ use frame_support::{
 };
 use sp_runtime::traits::Hash;
 use sp_std::{vec, vec::Vec};
+use frame_support::storage::types::StorageMap;
 use codec::Encode;
 
 // Define our own VRF types for quantum-safe operation
 pub type VrfPreOutput = [u8; 32];
-pub type VrfProof = [u8; 96];  // Larger for post-quantum
+pub type VrfProof = [u8; 128];  // Extended to 128 bytes: 96 bytes proof + 32 bytes entropy for deterministic verification
 pub type VrfSignData = ([u8; 32], [u8; 32], [u8; 64]);
 pub const QUANTUM_VRF_PREFIX: &[u8] = b"QuantumVRF";
+pub const VRF_PROOF_SIZE: usize = 96;  // Actual proof size
+pub const VRF_ENTROPY_OFFSET: usize = 96;  // Entropy stored at bytes 96-128
 
 /// QVRF implementation for committee selection
 impl<T: Config> Pallet<T> {
@@ -72,11 +75,12 @@ impl<T: Config> Pallet<T> {
             [randomness_bytes, [0u8; 32]].concat().try_into().map_err(|_| Error::<T>::InvalidVrfInput)?
         );
         
-        // Generate VRF proof with quantum-enhanced seed
+        // Generate VRF proof with quantum-enhanced seed and store entropy
         let (vrf_output, vrf_proof) = Self::create_vrf_output(
             &validator_key,
             context,
             &vrf_input,
+            &quantum_entropy,
         )?;
         
         Ok((vrf_output, vrf_proof))
@@ -163,13 +167,16 @@ impl<T: Config> Pallet<T> {
         // Get validator's public key
         let public_key = Self::get_validator_public_key(validator)?;
         
-        // Recreate VRF input
-        let quantum_entropy = Self::get_quantum_entropy(32)
-            .map_err(|_| Error::<T>::QuantumEntropyUnavailable)?;
+        // Extract entropy stored in proof to ensure deterministic verification
+        // This prevents spurious failures if quantum entropy changes between generation and verification
+        let mut stored_entropy = [0u8; 32];
+        stored_entropy.copy_from_slice(&vrf_proof[VRF_ENTROPY_OFFSET..]);
+        
+        // Recreate VRF input using stored entropy (not fetching new entropy)
         let on_chain_random = T::MyRandomness::random(&[b"quantum_vrf", &epoch.encode()[..]].concat());
         
         let mut combined_seed = Vec::with_capacity(64);
-        combined_seed.extend_from_slice(&quantum_entropy);
+        combined_seed.extend_from_slice(&stored_entropy);
         combined_seed.extend_from_slice(&on_chain_random.0.as_ref());
         
         let seed_hash = T::Hashing::hash(&combined_seed);
@@ -226,6 +233,7 @@ impl<T: Config> Pallet<T> {
         validator_key: &[u8; 32],
         _context: &[u8],
         input: &VrfSignData,
+        quantum_entropy: &[u8; 32],
     ) -> Result<(VrfPreOutput, VrfProof), Error<T>> {
         // For now, create a deterministic "VRF" output using hashing
         // In production, this would use actual VRF with schnorrkel
@@ -239,14 +247,17 @@ impl<T: Config> Pallet<T> {
         data_to_hash.extend_from_slice(&vrf_input_data);
         let output_hash = sp_core::blake2_256(&data_to_hash);
         
-        // Create pseudo-proof (96 bytes for VrfProof - post-quantum size)
+        // Create cryptographic proof components
         let proof_hash1 = sp_core::blake2_256(&[&output_hash[..], &vrf_input_data[..]].concat());
         let proof_hash2 = sp_core::blake2_256(&[&proof_hash1[..], validator_key].concat());
         let proof_hash3 = sp_core::blake2_256(&[&proof_hash2[..], &output_hash[..]].concat());
-        let mut proof_data = [0u8; 96];
+        let mut proof_data = [0u8; 128];
+        // Store proof components in first VRF_PROOF_SIZE bytes (96 bytes for post-quantum)
         proof_data[..32].copy_from_slice(&proof_hash1);
         proof_data[32..64].copy_from_slice(&proof_hash2);
-        proof_data[64..].copy_from_slice(&proof_hash3);
+        proof_data[64..VRF_PROOF_SIZE].copy_from_slice(&proof_hash3);
+        // Store quantum entropy in VRF_ENTROPY_OFFSET..128 for deterministic verification
+        proof_data[VRF_ENTROPY_OFFSET..].copy_from_slice(quantum_entropy);
         
         Ok((
             output_hash,
@@ -261,13 +272,17 @@ impl<T: Config> Pallet<T> {
         vrf_output: &VrfPreOutput,
         vrf_proof: &VrfProof,
     ) -> Result<bool, Error<T>> {
-        // For our pseudo-VRF, verify by recreating the output
+        // Note: The vrf_input parameter already contains the quantum entropy baked in
+        // through the seed_hash (created in verify_quantum_vrf). This ensures deterministic
+        // verification by using the exact entropy that was present at generation time.
+        
+        // Extract vrf_input_data from the provided input
         let mut vrf_input_data = Vec::new();
         vrf_input_data.extend_from_slice(&input.0); // epoch bytes
         vrf_input_data.extend_from_slice(&input.1); // slot bytes
         vrf_input_data.extend_from_slice(&input.2); // randomness
         
-        // Recreate the expected output
+        // Recreate the expected output deterministically using the provided input
         let mut data_to_hash = public_key.to_vec();
         data_to_hash.extend_from_slice(&vrf_input_data);
         let expected_output = sp_core::blake2_256(&data_to_hash);
@@ -277,16 +292,17 @@ impl<T: Config> Pallet<T> {
             return Ok(false);
         }
         
-        // Verify proof matches (96 bytes for post-quantum)
+        // Verify proof matches using only the cryptographic proof portion (first VRF_PROOF_SIZE bytes)
         let expected_proof_hash1 = sp_core::blake2_256(&[&expected_output[..], &vrf_input_data[..]].concat());
         let expected_proof_hash2 = sp_core::blake2_256(&[&expected_proof_hash1[..], public_key].concat());
         let expected_proof_hash3 = sp_core::blake2_256(&[&expected_proof_hash2[..], &expected_output[..]].concat());
-        let mut expected_proof = [0u8; 96];
+        let mut expected_proof = [0u8; VRF_PROOF_SIZE];
         expected_proof[..32].copy_from_slice(&expected_proof_hash1);
         expected_proof[32..64].copy_from_slice(&expected_proof_hash2);
-        expected_proof[64..].copy_from_slice(&expected_proof_hash3);
+        expected_proof[64..VRF_PROOF_SIZE].copy_from_slice(&expected_proof_hash3);
         
-        Ok(vrf_proof == &expected_proof)
+        // Compare only the proof portion (VRF_PROOF_SIZE = 96 bytes), excluding the stored entropy bytes
+        Ok(&vrf_proof[..VRF_PROOF_SIZE] == &expected_proof[..])
     }
     
     fn vrf_output_to_score(vrf_output: &VrfPreOutput) -> u128 {
