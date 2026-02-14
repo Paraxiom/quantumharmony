@@ -7997,6 +7997,7 @@ dependencies = [
 name = "pallet-sphincs-keystore"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking 28.0.0",
  "frame-support 28.0.0",
  "frame-system 28.0.0",
  "parity-scale-codec",
@@ -9419,9 +9420,11 @@ dependencies = [
  "pallet-im-online",
  "pallet-mesh-forum",
  "pallet-notarial",
+ "pallet-pedersen-commitment",
  "pallet-proof-of-coherence",
  "pallet-quantum-crypto",
  "pallet-runtime-segmentation",
+ "pallet-sphincs-keystore",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -9516,6 +9519,7 @@ dependencies = [
  "pallet-identity",
  "pallet-mesh-forum",
  "pallet-notarial",
+ "pallet-pedersen-commitment",
  "pallet-preimage",
  "pallet-proof-of-coherence",
  "pallet-proxy",

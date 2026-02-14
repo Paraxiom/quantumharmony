@@ -42,25 +42,29 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = { workspace = true }
-clap = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 futures = { workspace = true }
 hex-literal = { workspace = true }
 hex = { workspace = true }
-jsonrpsee = { workspace = true, features = ["server", "macros", "http-client", "ws-client"] }
-jsonrpsee-types = { workspace = true }	
+jsonrpsee = { workspace = true, features = [
+	"server",
+	"macros",
+	"http-client",
+	"ws-client",
+] }
+jsonrpsee-types = { workspace = true }
 jsonrpsee-core = { workspace = true }
 log = { workspace = true }
 scale-codec = { workspace = true }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
-jsonrpc-core = "18.0.0" # check for the latest or required version
+jsonrpc-core = "18.0.0"
 jsonrpc-derive = "18.0.0"
 serde = { version = "1.0", features = ["derive"] }
 sp-io = { workspace = true }
-jsonrpc-core-client = "18.0.0" 
+jsonrpc-core-client = "18.0.0"
 dashmap = "4.0"
 bs58 = { workspace = true }
 num_cpus = "1.16"
-
 
 # Substrate
 prometheus-endpoint = { workspace = true }
@@ -71,7 +75,6 @@ sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-aura = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
-# sc-consensus-manual-seal = { workspace = true }  # Not needed: using Aura for testnet
 sc-executor = { workspace = true }
 sc-network = { workspace = true, features = ["pqc-transport"] }
 sc-network-sync = { workspace = true }
@@ -99,74 +102,78 @@ sp-timestamp = { workspace = true, features = ["default"] }
 sp-transaction-pool = { workspace = true, features = ["default"] }
 sp-keystore = { workspace = true }
 sp-consensus = { workspace = true, features = ["default"] }
-# These dependencies are used for RPC
+
+# RPC Dependencies
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-transaction-payment-rpc = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
-# These dependencies are used for runtime benchmarking
+
+# Benchmarking Dependencies
 frame-benchmarking = { workspace = true, optional = true }
 frame-benchmarking-cli = { workspace = true, optional = true }
 frame-system = { workspace = true }
 frame-support = { workspace = true }
 pallet-transaction-payment = { workspace = true }
+
+# Local Pallets
 pallet-runtime-segmentation = { path = "../pallets/runtime-segmentation" }
 pallet-im-online = { workspace = true, features = ["std"] }
+pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false }
+pallet-notarial = { path = "../pallets/notarial", default-features = false }
+pallet-mesh-forum = { path = "../pallets/mesh-forum", default-features = false }
+pallet-devonomics = { path = "../pallets/devonomics", default-features = false }
 
-# Quantum pallets (for gadget access to types)
-pallet-proof-of-coherence = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false, features = ["std"] }
-pallet-quantum-crypto = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false, features = ["std"] }
-pallet-validator-rewards = { path = "../pallets/validator-rewards", default-features = false, features = ["std"] }
-pallet-notarial = { path = "../pallets/notarial", default-features = false, features = ["std"] }
-pallet-mesh-forum = { path = "../pallets/mesh-forum", default-features = false, features = ["std"] }
-pallet-devonomics = { path = "../pallets/devonomics", default-features = false, features = ["std"] }
+# Missing pallet added here to fix your error
+pallet-pedersen-commitment = { path = "../pallets/pedersen-commitment", default-features = false }
+pallet-sphincs-keystore = { path = "../pallets/sphincs-keystore", default-features = false }
 
-# Frontier dependencies removed for governance-only node
+# Quantum SDK Pallets
+pallet-proof-of-coherence = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+pallet-quantum-crypto = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
+
+# Runtime
 quantumharmony-runtime = { workspace = true, features = ["std"] }
 
-
-
+# Internal node libs
 jsonrpsee-ws-server = { workspace = true }
-
 tokio = { workspace = true }
 priority-queue = { workspace = true }
-sharks = "0.5"  # Shamir Secret Sharing for threshold QRNG
-aes-gcm = "0.10"  # AES-256-GCM encryption for entropy distribution
-rand = "0.8"  # Random number generation for AES keys
-parking_lot = { workspace = true }  # RwLock for thread-safe state
-reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }  # HTTP client for KIRQ/PQTG
-zeroize = "1.7"  # Secure memory zeroing for sensitive data
-sha3 = "0.10"  # SHA3/Keccak hashing
-once_cell = "1.19"  # Lazy static initialization for software vault
-base64 = "0.21"  # Base64 encoding for WASM runtime uploads
-tokio-tungstenite = "0.20"  # WebSocket for wallet server
+sharks = "0.5"
+aes-gcm = "0.10"
+rand = "0.8"
+parking_lot = { workspace = true }
+reqwest = { version = "0.11", features = [
+	"json",
+	"rustls-tls",
+], default-features = false }
+zeroize = "1.7"
+sha3 = "0.10"
+once_cell = "1.19"
+base64 = "0.21"
+tokio-tungstenite = "0.20"
 
 # Post-Quantum Cryptography
-pqcrypto-falcon = "0.3"  # Falcon1024 signatures (NIST Round 3 finalist)
-pqcrypto-traits = "0.3"  # Common traits for PQC algorithms
-pqcrypto-kyber = "0.8"   # ML-KEM-1024 for key encapsulation
-pqcrypto-sphincsplus = "0.7"  # SPHINCS+-SHAKE-256s for runtime upgrades
+pqcrypto-falcon = "0.3"
+pqcrypto-traits = "0.3"
+pqcrypto-kyber = "0.8"
+pqcrypto-sphincsplus = "0.7"
 
 tracing = { workspace = true }
 tracing-futures = { workspace = true }
 anyhow = { workspace = true }
 futures-util = { workspace = true }
 assert_matches = { workspace = true }
-
 hyper = { workspace = true }
 tower-http = { workspace = true }
 tower = { workspace = true }
 lazy_static = { workspace = true }
 env_logger = { workspace = true }
-
-# For tests
 sp-keyring = { workspace = true }
-
 
 [dependencies.tracing-subscriber]
 version = "0.3.18"
 features = ["env-filter"]
-
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
@@ -179,26 +186,24 @@ name = "tps_benchmark"
 harness = false
 
 [features]
-default = [
-	"rocksdb",
-	"std",
-	"pqc-transport",
-]
-# Enable std for native builds - required for Falcon1024 signing
-std = []
-# Enable post-quantum cryptographic transport layer (Kyber-1024 + Falcon-1024)
-pqc-transport = ["sc-network/pqc-transport", "sc-cli/pqc-transport"]
-rocksdb = [
-	"sc-cli/rocksdb",
-	"sc-service/rocksdb",
-	"quantumharmony-runtime/with-rocksdb-weights",
-]
-paritydb = [
-	"quantumharmony-runtime/with-paritydb-weights",
+default = ["rocksdb", "std", "pqc-transport"]
+std = [
+	"quantumharmony-runtime/std",
+	"pallet-pedersen-commitment/std",
+	"pallet-sphincs-keystore/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"quantumharmony-runtime/runtime-benchmarks",
+	"pallet-pedersen-commitment/runtime-benchmarks",
+	"pallet-sphincs-keystore/runtime-benchmarks",
 ]
+pqc-transport = ["sc-network/pqc-transport", "sc-cli/pqc-transport"]
+rocksdb = [
+	"sc-cli/rocksdb",
+	"sc-service/rocksdb",
+	"quantumharmony-runtime/with-rocksdb-weights",
+]
+paritydb = ["quantumharmony-runtime/with-paritydb-weights"]

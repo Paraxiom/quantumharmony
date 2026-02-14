@@ -27,15 +27,18 @@
 
 pub use pallet::*;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 #[frame_support::pallet]
 pub mod pallet {
+    use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_support::BoundedVec;
     use frame_system::pallet_prelude::*;
-    use codec::{Encode, Decode, DecodeWithMemTracking, MaxEncodedLen};
     use scale_info::TypeInfo;
-    use sp_core::{sphincs::Public as SphincsPublic, H256};
     use sp_core::ConstU32;
+    use sp_core::{sphincs::Public as SphincsPublic, H256};
     use sp_runtime::traits::{IdentifyAccount, SaturatedConversion};
     use sp_runtime::{AccountId32, MultiSigner};
     use sp_std::vec::Vec;
@@ -77,24 +80,14 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn public_key)]
-    pub type PublicKeys<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        AccountId32,
-        SphincsPublic,
-        OptionQuery,
-    >;
+    pub type PublicKeys<T: Config> =
+        StorageMap<_, Blake2_128Concat, AccountId32, SphincsPublic, OptionQuery>;
 
     /// HSM anchoring status for each registered key
     #[pallet::storage]
     #[pallet::getter(fn hsm_anchor_status)]
-    pub type HsmAnchors<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        AccountId32,
-        HsmAnchorStatus,
-        ValueQuery,
-    >;
+    pub type HsmAnchors<T: Config> =
+        StorageMap<_, Blake2_128Concat, AccountId32, HsmAnchorStatus, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -137,18 +130,12 @@ pub mod pallet {
         /// - Keys are immutable once registered (prevents key replacement attacks)
         #[pallet::call_index(0)]
         #[pallet::weight(Weight::from_parts(10_000, 0))]
-        pub fn register_key(
-            origin: OriginFor<T>,
-            public_key: SphincsPublic,
-        ) -> DispatchResult {
+        pub fn register_key(origin: OriginFor<T>, public_key: SphincsPublic) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
             // Verify the public key matches the account ID
             let derived_account = Self::derive_account_id(&public_key);
-            ensure!(
-                who == derived_account,
-                Error::<T>::PublicKeyMismatch
-            );
+            ensure!(who == derived_account, Error::<T>::PublicKeyMismatch);
 
             // Check if already registered (keys are immutable)
             ensure!(
@@ -241,10 +228,7 @@ pub mod pallet {
         pub fn auto_register(account: &AccountId32, public_key: SphincsPublic) -> DispatchResult {
             // Verify the public key matches the account ID
             let derived_account = Self::derive_account_id(&public_key);
-            ensure!(
-                *account == derived_account,
-                Error::<T>::PublicKeyMismatch
-            );
+            ensure!(*account == derived_account, Error::<T>::PublicKeyMismatch);
 
             // Only register if not already present
             if !PublicKeys::<T>::contains_key(account) {
@@ -300,7 +284,8 @@ pub mod pallet {
 
     impl<T: Config + Send + Sync> sp_runtime::traits::SignedExtension for AutoRegisterKey<T>
     where
-        T::RuntimeCall: sp_runtime::traits::Dispatchable<Info = frame_support::dispatch::DispatchInfo>,
+        T::RuntimeCall:
+            sp_runtime::traits::Dispatchable<Info = frame_support::dispatch::DispatchInfo>,
     {
         type AccountId = AccountId32;
         type Call = T::RuntimeCall;
@@ -308,7 +293,12 @@ pub mod pallet {
         type Pre = ();
         const IDENTIFIER: &'static str = "AutoRegisterKey";
 
-        fn additional_signed(&self) -> Result<Self::AdditionalSigned, sp_runtime::transaction_validity::TransactionValidityError> {
+        fn additional_signed(
+            &self,
+        ) -> Result<
+            Self::AdditionalSigned,
+            sp_runtime::transaction_validity::TransactionValidityError,
+        > {
             // No additional signed data required for auto-registration extension
             Ok(()) // Intentionally returns unit — no extra chain state needed for signing
         }
@@ -398,7 +388,7 @@ pub mod pallet {
 mod tests {
     use super::*;
     use frame_support::{assert_err, assert_ok, parameter_types, traits::BuildGenesisConfig};
-    use sp_core::{sphincs::Pair as SphincsPair, H256, Pair};
+    use sp_core::{sphincs::Pair as SphincsPair, Pair, H256};
     use sp_runtime::{
         traits::{BlakeTwo256, IdentifyAccount, IdentityLookup},
         AccountId32, BuildStorage, MultiSigner,
@@ -481,10 +471,7 @@ mod tests {
             ));
 
             // Verify the key is stored
-            assert_eq!(
-                SphincsKeystore::public_key(&account),
-                Some(public_key)
-            );
+            assert_eq!(SphincsKeystore::public_key(&account), Some(public_key));
 
             // Verify event was emitted
             System::assert_has_event(
@@ -509,10 +496,7 @@ mod tests {
 
             // Try to register key1 with account2 (should fail)
             assert_err!(
-                SphincsKeystore::register_key(
-                    RuntimeOrigin::signed(account2),
-                    public_key1
-                ),
+                SphincsKeystore::register_key(RuntimeOrigin::signed(account2), public_key1),
                 Error::<Test>::PublicKeyMismatch
             );
         });
@@ -534,10 +518,7 @@ mod tests {
 
             // Try to register again (should fail)
             assert_err!(
-                SphincsKeystore::register_key(
-                    RuntimeOrigin::signed(account),
-                    public_key
-                ),
+                SphincsKeystore::register_key(RuntimeOrigin::signed(account), public_key),
                 Error::<Test>::KeyAlreadyRegistered
             );
         });
@@ -612,10 +593,7 @@ mod tests {
             ));
 
             // Now key should be retrievable
-            assert_eq!(
-                Pallet::<Test>::get_public_key(&account),
-                Some(public_key)
-            );
+            assert_eq!(Pallet::<Test>::get_public_key(&account), Some(public_key));
         });
     }
 
@@ -652,7 +630,10 @@ mod tests {
 
         // Create genesis config with initial keys
         let genesis_config = GenesisConfig::<Test> {
-            keys: vec![(account1.clone(), public_key1), (account2.clone(), public_key2)],
+            keys: vec![
+                (account1.clone(), public_key1),
+                (account2.clone(), public_key2),
+            ],
             _phantom: Default::default(),
         };
 
@@ -726,7 +707,11 @@ mod tests {
             assert_eq!(retrieved_key, Some(public_key));
 
             // Verify signature with retrieved key
-            assert!(SphincsPair::verify(&signature, message, &retrieved_key.unwrap()));
+            assert!(SphincsPair::verify(
+                &signature,
+                message,
+                &retrieved_key.unwrap()
+            ));
         });
     }
 
@@ -782,7 +767,11 @@ mod tests {
 
             // Verify with wrong message (should fail)
             let wrong_message = b"Different message";
-            assert!(!SphincsPair::verify(&signature1, wrong_message, &public_key1));
+            assert!(!SphincsPair::verify(
+                &signature1,
+                wrong_message,
+                &public_key1
+            ));
         });
     }
 
@@ -816,7 +805,10 @@ mod tests {
             // Verify anchored status
             let status = SphincsKeystore::hsm_anchor_status(&account);
             assert!(status.anchored);
-            assert_eq!(status.hsm_key_id.as_ref().map(|v| v.to_vec()), Some(hsm_key_id));
+            assert_eq!(
+                status.hsm_key_id.as_ref().map(|v| v.to_vec()),
+                Some(hsm_key_id)
+            );
             assert!(status.last_sync > 0);
         });
     }
@@ -832,11 +824,7 @@ mod tests {
             // Try to anchor without registering (should fail)
             let hsm_key_id = b"hsm-key-12345".to_vec();
             assert_err!(
-                SphincsKeystore::mark_hsm_anchored(
-                    RuntimeOrigin::root(),
-                    account,
-                    hsm_key_id
-                ),
+                SphincsKeystore::mark_hsm_anchored(RuntimeOrigin::root(), account, hsm_key_id),
                 Error::<Test>::KeyNotRegistered
             );
         });
@@ -868,24 +856,30 @@ mod tests {
 
             // Tamper with first byte
             sig_bytes[0] ^= 0xFF;
-            assert!(!SphincsPair::verify(&valid_sig, message, &public_key),
-                "Tampered signature should be rejected");
+            assert!(
+                !SphincsPair::verify(&valid_sig, message, &public_key),
+                "Tampered signature should be rejected"
+            );
 
             // Get fresh signature and tamper with middle
             let mut valid_sig2 = pair.sign(message);
             let sig_bytes2 = valid_sig2.0.as_mut();
             let mid = sig_bytes2.len() / 2;
             sig_bytes2[mid] ^= 0xFF;
-            assert!(!SphincsPair::verify(&valid_sig2, message, &public_key),
-                "Signature with tampered middle byte should be rejected");
+            assert!(
+                !SphincsPair::verify(&valid_sig2, message, &public_key),
+                "Signature with tampered middle byte should be rejected"
+            );
 
             // Get fresh signature and tamper with last byte
             let mut valid_sig3 = pair.sign(message);
             let sig_bytes3 = valid_sig3.0.as_mut();
             let last = sig_bytes3.len() - 1;
             sig_bytes3[last] ^= 0xFF;
-            assert!(!SphincsPair::verify(&valid_sig3, message, &public_key),
-                "Signature with tampered last byte should be rejected");
+            assert!(
+                !SphincsPair::verify(&valid_sig3, message, &public_key),
+                "Signature with tampered last byte should be rejected"
+            );
         });
     }
 
@@ -906,8 +900,10 @@ mod tests {
             zero_sig.0.iter_mut().for_each(|b| *b = 0);
 
             use sp_core::Pair;
-            assert!(!SphincsPair::verify(&zero_sig, message, &public_key),
-                "All-zeros signature should be rejected");
+            assert!(
+                !SphincsPair::verify(&zero_sig, message, &public_key),
+                "All-zeros signature should be rejected"
+            );
         });
     }
 
@@ -923,8 +919,10 @@ mod tests {
             ones_sig.0.iter_mut().for_each(|b| *b = 0xFF);
 
             use sp_core::Pair;
-            assert!(!SphincsPair::verify(&ones_sig, message, &public_key),
-                "All-ones signature should be rejected");
+            assert!(
+                !SphincsPair::verify(&ones_sig, message, &public_key),
+                "All-ones signature should be rejected"
+            );
         });
     }
 
@@ -943,8 +941,10 @@ mod tests {
             use sp_core::Pair;
             // Signature for message1 should not verify message2
             assert!(SphincsPair::verify(&sig1, message1, &public_key));
-            assert!(!SphincsPair::verify(&sig1, message2, &public_key),
-                "Signature replay for different message should fail");
+            assert!(
+                !SphincsPair::verify(&sig1, message2, &public_key),
+                "Signature replay for different message should fail"
+            );
         });
     }
 
@@ -959,12 +959,16 @@ mod tests {
             let signature = pair.sign(empty_message);
 
             use sp_core::Pair;
-            assert!(SphincsPair::verify(&signature, empty_message, &public_key),
-                "Empty message signature should verify");
+            assert!(
+                SphincsPair::verify(&signature, empty_message, &public_key),
+                "Empty message signature should verify"
+            );
 
             // But should not verify against non-empty message
-            assert!(!SphincsPair::verify(&signature, b"not empty", &public_key),
-                "Empty message signature should not verify non-empty message");
+            assert!(
+                !SphincsPair::verify(&signature, b"not empty", &public_key),
+                "Empty message signature should not verify non-empty message"
+            );
         });
     }
 
@@ -979,14 +983,18 @@ mod tests {
             let signature = pair.sign(&large_message);
 
             use sp_core::Pair;
-            assert!(SphincsPair::verify(&signature, &large_message, &public_key),
-                "Large message signature should verify");
+            assert!(
+                SphincsPair::verify(&signature, &large_message, &public_key),
+                "Large message signature should verify"
+            );
 
             // Single byte change should invalidate
             let mut tampered = large_message.clone();
             tampered[500_000] ^= 0x01;
-            assert!(!SphincsPair::verify(&signature, &tampered, &public_key),
-                "Single byte change should invalidate signature");
+            assert!(
+                !SphincsPair::verify(&signature, &tampered, &public_key),
+                "Single byte change should invalidate signature"
+            );
         });
     }
 
@@ -1008,8 +1016,10 @@ mod tests {
 
             use sp_core::Pair;
             // Forged key should not verify signature from key1
-            assert!(!SphincsPair::verify(&sig1, message, &forged_key),
-                "Forged public key should not verify valid signature");
+            assert!(
+                !SphincsPair::verify(&sig1, message, &forged_key),
+                "Forged public key should not verify valid signature"
+            );
         });
     }
 
@@ -1029,9 +1039,7 @@ mod tests {
                 .map(|i| format!("Message number {}", i).into_bytes())
                 .collect();
 
-            let signatures: Vec<_> = messages.iter()
-                .map(|m| pair.sign(m))
-                .collect();
+            let signatures: Vec<_> = messages.iter().map(|m| pair.sign(m)).collect();
 
             // All signatures should verify correctly
             for (msg, sig) in messages.iter().zip(signatures.iter()) {
@@ -1041,8 +1049,10 @@ mod tests {
             // But none should verify a message that wasn't signed
             let new_message = b"This was never signed";
             for sig in &signatures {
-                assert!(!SphincsPair::verify(sig, new_message, &public_key),
-                    "Collected signatures should not help forge new signatures");
+                assert!(
+                    !SphincsPair::verify(sig, new_message, &public_key),
+                    "Collected signatures should not help forge new signatures"
+                );
             }
         });
     }
