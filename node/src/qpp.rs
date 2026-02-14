@@ -1128,11 +1128,7 @@ mod tests {
     fn test_lamport_state_transition() {
         use lamport::*;
 
-        let entropy = QuantumEntropy::new(
-            vec![0u8; 64],
-            EntropySource::Keystore,
-            None,
-        );
+        let entropy = QuantumEntropy::new(vec![0u8; 64], EntropySource::Keystore, None);
 
         let key = LamportKey::<Unused>::from_entropy(entropy);
         let message = b"test message";
@@ -1179,12 +1175,13 @@ mod tests {
 
     #[test]
     fn test_falcon_lifecycle_states() {
+        use crate::falcon_crypto::generate_keypair_sha3;
         use falcon_lifecycle::*;
-        use crate::falcon_crypto::generate_keypair;
 
-        // Generate real Falcon keys for testing
+        // Generate real Falcon keys for testing with SHA-3 KDF
         let seed = [0u8; 32];
-        let (pk, sk) = generate_keypair(&seed);
+        let validator_id = b"test-validator";
+        let (pk, sk) = generate_keypair_sha3(&seed, None, None, validator_id);
 
         // Fresh → Active transition
         let fresh_key = FalconKeyPair::<Fresh>::new(pk, sk);
@@ -1297,14 +1294,16 @@ mod tests {
 
     #[test]
     fn test_triple_ratchet_state_machine() {
+        use crate::falcon_crypto::generate_keypair_sha3;
         use triple_ratchet::*;
-        use crate::falcon_crypto::generate_keypair;
 
-        // Generate real Falcon keys for testing
+        // Generate real Falcon keys for testing with SHA-3 KDF
         let seed1 = [0u8; 32];
         let seed2 = [1u8; 32];
-        let (falcon_public, falcon_secret) = generate_keypair(&seed1);
-        let (peer_public, _peer_secret) = generate_keypair(&seed2);
+        let validator_id = b"test-validator";
+        let (falcon_public, falcon_secret) =
+            generate_keypair_sha3(&seed1, None, None, validator_id);
+        let (peer_public, _peer_secret) = generate_keypair_sha3(&seed2, None, None, validator_id);
 
         // Init → HandshakeComplete
         let init = TripleRatchet::<Init>::new(falcon_secret, falcon_public);
@@ -1337,13 +1336,15 @@ mod tests {
 
     #[test]
     fn test_triple_ratchet_rekeying() {
+        use crate::falcon_crypto::generate_keypair_sha3;
         use triple_ratchet::*;
-        use crate::falcon_crypto::generate_keypair;
 
         let seed1 = [0u8; 32];
         let seed2 = [1u8; 32];
-        let (falcon_public, falcon_secret) = generate_keypair(&seed1);
-        let (peer_public, _) = generate_keypair(&seed2);
+        let validator_id = b"test-validator";
+        let (falcon_public, falcon_secret) =
+            generate_keypair_sha3(&seed1, None, None, validator_id);
+        let (peer_public, _) = generate_keypair_sha3(&seed2, None, None, validator_id);
 
         let init = TripleRatchet::<Init>::new(falcon_secret, falcon_public);
         let handshake = init.complete_handshake(&peer_public, [3u8; 32]);
@@ -1368,13 +1369,15 @@ mod tests {
 
     #[test]
     fn test_triple_ratchet_termination() {
+        use crate::falcon_crypto::generate_keypair_sha3;
         use triple_ratchet::*;
-        use crate::falcon_crypto::generate_keypair;
 
         let seed1 = [0u8; 32];
         let seed2 = [1u8; 32];
-        let (falcon_public, falcon_secret) = generate_keypair(&seed1);
-        let (peer_public, _) = generate_keypair(&seed2);
+        let validator_id = b"test-validator";
+        let (falcon_public, falcon_secret) =
+            generate_keypair_sha3(&seed1, None, None, validator_id);
+        let (peer_public, _) = generate_keypair_sha3(&seed2, None, None, validator_id);
 
         let init = TripleRatchet::<Init>::new(falcon_secret, falcon_public);
         let handshake = init.complete_handshake(&peer_public, [3u8; 32]);
@@ -1459,11 +1462,7 @@ mod tests {
         use sync_async::*;
 
         // Synchronous operation
-        let entropy = QuantumEntropy::new(
-            vec![1, 2, 3, 4],
-            EntropySource::HardwareRNG,
-            None,
-        );
+        let entropy = QuantumEntropy::new(vec![1, 2, 3, 4], EntropySource::HardwareRNG, None);
 
         let sync_op = SyncOp::new(entropy);
         let result = sync_op.blocking_execute(|e| {
@@ -1479,11 +1478,7 @@ mod tests {
     fn test_sync_async_async_operation() {
         use sync_async::*;
 
-        let entropy = QuantumEntropy::new(
-            vec![5, 6, 7, 8],
-            EntropySource::Keystore,
-            None,
-        );
+        let entropy = QuantumEntropy::new(vec![5, 6, 7, 8], EntropySource::Keystore, None);
 
         let async_op = AsyncOp::new(entropy);
 
@@ -1501,11 +1496,7 @@ mod tests {
     async fn test_sync_async_async_execute() {
         use sync_async::*;
 
-        let entropy = QuantumEntropy::new(
-            vec![9, 10, 11, 12],
-            EntropySource::KirqHub,
-            Some(250),
-        );
+        let entropy = QuantumEntropy::new(vec![9, 10, 11, 12], EntropySource::KirqHub, Some(250));
 
         let async_op = AsyncOp::new(entropy);
         let result = async_op
@@ -1522,11 +1513,7 @@ mod tests {
     fn test_sync_entropy_type_alias() {
         use sync_async::*;
 
-        let entropy = QuantumEntropy::new(
-            vec![13, 14, 15, 16],
-            EntropySource::Crypto4AHSM,
-            None,
-        );
+        let entropy = QuantumEntropy::new(vec![13, 14, 15, 16], EntropySource::Crypto4AHSM, None);
 
         let sync_entropy = SyncEntropy::new(entropy);
         let bytes = sync_entropy.blocking_execute(|e| e.consume());
@@ -1537,11 +1524,8 @@ mod tests {
     async fn test_async_entropy_type_alias() {
         use sync_async::*;
 
-        let entropy = QuantumEntropy::new(
-            vec![17, 18, 19, 20],
-            EntropySource::ToshibaQKD,
-            Some(150),
-        );
+        let entropy =
+            QuantumEntropy::new(vec![17, 18, 19, 20], EntropySource::ToshibaQKD, Some(150));
 
         let async_entropy = AsyncEntropy::new(entropy);
         let bytes = async_entropy

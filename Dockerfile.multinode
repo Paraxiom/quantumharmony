@@ -1,0 +1,96 @@
+# QuantumHarmony Production Multi-Stage Dockerfile
+#
+# This Dockerfile builds the node from source for reproducibility
+# and creates a minimal runtime image (~100MB vs ~2GB)
+#
+# Usage:
+#   docker build -f Dockerfile.production -t quantumharmony:latest .
+#   docker build -f Dockerfile.production --build-arg PROFILE=release -t quantumharmony:latest .
+
+# =============================================================================
+# STAGE 1: Builder
+# =============================================================================
+FROM rust:1.85-bookworm AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    clang \
+    cmake \
+    git \
+    libssl-dev \
+    pkg-config \
+    protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up Rust toolchain
+RUN rustup target add wasm32-unknown-unknown
+
+WORKDIR /build
+
+# Build arguments
+ARG PROFILE=release
+ARG FEATURES=""
+
+# Copy source code
+# Note: Use .dockerignore to exclude target/, .git/, etc.
+COPY . .
+
+# Build the node
+# SKIP_WASM_BUILD=0 ensures WASM runtime is compiled
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/build/target \
+    SKIP_WASM_BUILD=0 cargo build --profile $PROFILE -p quantumharmony-node \
+    && cp /build/target/$PROFILE/quantumharmony-node /quantumharmony-node
+
+# =============================================================================
+# STAGE 2: Runtime
+# =============================================================================
+FROM debian:bookworm-slim AS runtime
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -u 1000 -U -s /bin/sh quantumharmony
+
+# Copy binary from builder
+COPY --from=builder /quantumharmony-node /usr/local/bin/
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Create directories
+RUN mkdir -p /data /config && chown -R quantumharmony:quantumharmony /data /config
+
+# Switch to non-root user
+USER quantumharmony
+
+# Environment variables for configuration
+ENV CHAIN_SPEC="/config/chainspec.json"
+ENV BASE_PATH="/data"
+ENV RPC_PORT="9944"
+ENV P2P_PORT="30333"
+ENV PROMETHEUS_PORT="9615"
+ENV NODE_NAME="QuantumHarmony"
+ENV VALIDATOR="false"
+ENV RPC_CORS="all"
+ENV RPC_METHODS="Safe"
+
+# Expose ports
+# 30333: P2P networking
+# 9944:  RPC/WebSocket
+# 9615:  Prometheus metrics
+EXPOSE 30333 9944 9615
+
+# Volume for chain data persistence
+VOLUME ["/data", "/config"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -sf http://localhost:${RPC_PORT}/health || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]

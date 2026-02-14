@@ -25,13 +25,13 @@
 //! let keypair = generate_falcon_keypair_from_qpp(qpp_entropy)?;
 //! ```
 
-use crate::qpp::{
-    QuantumEntropy, EntropySource, NoClone,
-    const_constraints::{ConstrainedKey, AES_256_KEY_SIZE, CHACHA20_KEY_SIZE},
-    sync_async::{SyncOp, AsyncOp, SyncEntropy, AsyncEntropy},
-    triple_ratchet::TripleRatchet,
-};
 use crate::falcon_crypto::{PublicKey as FalconPublic, SecretKey as FalconSecret};
+use crate::qpp::{
+    const_constraints::{ConstrainedKey, AES_256_KEY_SIZE, CHACHA20_KEY_SIZE},
+    sync_async::{AsyncEntropy, AsyncOp, SyncEntropy, SyncOp},
+    triple_ratchet::TripleRatchet,
+    EntropySource, NoClone, QuantumEntropy,
+};
 use sp_core::Pair;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -130,7 +130,12 @@ pub fn generate_falcon_keypair_from_qpp(
     use crate::falcon_crypto::generate_keypair_qpp;
 
     // The falcon_crypto module already has QPP support!
-    generate_keypair_qpp(keystore_entropy, quantum_entropy, hwrng_entropy, validator_id)
+    generate_keypair_qpp(
+        keystore_entropy,
+        quantum_entropy,
+        hwrng_entropy,
+        validator_id,
+    )
 }
 
 /// Wrap an AES-256 key in a ConstrainedKey for compile-time size checking
@@ -212,7 +217,9 @@ impl ValidatorMessaging {
     ///
     /// This provides per-message forward secrecy by ratcheting the symmetric key.
     pub fn encrypt_message(&mut self, plaintext: &[u8]) -> Result<Vec<u8>, String> {
-        let ratchet = self.ratchet.take()
+        let ratchet = self
+            .ratchet
+            .take()
             .ok_or_else(|| "Triple Ratchet not initialized".to_string())?;
 
         let (ciphertext, new_ratchet) = ratchet.encrypt(plaintext);
@@ -223,7 +230,9 @@ impl ValidatorMessaging {
 
     /// Decrypt a message from another validator
     pub fn decrypt_message(&mut self, ciphertext: &[u8]) -> Result<Vec<u8>, String> {
-        let ratchet = self.ratchet.take()
+        let ratchet = self
+            .ratchet
+            .take()
             .ok_or_else(|| "Triple Ratchet not initialized".to_string())?;
 
         let (plaintext, new_ratchet) = ratchet.decrypt(ciphertext);
@@ -234,14 +243,17 @@ impl ValidatorMessaging {
 
     /// Check if rekeying is needed based on message count or time
     pub fn needs_rekey(&self, max_messages: u64, max_age_secs: u64) -> bool {
-        self.ratchet.as_ref()
+        self.ratchet
+            .as_ref()
             .map(|r| r.needs_rekey(max_messages, max_age_secs))
             .unwrap_or(false)
     }
 
     /// Perform rekeying to rotate Merkle ratchet
     pub fn rekey(&mut self) -> Result<(), String> {
-        let ratchet = self.ratchet.take()
+        let ratchet = self
+            .ratchet
+            .take()
             .ok_or_else(|| "Triple Ratchet not initialized".to_string())?;
 
         let ratchet_rekeying = ratchet.begin_rekey();
@@ -338,19 +350,22 @@ mod tests {
         let async_entropy = create_async_entropy(qentropy);
 
         // Async entropy must be awaited
-        async_entropy.async_execute(|e| async move {
-            assert_eq!(e.source, EntropySource::HardwareRNG);
-        }).await;
+        async_entropy
+            .async_execute(|e| async move {
+                assert_eq!(e.source, EntropySource::HardwareRNG);
+            })
+            .await;
     }
 
     #[test]
     fn test_validator_messaging_initialization() {
-        use crate::falcon_crypto::generate_keypair;
+        use crate::falcon_crypto::generate_keypair_sha3;
         let mut messaging = ValidatorMessaging::new();
 
-        // Generate real Falcon keys for testing
+        // Generate real Falcon keys for testing with SHA-3 KDF
         let seed = [0u8; 32];
-        let (public, secret) = generate_keypair(&seed);
+        let validator_id = b"test-validator";
+        let (public, secret) = generate_keypair_sha3(&seed, None, None, validator_id);
 
         let result = messaging.initialize_from_falcon(secret, public);
         assert!(result.is_ok());
@@ -358,11 +373,12 @@ mod tests {
 
     #[test]
     fn test_validator_messaging_encrypt_decrypt() {
-        use crate::falcon_crypto::generate_keypair;
+        use crate::falcon_crypto::generate_keypair_sha3;
         let mut messaging = ValidatorMessaging::new();
 
         let seed = [0u8; 32];
-        let (public, secret) = generate_keypair(&seed);
+        let validator_id = b"test-validator";
+        let (public, secret) = generate_keypair_sha3(&seed, None, None, validator_id);
 
         messaging.initialize_from_falcon(secret, public).unwrap();
 
@@ -382,11 +398,12 @@ mod tests {
 
     #[test]
     fn test_validator_messaging_needs_rekey() {
-        use crate::falcon_crypto::generate_keypair;
+        use crate::falcon_crypto::generate_keypair_sha3;
         let mut messaging = ValidatorMessaging::new();
 
         let seed = [0u8; 32];
-        let (public, secret) = generate_keypair(&seed);
+        let validator_id = b"test-validator";
+        let (public, secret) = generate_keypair_sha3(&seed, None, None, validator_id);
 
         messaging.initialize_from_falcon(secret, public).unwrap();
 

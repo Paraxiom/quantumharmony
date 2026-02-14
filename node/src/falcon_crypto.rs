@@ -14,19 +14,25 @@
 //!
 //! ## Usage
 //! ```ignore
-//! use falcon_crypto::{generate_keypair, sign_message, verify_signature};
+//! use falcon_crypto::{generate_keypair_sha3, sign_message, verify_signature};
 //!
-//! let (pk, sk) = generate_keypair(&seed);
+//! // Use SHA-3 KDF for quantum resistance
+//! let (pk, sk) = generate_keypair_sha3(
+//!     &keystore_entropy,
+//!     Some(&quantum_entropy),
+//!     Some(&hwrng_entropy),
+//!     &validator_id,
+//! );
 //! let signature = sign_message(b"message", &sk);
 //! verify_signature(b"message", &signature, &pk)?;
 //! ```
 
+use crate::qpp::{EntropySource, QuantumEntropy};
+use pallet_proof_of_coherence::types::QuantumState;
 use scale_codec::Encode;
+use sha3::{Digest, Sha3_256};
 use sp_core::H256;
 use std::collections::HashMap;
-use pallet_proof_of_coherence::types::QuantumState;
-use crate::qpp::{QuantumEntropy, EntropySource};
-use sha3::{Sha3_256, Digest};
 
 /// SHA3-256 hash function (quantum-resistant)
 fn sha3_256(data: &[u8]) -> [u8; 32] {
@@ -44,7 +50,9 @@ fn sha3_256(data: &[u8]) -> [u8; 32] {
 use pqcrypto_falcon::falcon1024;
 
 #[cfg(feature = "std")]
-use pqcrypto_traits::sign::{PublicKey as PQPublicKey, SecretKey as PQSecretKey, SignedMessage as PQSignedMessage};
+use pqcrypto_traits::sign::{
+    PublicKey as PQPublicKey, SecretKey as PQSecretKey, SignedMessage as PQSignedMessage,
+};
 
 /// Falcon1024 public key wrapper
 #[derive(Clone)]
@@ -72,10 +80,37 @@ impl std::fmt::Debug for SecretKey {
     }
 }
 
-/// Generate Falcon1024 keypair from seed (LEGACY - Use generate_keypair_sha3 for quantum-resistant KDF)
+/// Generate Falcon1024 keypair from seed (LEGACY - DEPRECATED)
 ///
-/// **Security Note:** This uses a deterministic derivation from the seed.
-/// The seed must be cryptographically random and kept secret.
+/// # ⚠️ DEPRECATED - DO NOT USE IN NEW CODE
+///
+/// **This function uses BLAKE2b-512 KDF which is not quantum-resistant.**
+/// **Use [`generate_keypair_sha3()`] or [`generate_keypair_qpp()`] instead.**
+///
+/// ## Migration Guide
+/// ```ignore
+/// // OLD (BLAKE2b - not quantum-resistant):
+/// let (pk, sk) = generate_keypair(&seed);
+///
+/// // NEW (SHA-3 - quantum-resistant):
+/// let (pk, sk) = generate_keypair_sha3(
+///     &seed,           // keystore entropy
+///     None,            // optional quantum entropy
+///     None,            // optional HWRNG entropy
+///     &validator_id,   // validator identity binding
+/// );
+/// ```
+///
+/// ## Why Deprecated?
+/// - **BLAKE2b is not quantum-resistant** for KDF applications
+/// - **SHA-3 provides quantum resistance** via sponge construction
+/// - **No multi-source entropy mixing** (keystore only)
+/// - **No entropy provenance tracking** (QPP enforcement)
+///
+/// ## Security Impact
+/// While BLAKE2b remains secure against classical attacks, SHA-3's sponge
+/// construction provides better resistance to quantum cryptanalysis for
+/// key derivation functions.
 ///
 /// # Arguments
 /// * `seed` - 32-byte seed for deterministic key generation
@@ -83,11 +118,13 @@ impl std::fmt::Debug for SecretKey {
 /// # Returns
 /// * `(PublicKey, SecretKey)` - Falcon1024 keypair
 ///
-/// # Implementation
-/// Uses BLAKE2b-512 to expand the 32-byte seed to the required entropy for
-/// Falcon1024 key generation. This ensures deterministic key derivation.
-///
-/// **DEPRECATED**: Use `generate_keypair_sha3` for quantum-resistant KDF.
+/// # See Also
+/// - [`generate_keypair_sha3()`] - SHA-3 KDF with multi-source entropy
+/// - [`generate_keypair_qpp()`] - QPP-enforced quantum entropy
+#[deprecated(
+    since = "0.2.0",
+    note = "Use generate_keypair_sha3() or generate_keypair_qpp() for quantum-resistant KDF"
+)]
 #[cfg(feature = "std")]
 pub fn generate_keypair(seed: &[u8; 32]) -> (PublicKey, SecretKey) {
     use sp_core::hashing::blake2_512;
@@ -191,6 +228,10 @@ pub fn generate_keypair_sha3(
     (PublicKey(pk), SecretKey(sk))
 }
 
+#[deprecated(
+    since = "0.2.0",
+    note = "Use generate_keypair_sha3() or generate_keypair_qpp() for quantum-resistant KDF"
+)]
 #[cfg(not(feature = "std"))]
 pub fn generate_keypair(_seed: &[u8; 32]) -> (PublicKey, SecretKey) {
     // No-std placeholder
@@ -392,11 +433,7 @@ pub fn sign_message(message: &[u8], sk: &SecretKey) -> Vec<u8> {
 /// * "Signature verification failed" - Cryptographic verification failed
 /// * "Message mismatch after verification" - Signature valid but message doesn't match
 #[cfg(feature = "std")]
-pub fn verify_signature(
-    message: &[u8],
-    signature: &[u8],
-    pk: &PublicKey,
-) -> Result<(), String> {
+pub fn verify_signature(message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<(), String> {
     // Convert raw bytes to SignedMessage using the trait method
     use pqcrypto_traits::sign::SignedMessage as PQSignedMessageTrait;
     let signed_msg = falcon1024::SignedMessage::from_bytes(signature)
@@ -410,11 +447,7 @@ pub fn verify_signature(
 }
 
 #[cfg(not(feature = "std"))]
-pub fn verify_signature(
-    _message: &[u8],
-    _signature: &[u8],
-    _pk: &PublicKey,
-) -> Result<(), String> {
+pub fn verify_signature(_message: &[u8], _signature: &[u8], _pk: &PublicKey) -> Result<(), String> {
     Err("Falcon1024 verification not available in no_std".to_string())
 }
 
@@ -450,8 +483,10 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn test_falcon_sign_and_verify() {
+        // Use SHA-3 KDF instead of legacy BLAKE2b
         let seed = [0u8; 32];
-        let (pk, sk) = generate_keypair(&seed);
+        let validator_id = b"test-validator";
+        let (pk, sk) = generate_keypair_sha3(&seed, None, None, validator_id);
         let message = b"test vote message";
 
         let signature = sign_message(message, &sk);
@@ -465,8 +500,10 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn test_invalid_signature_rejected() {
+        // Use SHA-3 KDF instead of legacy BLAKE2b
         let seed = [0u8; 32];
-        let (pk, sk) = generate_keypair(&seed);
+        let validator_id = b"test-validator";
+        let (pk, sk) = generate_keypair_sha3(&seed, None, None, validator_id);
         let message = b"test vote message";
         let signature = sign_message(message, &sk);
 
@@ -479,33 +516,38 @@ mod tests {
     #[test]
     #[cfg(feature = "std")]
     fn test_wrong_public_key_rejected() {
+        // Use SHA-3 KDF instead of legacy BLAKE2b
         let seed1 = [0u8; 32];
         let seed2 = [1u8; 32];
-        let (pk1, sk1) = generate_keypair(&seed1);
-        let (pk2, _sk2) = generate_keypair(&seed2);
+        let validator_id = b"test-validator";
+        let (pk1, sk1) = generate_keypair_sha3(&seed1, None, None, validator_id);
+        let (pk2, _sk2) = generate_keypair_sha3(&seed2, None, None, validator_id);
 
         let message = b"test vote message";
         let signature = sign_message(message, &sk1);
 
         // Try to verify with different public key
         let result = verify_signature(message, &signature, &pk2);
-        assert!(result.is_err(), "Signature from wrong key should be rejected");
+        assert!(
+            result.is_err(),
+            "Signature from wrong key should be rejected"
+        );
     }
 
     #[test]
     fn test_vote_encoding() {
         use sp_core::sr25519;
 
-        let validator = sr25519::Public::from_raw([1u8; 64]);  // SPHINCS+ public key is 64 bytes
+        let validator = sr25519::Public::from_raw([1u8; 64]); // SPHINCS+ public key is 64 bytes
         let block_hash = H256::from([2u8; 32]);
         let block_number: u64 = 42;
         let coherence_score: u64 = 95000;
         let quantum_state = QuantumState {
             entropy_pool_hash: H256::from([3u8; 32]),
             reporter_count: 10,
-            min_qber: 400,  // 4.00%
-            max_qber: 500,  // 5.00%
-            average_qber: 450,  // 4.50%
+            min_qber: 400,     // 4.00%
+            max_qber: 500,     // 5.00%
+            average_qber: 450, // 4.50%
             valid_proofs: 10,
             rejected_proofs: 2,
         };
