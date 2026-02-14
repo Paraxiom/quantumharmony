@@ -27,13 +27,13 @@
 //! | Finality Proof | FinalityCertificate |
 //! | Byzantine FT | >2/3 validator agreement |
 
-use scale_codec::{Encode, Decode};
 use futures::prelude::*;
-use log::{debug, info, warn, error};
-use sc_client_api::{Backend, BlockchainEvents, backend::Finalizer};
+use log::{debug, error, info, warn};
+use sc_client_api::{backend::Finalizer, Backend, BlockchainEvents};
 use sc_consensus::JustificationSyncLink;
 use sc_network::service::traits::{NetworkService, NotificationService};
 use sc_transaction_pool_api::TransactionPool;
+use scale_codec::{Decode, Encode};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_consensus_aura::AuraApi;
@@ -42,20 +42,22 @@ use std::{marker::PhantomData, sync::Arc};
 
 use crate::coherence_justification::{CoherenceJustification, COHERENCE_ENGINE_ID};
 
+use frame_support::BoundedVec;
 use pallet_proof_of_coherence::types::{
     CoherenceVote, FinalityCertificate, QuantumState, ValidatorSet, VoteType,
     VoteVerificationResult, MAX_SIGNATURE_SIZE, MAX_VOTES_PER_CERTIFICATE,
 };
-use pallet_quantum_crypto::stark_proof::{QuantumEntropyProof, PublicInputs, ProofVerificationResult};
-use std::collections::HashMap;
-use frame_support::BoundedVec;
-use sp_core::ConstU32;
+use pallet_quantum_crypto::stark_proof::{
+    ProofVerificationResult, PublicInputs, QuantumEntropyProof,
+};
 use priority_queue::PriorityQueue;
+use sp_core::ConstU32;
 use std::cmp::Reverse;
+use std::collections::HashMap;
 
 use crate::threshold_qrng::{
-    DeviceId, DeviceShare, ThresholdConfig, CombinedEntropyTx,
-    reconstruct_entropy, create_reconstruction_proof, verify_reconstruction_proof,
+    create_reconstruction_proof, reconstruct_entropy, verify_reconstruction_proof,
+    CombinedEntropyTx, DeviceId, DeviceShare, ThresholdConfig,
 };
 
 // Post-quantum cryptography for Falcon signatures
@@ -126,7 +128,14 @@ pub struct CoherenceGadget<Block: BlockT, Client, Backend, Pool> {
     /// In-memory vote storage (Phase 2B simplified - no gossip yet)
     /// Maps block_hash -> list of votes
     /// In Phase 3, this will be replaced with gossip protocol
-    votes: Arc<std::sync::Mutex<HashMap<Block::Hash, Vec<CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>>>>>,
+    votes: Arc<
+        std::sync::Mutex<
+            HashMap<
+                Block::Hash,
+                Vec<CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>>,
+            >,
+        >,
+    >,
 
     /// Connected peers for vote broadcasting
     /// Tracks which peers have active notification streams
@@ -135,10 +144,12 @@ pub struct CoherenceGadget<Block: BlockT, Client, Backend, Pool> {
     /// Priority queue for STARK proofs per validator (ValidatorId -> (ID -> Priority))
     /// Priority = Reverse(QBER) so lower QBER = higher priority
     /// Each validator maintains their own queue
-    validator_proof_queues: Arc<std::sync::Mutex<HashMap<sp_core::sr25519::Public, PriorityQueue<u64, Reverse<u32>>>>>,
+    validator_proof_queues:
+        Arc<std::sync::Mutex<HashMap<sp_core::sr25519::Public, PriorityQueue<u64, Reverse<u32>>>>>,
 
     /// STARK proof storage (ID -> Proof)
-    stark_proof_storage: Arc<std::sync::Mutex<HashMap<u64, QuantumEntropyProof<sp_core::sr25519::Public>>>>,
+    stark_proof_storage:
+        Arc<std::sync::Mutex<HashMap<u64, QuantumEntropyProof<sp_core::sr25519::Public>>>>,
 
     /// Next proof ID per validator
     next_proof_id: Arc<std::sync::Mutex<HashMap<sp_core::sr25519::Public, u64>>>,
@@ -146,7 +157,8 @@ pub struct CoherenceGadget<Block: BlockT, Client, Backend, Pool> {
     /// THRESHOLD QRNG: Per-device priority queues (DeviceId -> Queue of shares)
     /// Priority = Reverse(QBER) so lower QBER = higher priority
     /// Devices: Toshiba QRNG, Crypto4A QRNG, KIRQ
-    device_share_queues: Arc<std::sync::Mutex<HashMap<DeviceId, PriorityQueue<DeviceShare, Reverse<u32>>>>>,
+    device_share_queues:
+        Arc<std::sync::Mutex<HashMap<DeviceId, PriorityQueue<DeviceShare, Reverse<u32>>>>>,
 
     /// Threshold QRNG configuration (K=2, M=3)
     threshold_config: Arc<std::sync::Mutex<ThresholdConfig>>,
@@ -164,7 +176,8 @@ pub struct CoherenceGadget<Block: BlockT, Client, Backend, Pool> {
 
     /// Validator Falcon1024 public keys (AccountId -> PublicKey)
     /// Used to verify signatures on received votes
-    validator_keys: Arc<std::sync::Mutex<HashMap<sp_core::sr25519::Public, crate::falcon_crypto::PublicKey>>>,
+    validator_keys:
+        Arc<std::sync::Mutex<HashMap<sp_core::sr25519::Public, crate::falcon_crypto::PublicKey>>>,
 
     /// This validator's Falcon1024 secret key (for signing our votes)
     /// None if this node is not a validator
@@ -181,11 +194,18 @@ pub struct CoherenceGadget<Block: BlockT, Client, Backend, Pool> {
     /// PQ-MonadBFT Phase 1: Leader-collected votes with QBER measurements
     /// Maps block_hash -> Vec<(vote, qber_measurement, qkd_channel_id)>
     /// Only populated when this node is the leader
-    leader_vote_aggregation: Arc<std::sync::Mutex<HashMap<Block::Hash, Vec<(
-        CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
-        u16,  // qber_measurement (basis points)
-        u32,  // qkd_channel_id
-    )>>>>,
+    leader_vote_aggregation: Arc<
+        std::sync::Mutex<
+            HashMap<
+                Block::Hash,
+                Vec<(
+                    CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
+                    u16, // qber_measurement (basis points)
+                    u32, // qkd_channel_id
+                )>,
+            >,
+        >,
+    >,
 
     /// PQ-MonadBFT: Whether to use linear voting (O(n)) or legacy gossip (O(n log n))
     /// Default: true (use linear voting)
@@ -251,8 +271,8 @@ where
 
         // Derive Falcon1024 keypair with quantum-enhanced multi-source entropy
         // This combines: keystore secrets + quantum QRNG + hardware RNG
-        use sp_core::crypto::KeyTypeId;
         use scale_codec::Encode;
+        use sp_core::crypto::KeyTypeId;
 
         let aura_keytype = KeyTypeId(sp_consensus_aura::AURA_ENGINE_ID);
         let keystore_keys = keystore.sphincs_public_keys(aura_keytype);
@@ -266,13 +286,18 @@ where
         use sp_blockchain::HeaderBackend;
         use sp_core::crypto::ByteArray;
         let best_hash = client.info().best_hash;
-        let authorities = client.runtime_api()
+        let authorities = client
+            .runtime_api()
             .authorities(best_hash)
             .unwrap_or_default();
 
         info!("🔍 Found {} runtime authorities", authorities.len());
         for (i, auth) in authorities.iter().enumerate() {
-            info!("   Auth {}: 0x{}...", i, hex::encode(&auth.to_raw_vec()[..8]));
+            info!(
+                "   Auth {}: 0x{}...",
+                i,
+                hex::encode(&auth.to_raw_vec()[..8])
+            );
         }
 
         // Find a keystore key that matches a runtime authority AND can sign
@@ -298,27 +323,46 @@ where
             Some(aura_public_key) => {
                 // We have an AURA key that can sign - derive Falcon key securely
                 let validator_id = sp_core::sr25519::Public::from_raw(aura_public_key.0);
-                info!("🔑 Using AURA key for finality: 0x{}...", hex::encode(&aura_public_key.0[..8]));
+                info!(
+                    "🔑 Using AURA key for finality: 0x{}...",
+                    hex::encode(&aura_public_key.0[..8])
+                );
 
                 // Step 1: Extract secret entropy from keystore via signing (QPP-wrapped)
                 // Signing uses the SECRET key, giving us secret entropy without exposing the key
-                use crate::qpp::{QuantumEntropy, EntropySource};
+                use crate::qpp::{EntropySource, QuantumEntropy};
 
                 let entropy_message = b"falcon1024-keystore-entropy-v2";
-                let keystore_qentropy = match keystore.sphincs_sign(aura_keytype, aura_public_key, entropy_message) {
-                    Ok(Some(signature)) => {
-                        info!("✅ Extracted secret entropy from keystore via SPHINCS+ signature");
-                        QuantumEntropy::new(signature.0.to_vec(), EntropySource::Keystore, None)
-                    }
-                    Ok(None) => {
-                        warn!("⚠️  Keystore has key but couldn't sign, using public key fallback");
-                        QuantumEntropy::new(aura_public_key.0.to_vec(), EntropySource::Keystore, None)
-                    }
-                    Err(e) => {
-                        warn!("⚠️  Keystore signing failed: {:?}, using public key fallback", e);
-                        QuantumEntropy::new(aura_public_key.0.to_vec(), EntropySource::Keystore, None)
-                    }
-                };
+                let keystore_qentropy =
+                    match keystore.sphincs_sign(aura_keytype, aura_public_key, entropy_message) {
+                        Ok(Some(signature)) => {
+                            info!(
+                                "✅ Extracted secret entropy from keystore via SPHINCS+ signature"
+                            );
+                            QuantumEntropy::new(signature.0.to_vec(), EntropySource::Keystore, None)
+                        }
+                        Ok(None) => {
+                            warn!(
+                                "⚠️  Keystore has key but couldn't sign, using public key fallback"
+                            );
+                            QuantumEntropy::new(
+                                aura_public_key.0.to_vec(),
+                                EntropySource::Keystore,
+                                None,
+                            )
+                        }
+                        Err(e) => {
+                            warn!(
+                                "⚠️  Keystore signing failed: {:?}, using public key fallback",
+                                e
+                            );
+                            QuantumEntropy::new(
+                                aura_public_key.0.to_vec(),
+                                EntropySource::Keystore,
+                                None,
+                            )
+                        }
+                    };
 
                 // Step 2: Get quantum entropy from threshold QRNG (if available)
                 // Note: This is synchronous constructor, can't await. Will fetch in background later.
@@ -344,9 +388,9 @@ where
                 // Entropy is consumed (moved), cannot be reused - enforced at compile time
                 // Detailed logging happens inside generate_keypair_qpp()
                 let (pk, sk, _entropy_sources) = crate::falcon_crypto::generate_keypair_qpp(
-                    keystore_qentropy,      // Consumed
-                    quantum_qentropy,       // Consumed
-                    hwrng_qentropy,         // Consumed
+                    keystore_qentropy, // Consumed
+                    quantum_qentropy,  // Consumed
+                    hwrng_qentropy,    // Consumed
                     &validator_id.encode(),
                 );
 
@@ -357,7 +401,7 @@ where
                 warn!("⚠️  No AURA key in keystore, using test key (NOT SECURE FOR PRODUCTION!)");
 
                 // Still use QPP-enforced derivation for testing
-                use crate::qpp::{QuantumEntropy, EntropySource};
+                use crate::qpp::{EntropySource, QuantumEntropy};
                 use rand::RngCore;
 
                 let mut hwrng_bytes = [0u8; 32];
@@ -366,7 +410,8 @@ where
                 let test_entropy = b"falcon1024-test-entropy-insecure".to_vec();
                 let test_id_bytes = [1u8; 32];
 
-                let test_qentropy = QuantumEntropy::new(test_entropy, EntropySource::Keystore, None);
+                let test_qentropy =
+                    QuantumEntropy::new(test_entropy, EntropySource::Keystore, None);
                 let hwrng_qentropy = Some(QuantumEntropy::new(
                     hwrng_bytes.to_vec(),
                     EntropySource::HardwareRNG,
@@ -466,12 +511,17 @@ where
         let last_finalized_number = self.client.info().finalized_number;
 
         // Get target block number
-        let target_header = self.client.header(block_hash)
+        let target_header = self
+            .client
+            .header(block_hash)
             .map_err(|e| format!("Failed to get block header: {:?}", e))?
             .ok_or("Block header not found")?;
         let target_number = *target_header.number();
 
-        info!("🔍 Current finalized: #{}, target: #{}", last_finalized_number, target_number);
+        info!(
+            "🔍 Current finalized: #{}, target: #{}",
+            last_finalized_number, target_number
+        );
 
         // If target is already finalized or older, skip
         if target_number <= last_finalized_number {
@@ -491,33 +541,53 @@ where
                 "⚠️  Finality is {} blocks behind (max catchup: {}). Skipping to avoid timeout.",
                 blocks_behind, MAX_CATCHUP_BLOCKS
             );
-            warn!("   Finality will catch up gradually over next {} election cycles.", blocks_behind / 5 + 1);
+            warn!(
+                "   Finality will catch up gradually over next {} election cycles.",
+                blocks_behind / 5 + 1
+            );
 
             // Encode justification for direct finalization too
             let direct_justification = {
                 let justification = CoherenceJustification::new(certificate.clone());
                 let encoded = justification.encode();
-                info!("📝 Encoded coherence justification for direct finalization: {} bytes", encoded.len());
+                info!(
+                    "📝 Encoded coherence justification for direct finalization: {} bytes",
+                    encoded.len()
+                );
                 Some((COHERENCE_ENGINE_ID, encoded))
             };
 
             // Just finalize the target block directly - Substrate will handle it
             // Some clients support this, others require sequential finalization
-            match self.client.finalize_block(block_hash, direct_justification.clone(), true) {
+            match self
+                .client
+                .finalize_block(block_hash, direct_justification.clone(), true)
+            {
                 Ok(()) => {
-                    info!("✅ Direct finalization of block #{} succeeded!", target_number);
+                    info!(
+                        "✅ Direct finalization of block #{} succeeded!",
+                        target_number
+                    );
                     // Broadcast justification to peers via gossip protocol
                     if let Some((_, encoded)) = direct_justification {
-                        info!("📡 Broadcasting justification for block #{} to peers via gossip", target_number);
-                        if let Err(e) = self.broadcast_justification(block_hash, target_number, encoded) {
+                        info!(
+                            "📡 Broadcasting justification for block #{} to peers via gossip",
+                            target_number
+                        );
+                        if let Err(e) =
+                            self.broadcast_justification(block_hash, target_number, encoded)
+                        {
                             warn!("⚠️  Failed to broadcast justification: {}", e);
                         }
                     }
                     return Ok(());
-                },
+                }
                 Err(e) => {
                     // Direct finalization failed, this is expected for some backends
-                    info!("ℹ️  Direct finalization failed ({}), will retry on next election", e);
+                    info!(
+                        "ℹ️  Direct finalization failed ({}), will retry on next election",
+                        e
+                    );
                     return Ok(()); // Don't error out, just skip this round
                 }
             }
@@ -525,17 +595,25 @@ where
 
         // Finalize all blocks sequentially from last_finalized+1 to target
         // Substrate requires blocks to be finalized in order (no skipping!)
-        info!("🔗 Finalizing {} blocks sequentially from #{} to #{}", blocks_behind, last_finalized_number + 1u32.into(), target_number);
+        info!(
+            "🔗 Finalizing {} blocks sequentially from #{} to #{}",
+            blocks_behind,
+            last_finalized_number + 1u32.into(),
+            target_number
+        );
 
         // OPTIMIZATION: Build block hash map by walking backwards once (O(n) instead of O(n²))
-        let mut block_hashes: std::collections::HashMap<NumberFor<Block>, Block::Hash> = std::collections::HashMap::new();
+        let mut block_hashes: std::collections::HashMap<NumberFor<Block>, Block::Hash> =
+            std::collections::HashMap::new();
         block_hashes.insert(target_number, block_hash);
 
         let mut walk_hash = block_hash;
         let mut walk_number = target_number;
 
         while walk_number > last_finalized_number + 1u32.into() {
-            let header = self.client.header(walk_hash)
+            let header = self
+                .client
+                .header(walk_hash)
                 .map_err(|e| format!("Failed to get header for #{}: {:?}", walk_number, e))?
                 .ok_or_else(|| format!("Header not found for #{}", walk_number))?;
 
@@ -544,7 +622,10 @@ where
             block_hashes.insert(walk_number, walk_hash);
         }
 
-        info!("📋 Built block hash map with {} entries", block_hashes.len());
+        info!(
+            "📋 Built block hash map with {} entries",
+            block_hashes.len()
+        );
 
         let mut current_number = last_finalized_number + 1u32.into();
         let mut finalized_count = 0u32;
@@ -554,12 +635,16 @@ where
         let encoded_justification = {
             let justification = CoherenceJustification::new(certificate.clone());
             let encoded = justification.encode();
-            info!("📝 Encoded coherence justification: {} bytes", encoded.len());
+            info!(
+                "📝 Encoded coherence justification: {} bytes",
+                encoded.len()
+            );
             Some((COHERENCE_ENGINE_ID, encoded))
         };
 
         while current_number <= target_number {
-            let current_hash = *block_hashes.get(&current_number)
+            let current_hash = *block_hashes
+                .get(&current_number)
                 .ok_or_else(|| format!("Block hash not found for #{}", current_number))?;
 
             // For the target block, include the justification so it gets broadcast
@@ -571,16 +656,25 @@ where
             };
 
             // Finalize this block using Client's Finalizer trait
-            match self.client.finalize_block(current_hash, justification_for_block, true) {
+            match self
+                .client
+                .finalize_block(current_hash, justification_for_block, true)
+            {
                 Ok(()) => {
                     finalized_count += 1;
                     if finalized_count % 10 == 0 || current_number == target_number {
-                        info!("🔒 Finalized up to #{} ({}/{})", current_number, finalized_count, blocks_behind);
+                        info!(
+                            "🔒 Finalized up to #{} ({}/{})",
+                            current_number, finalized_count, blocks_behind
+                        );
                     }
-                },
+                }
                 Err(e) => {
                     error!("❌ Failed to finalize block #{}: {:?}", current_number, e);
-                    return Err(format!("Failed to finalize block #{}: {:?}", current_number, e));
+                    return Err(format!(
+                        "Failed to finalize block #{}: {:?}",
+                        current_number, e
+                    ));
                 }
             }
 
@@ -590,13 +684,21 @@ where
         // Broadcast justification to peers via gossip protocol
         // This is what actually sends the justification to full nodes
         if let Some((_, encoded)) = encoded_justification {
-            info!("📡 Broadcasting justification for block #{} to peers via gossip", target_number);
+            info!(
+                "📡 Broadcasting justification for block #{} to peers via gossip",
+                target_number
+            );
             if let Err(e) = self.broadcast_justification(block_hash, target_number, encoded) {
                 warn!("⚠️  Failed to broadcast justification: {}", e);
             }
         }
 
-        info!("✅ Successfully finalized {} blocks (#{} to #{})", finalized_count, last_finalized_number + 1u32.into(), target_number);
+        info!(
+            "✅ Successfully finalized {} blocks (#{} to #{})",
+            finalized_count,
+            last_finalized_number + 1u32.into(),
+            target_number
+        );
         Ok(())
     }
 
@@ -666,7 +768,9 @@ where
                 leader_vote_aggregation_for_receiver,
                 current_leader_for_receiver,
                 our_validator_id_for_receiver,
-            ).await {
+            )
+            .await
+            {
                 error!("Vote receiver task failed: {}", e);
             }
         });
@@ -705,23 +809,39 @@ where
     /// in a separate tokio task without lifetime issues.
     async fn run_vote_receiver_static(
         notification_service: Arc<tokio::sync::Mutex<Box<dyn NotificationService>>>,
-        votes: Arc<std::sync::Mutex<HashMap<Block::Hash, Vec<CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>>>>>,
+        votes: Arc<
+            std::sync::Mutex<
+                HashMap<
+                    Block::Hash,
+                    Vec<CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>>,
+                >,
+            >,
+        >,
         connected_peers: Arc<tokio::sync::Mutex<std::collections::HashSet<sc_network::PeerId>>>,
-        validator_keys: Arc<std::sync::Mutex<HashMap<sp_core::sr25519::Public, crate::falcon_crypto::PublicKey>>>,
+        validator_keys: Arc<
+            std::sync::Mutex<HashMap<sp_core::sr25519::Public, crate::falcon_crypto::PublicKey>>,
+        >,
         client: Arc<Client>,
         // PQ-MonadBFT Phase 1: Leader vote aggregation
-        leader_vote_aggregation: Arc<std::sync::Mutex<HashMap<Block::Hash, Vec<(
-            CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
-            u16,  // qber_measurement
-            u32,  // qkd_channel_id
-        )>>>>,
+        leader_vote_aggregation: Arc<
+            std::sync::Mutex<
+                HashMap<
+                    Block::Hash,
+                    Vec<(
+                        CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
+                        u16, // qber_measurement
+                        u32, // qkd_channel_id
+                    )>,
+                >,
+            >,
+        >,
         current_leader: Arc<std::sync::Mutex<Option<sp_core::sr25519::Public>>>,
         our_validator_id: Option<sp_core::sr25519::Public>,
     ) -> Result<(), String> {
-        use scale_codec::Decode;
         use crate::coherence_gossip::GossipMessage;
         use crate::coherence_justification::{CoherenceJustification, COHERENCE_ENGINE_ID};
         use sc_network::service::traits::NotificationEvent;
+        use scale_codec::Decode;
 
         info!("📡 Vote receiver task starting...");
 
@@ -746,7 +866,11 @@ where
             // Handle the event
             match event {
                 Some(NotificationEvent::NotificationReceived { peer, notification }) => {
-                    debug!("📨 Received message from peer {:?} ({} bytes)", peer, notification.len());
+                    debug!(
+                        "📨 Received message from peer {:?} ({} bytes)",
+                        peer,
+                        notification.len()
+                    );
 
                     // Decode the gossip message
                     let message = match GossipMessage::<Block>::decode(&mut &notification[..]) {
@@ -766,7 +890,8 @@ where
                             );
 
                             // Validate the vote
-                            let keys = validator_keys.lock()
+                            let keys = validator_keys
+                                .lock()
                                 .map_err(|e| format!("Failed to lock validator_keys: {}", e))?;
                             if let Err(e) = Self::validate_vote_static(&vote, &keys) {
                                 warn!("❌ Invalid vote from {:?}: {}", peer, e);
@@ -775,15 +900,19 @@ where
                             drop(keys);
 
                             // Store the vote
-                            let mut votes_map = votes.lock()
+                            let mut votes_map = votes
+                                .lock()
                                 .map_err(|e| format!("Failed to lock votes: {}", e))?;
 
-                            let block_votes = votes_map.entry(vote.block_hash)
-                                .or_insert_with(Vec::new);
+                            let block_votes =
+                                votes_map.entry(vote.block_hash).or_insert_with(Vec::new);
 
                             // Check for duplicate
                             if block_votes.iter().any(|v| v.validator == vote.validator) {
-                                debug!("⚠️  Duplicate vote from validator {:?}, ignoring", vote.validator);
+                                debug!(
+                                    "⚠️  Duplicate vote from validator {:?}, ignoring",
+                                    vote.validator
+                                );
                                 continue;
                             }
 
@@ -793,8 +922,7 @@ where
 
                             info!(
                                 "✅ Vote stored: {} total votes for block {:?}",
-                                vote_count,
-                                vote.block_hash
+                                vote_count, vote.block_hash
                             );
 
                             // Check for supermajority immediately after receiving vote
@@ -809,12 +937,14 @@ where
                                 );
 
                                 // Create justification and finalize
-                                let finalized_number: u32 = client.info().finalized_number.saturated_into();
+                                let finalized_number: u32 =
+                                    client.info().finalized_number.saturated_into();
                                 let block_num: u32 = vote.block_number.saturated_into();
 
                                 if block_num > finalized_number {
                                     // Collect votes for this block
-                                    let votes_for_block: Vec<_> = block_votes.iter().cloned().collect();
+                                    let votes_for_block: Vec<_> =
+                                        block_votes.iter().cloned().collect();
                                     let vote_block_hash = vote.block_hash;
                                     let vote_block_number = vote.block_number;
                                     drop(votes_map); // Release lock before finalization
@@ -822,15 +952,26 @@ where
                                     // Finalize the block
                                     let justification: sp_runtime::Justification = (
                                         *b"COHR",
-                                        format!("Coherence supermajority: {} votes", votes_for_block.len()).into_bytes(),
+                                        format!(
+                                            "Coherence supermajority: {} votes",
+                                            votes_for_block.len()
+                                        )
+                                        .into_bytes(),
                                     );
 
-                                    match client.finalize_block(vote_block_hash, Some(justification.into()), true) {
+                                    match client.finalize_block(
+                                        vote_block_hash,
+                                        Some(justification.into()),
+                                        true,
+                                    ) {
                                         Ok(()) => {
                                             error!("✅🎯 Block #{} FINALIZED via vote receiver supermajority!", block_num);
                                         }
                                         Err(e) => {
-                                            warn!("❌ Failed to finalize block #{}: {:?}", block_num, e);
+                                            warn!(
+                                                "❌ Failed to finalize block #{}: {:?}",
+                                                block_num, e
+                                            );
                                         }
                                     }
                                     continue; // Skip to next message
@@ -839,11 +980,18 @@ where
                         }
 
                         GossipMessage::VoteRequest(block_hash) => {
-                            debug!("📬 Vote request received for block {:?} from {:?}", block_hash, peer);
+                            debug!(
+                                "📬 Vote request received for block {:?} from {:?}",
+                                block_hash, peer
+                            );
                             // Future: Send our votes for this block back to requester
                         }
 
-                        GossipMessage::Justification { block_hash, block_number, encoded_justification } => {
+                        GossipMessage::Justification {
+                            block_hash,
+                            block_number,
+                            encoded_justification,
+                        } => {
                             info!(
                                 "📨 Received justification for block #{} ({:?}) from {:?} ({} bytes)",
                                 block_number, block_hash, peer, encoded_justification.len()
@@ -861,7 +1009,9 @@ where
                                 sp_core::sphincs::Public,
                                 NumberFor<Block>,
                                 Block::Hash,
-                            > = match CoherenceJustification::decode_from_network(&encoded_justification) {
+                            > = match CoherenceJustification::decode_from_network(
+                                &encoded_justification,
+                            ) {
                                 Ok(j) => j,
                                 Err(e) => {
                                     warn!("❌ Failed to decode justification: {:?}", e);
@@ -871,7 +1021,10 @@ where
 
                             // Verify the block exists
                             if client.header(block_hash).ok().flatten().is_none() {
-                                warn!("⚠️  Block {:?} not found, cannot import justification", block_hash);
+                                warn!(
+                                    "⚠️  Block {:?} not found, cannot import justification",
+                                    block_hash
+                                );
                                 continue;
                             }
 
@@ -894,14 +1047,19 @@ where
                             );
 
                             // Finalize the block using the justification
-                            let substrate_justification = (COHERENCE_ENGINE_ID, encoded_justification.clone());
-                            match client.finalize_block(block_hash, Some(substrate_justification), true) {
+                            let substrate_justification =
+                                (COHERENCE_ENGINE_ID, encoded_justification.clone());
+                            match client.finalize_block(
+                                block_hash,
+                                Some(substrate_justification),
+                                true,
+                            ) {
                                 Ok(()) => {
                                     info!(
                                         "🎉 Block #{} finalized via received justification! (coherence score: {})",
                                         block_number, cert.total_coherence_score
                                     );
-                                },
+                                }
                                 Err(e) => {
                                     warn!("❌ Failed to finalize block #{}: {:?}", block_number, e);
                                 }
@@ -909,7 +1067,11 @@ where
                         }
 
                         // PQ-MonadBFT Phase 1: Handle vote sent directly to leader
-                        GossipMessage::VoteToLeader { vote, qber_measurement, qkd_channel_id } => {
+                        GossipMessage::VoteToLeader {
+                            vote,
+                            qber_measurement,
+                            qkd_channel_id,
+                        } => {
                             info!(
                                 "🎯 [LINEAR] Received vote from {:?} for block #{} (QBER: {:.2}%)",
                                 &vote.validator.0[..8],
@@ -918,7 +1080,8 @@ where
                             );
 
                             // Check if we are the current leader
-                            let leader_opt = current_leader.lock()
+                            let leader_opt = current_leader
+                                .lock()
                                 .map_err(|e| format!("Failed to lock current leader: {}", e))?
                                 .clone();
 
@@ -931,7 +1094,8 @@ where
                             }
 
                             // We ARE the leader - validate and store the vote
-                            let keys = validator_keys.lock()
+                            let keys = validator_keys
+                                .lock()
                                 .map_err(|e| format!("Failed to lock validator_keys: {}", e))?;
                             if let Err(e) = Self::validate_vote_static(&vote, &keys) {
                                 warn!("❌ Invalid vote from {:?}: {}", &vote.validator.0[..8], e);
@@ -945,14 +1109,19 @@ where
                             let validator_id = vote.validator.clone();
 
                             let vote_count = {
-                                let mut aggregation = leader_vote_aggregation.lock()
-                                    .map_err(|e| format!("Failed to lock leader vote aggregation: {}", e))?;
+                                let mut aggregation =
+                                    leader_vote_aggregation.lock().map_err(|e| {
+                                        format!("Failed to lock leader vote aggregation: {}", e)
+                                    })?;
 
                                 let votes = aggregation.entry(block_hash).or_insert_with(Vec::new);
 
                                 // Check for duplicate votes from same validator
                                 if votes.iter().any(|(v, _, _)| v.validator == validator_id) {
-                                    debug!("Duplicate vote from validator {:?}, ignoring", &validator_id.0[..8]);
+                                    debug!(
+                                        "Duplicate vote from validator {:?}, ignoring",
+                                        &validator_id.0[..8]
+                                    );
                                     continue;
                                 }
 
@@ -968,7 +1137,8 @@ where
                             );
 
                             // Also store in regular votes map for compatibility
-                            let mut votes_map = votes.lock()
+                            let mut votes_map = votes
+                                .lock()
                                 .map_err(|e| format!("Failed to lock votes: {}", e))?;
                             let block_votes = votes_map.entry(block_hash).or_insert_with(Vec::new);
                             if !block_votes.iter().any(|v| v.validator == validator_id) {
@@ -1014,20 +1184,28 @@ where
                             // Check if we already have this block finalized
                             let finalized_number = client.info().finalized_number;
                             if block_number <= finalized_number {
-                                debug!("⏭️  Block #{} already finalized, ignoring certificate", block_number);
+                                debug!(
+                                    "⏭️  Block #{} already finalized, ignoring certificate",
+                                    block_number
+                                );
                                 continue;
                             }
 
                             // Finalize the block using the certificate
-                            let substrate_justification = (COHERENCE_ENGINE_ID, encoded_certificate.clone());
-                            match client.finalize_block(block_hash, Some(substrate_justification), true) {
+                            let substrate_justification =
+                                (COHERENCE_ENGINE_ID, encoded_certificate.clone());
+                            match client.finalize_block(
+                                block_hash,
+                                Some(substrate_justification),
+                                true,
+                            ) {
                                 Ok(()) => {
                                     info!(
                                         "🎉 [LINEAR] Block #{} finalized via leader certificate! (QBER: {:.2}%)",
                                         block_number,
                                         aggregated_qber as f64 / 100.0
                                     );
-                                },
+                                }
                                 Err(e) => {
                                     warn!("❌ Failed to finalize block #{}: {:?}", block_number, e);
                                 }
@@ -1036,8 +1214,14 @@ where
                     }
                 }
 
-                Some(NotificationEvent::NotificationStreamOpened { peer, handshake, .. }) => {
-                    info!("🤝 Peer {:?} opened notification stream (handshake: {} bytes)", peer, handshake.len());
+                Some(NotificationEvent::NotificationStreamOpened {
+                    peer, handshake, ..
+                }) => {
+                    info!(
+                        "🤝 Peer {:?} opened notification stream (handshake: {} bytes)",
+                        peer,
+                        handshake.len()
+                    );
                     // Add peer to connected set
                     connected_peers.lock().await.insert(peer);
                     info!("✅ Peer {:?} added to connected peers", peer);
@@ -1050,7 +1234,9 @@ where
                     info!("✅ Peer {:?} removed from connected peers", peer);
                 }
 
-                Some(NotificationEvent::ValidateInboundSubstream { peer, result_tx, .. }) => {
+                Some(NotificationEvent::ValidateInboundSubstream {
+                    peer, result_tx, ..
+                }) => {
                     debug!("🔍 Validating inbound substream from {:?}", peer);
                     // Accept all inbound substreams (validators are authenticated via signatures)
                     let _ = result_tx.send(sc_network::service::traits::ValidationResult::Accept);
@@ -1076,12 +1262,18 @@ where
         // Score formula: Σ(1000 / (1 + QBER_i)) per proof, so max ~1000 per proof
         // With up to 20 proofs and excellent QBER, max would be ~20000
         if vote.coherence_score > 20000 {
-            return Err(format!("Coherence score {} exceeds maximum", vote.coherence_score));
+            return Err(format!(
+                "Coherence score {} exceeds maximum",
+                vote.coherence_score
+            ));
         }
 
         // 2. Check QBER is reasonable
         if vote.quantum_state.average_qber > 1100 {
-            return Err(format!("QBER {} exceeds 11% threshold", vote.quantum_state.average_qber));
+            return Err(format!(
+                "QBER {} exceeds 11% threshold",
+                vote.quantum_state.average_qber
+            ));
         }
 
         // 3. Check signature exists
@@ -1104,7 +1296,10 @@ where
             );
 
             crate::falcon_crypto::verify_signature(&message, &vote.signature, public_key)?;
-            debug!("✅ Vote validation passed for validator {:?} (Falcon1024 verified)", vote.validator);
+            debug!(
+                "✅ Vote validation passed for validator {:?} (Falcon1024 verified)",
+                vote.validator
+            );
         } else {
             // Remote validator - accept vote without Falcon verification
             // Their identity is authenticated by the session pallet authorities
@@ -1132,7 +1327,10 @@ where
 
         // PQ-MonadBFT Phase 3: Track pipeline state - block enters PROPOSE phase
         if let Err(e) = self.set_pipeline_phase(block_hash, PipelinePhase::Propose) {
-            warn!("⚠️  Failed to set PROPOSE phase for block #{}: {}", block_number, e);
+            warn!(
+                "⚠️  Failed to set PROPOSE phase for block #{}: {}",
+                block_number, e
+            );
         }
 
         // MEMPOOL GROOMING: Check pool status and groom ASAP if needed
@@ -1173,7 +1371,11 @@ where
 
         // Calculate coherence score - leader uses proofs, non-leader uses default
         let (coherence_score, quantum_state) = if is_leader && !proofs.is_empty() {
-            info!("👑 Leader collected {} STARK proofs from validators for block #{}", proofs.len(), block_number);
+            info!(
+                "👑 Leader collected {} STARK proofs from validators for block #{}",
+                proofs.len(),
+                block_number
+            );
 
             // THRESHOLD QRNG: Collect device entropy (real or mock)
             if self.pqtg_client.is_some() {
@@ -1190,10 +1392,13 @@ where
                         "🎲 Leader reconstructed combined entropy from {} device shares",
                         entropy_tx.device_shares.len()
                     );
-                    if let Err(e) = self.demonstrate_entropy_encryption(&entropy_tx, block_number.saturated_into()).await {
+                    if let Err(e) = self
+                        .demonstrate_entropy_encryption(&entropy_tx, block_number.saturated_into())
+                        .await
+                    {
                         warn!("⚠️  Entropy encryption demo skipped: {}", e);
                     }
-                },
+                }
                 Ok(None) => debug!("⏭️  Insufficient device shares"),
                 Err(e) => warn!("⚠️  Failed to collect device shares: {}", e),
             }
@@ -1250,12 +1455,18 @@ where
 
         // PQ-MonadBFT Phase 3: Track pipeline state - block enters VOTE phase
         if let Err(e) = self.set_pipeline_phase(block_hash, PipelinePhase::Vote) {
-            warn!("⚠️  Failed to set VOTE phase for block #{}: {}", block_number, e);
+            warn!(
+                "⚠️  Failed to set VOTE phase for block #{}: {}",
+                block_number, e
+            );
         }
 
         // PHASE 7: Wait for votes and check for supermajority on ANY recent block
         // P2P votes may arrive for different blocks due to timing, so check all
-        error!("🔴 PHASE 7: Starting supermajority check for block #{}", block_number);
+        error!(
+            "🔴 PHASE 7: Starting supermajority check for block #{}",
+            block_number
+        );
         let mut best_block_with_sm: Option<(Block::Hash, NumberFor<Block>, u32)> = None;
         let mut total_validators = 0u32;
 
@@ -1263,7 +1474,10 @@ where
             // Check ALL blocks in the votes map for supermajority
             // Use block scope to ensure MutexGuard is dropped before await
             let found_sm = {
-                let votes_map = self.votes.lock().map_err(|e| format!("Failed to lock votes: {}", e))?;
+                let votes_map = self
+                    .votes
+                    .lock()
+                    .map_err(|e| format!("Failed to lock votes: {}", e))?;
                 total_validators = match self.get_current_validators() {
                     Ok(v) => v.len() as u32,
                     Err(_) => 3,
@@ -1271,8 +1485,13 @@ where
                 let threshold = ((total_validators * 2) + 2) / 3;
 
                 // Debug: log the votes map contents
-                error!("🔴 Supermajority check attempt {}: {} blocks in votes map, threshold {}/{}",
-                      attempt + 1, votes_map.len(), threshold, total_validators);
+                error!(
+                    "🔴 Supermajority check attempt {}: {} blocks in votes map, threshold {}/{}",
+                    attempt + 1,
+                    votes_map.len(),
+                    threshold,
+                    total_validators
+                );
                 for (hash, block_votes) in votes_map.iter() {
                     if let Some(first_vote) = block_votes.first() {
                         let num: u64 = first_vote.block_number.saturated_into();
@@ -1281,7 +1500,8 @@ where
                 }
 
                 for (hash, block_votes) in votes_map.iter() {
-                    let valid_count = block_votes.iter()
+                    let valid_count = block_votes
+                        .iter()
                         .filter(|v| self.is_valid_validator(&v.validator))
                         .count() as u32;
 
@@ -1289,10 +1509,19 @@ where
                         // Get block number from first vote
                         if let Some(vote) = block_votes.first() {
                             let num: u64 = vote.block_number.saturated_into();
-                            info!("📊 Found supermajority for block #{}: {}/{} votes", num, valid_count, total_validators);
+                            info!(
+                                "📊 Found supermajority for block #{}: {}/{} votes",
+                                num, valid_count, total_validators
+                            );
                             // Keep the highest block with supermajority
-                            if best_block_with_sm.is_none() ||
-                               vote.block_number.saturated_into::<u64>() > best_block_with_sm.as_ref().unwrap().1.saturated_into::<u64>() {
+                            if best_block_with_sm.is_none()
+                                || vote.block_number.saturated_into::<u64>()
+                                    > best_block_with_sm
+                                        .as_ref()
+                                        .unwrap()
+                                        .1
+                                        .saturated_into::<u64>()
+                            {
                                 best_block_with_sm = Some((*hash, vote.block_number, valid_count));
                             }
                         }
@@ -1339,11 +1568,9 @@ where
             // PQ-MonadBFT Phase 2: Leader broadcasts certificate to all validators
             // This allows validators to finalize even if they didn't receive all votes directly
             if self.use_linear_voting && is_leader {
-                if let Err(e) = self.broadcast_finality_certificate(
-                    block_hash,
-                    block_number,
-                    &certificate,
-                ) {
+                if let Err(e) =
+                    self.broadcast_finality_certificate(block_hash, block_number, &certificate)
+                {
                     warn!("⚠️  Failed to broadcast finality certificate: {}", e);
                 }
             }
@@ -1353,7 +1580,9 @@ where
             let aggregated_qber = certificate.consensus_quantum_state.average_qber as u16;
 
             // Get parent's certificate for tail-fork protection
-            let parent_hash = self.client.header(block_hash)
+            let parent_hash = self
+                .client
+                .header(block_hash)
                 .ok()
                 .flatten()
                 .map(|h| *h.parent_hash());
@@ -1369,17 +1598,26 @@ where
             }
 
             // PHASE 9: Finalize block via client (not transaction pool!)
-            info!("🔮 Finalizing block #{} via quantum coherence consensus", block_number);
+            info!(
+                "🔮 Finalizing block #{} via quantum coherence consensus",
+                block_number
+            );
             info!("   Block: {:?}", block_hash);
-            info!("   Validators: {}/{}", certificate.validator_count, total_validators);
+            info!(
+                "   Validators: {}/{}",
+                certificate.validator_count, total_validators
+            );
             info!("   Coherence Score: {}", certificate.total_coherence_score);
 
             // Phase 6A: Finalize via client backend (off-chain finality)
             // This is the correct approach - like GRANDPA, not transaction pool
-            match self.finalize_block_in_client(block_hash, certificate.clone()).await {
+            match self
+                .finalize_block_in_client(block_hash, certificate.clone())
+                .await
+            {
                 Ok(()) => {
                     info!("✅ Block #{} finalized successfully!", block_number);
-                },
+                }
                 Err(e) => {
                     error!("❌ Failed to finalize block #{}: {}", block_number, e);
                 }
@@ -1389,22 +1627,32 @@ where
             // Check if this is a checkpoint block
             let block_num: u64 = block_number.saturated_into();
             if block_num % 3 == 0 {
-                info!("📌 Checkpoint block #{} - storing certificate on-chain", block_num);
+                info!(
+                    "📌 Checkpoint block #{} - storing certificate on-chain",
+                    block_num
+                );
 
                 // Submit checkpoint certificate to on-chain storage
-                match self.submit_checkpoint_certificate(block_hash, certificate.clone()).await {
+                match self
+                    .submit_checkpoint_certificate(block_hash, certificate.clone())
+                    .await
+                {
                     Ok(()) => {
-                        info!("✅ Checkpoint certificate submitted for block #{}", block_num);
-                    },
+                        info!(
+                            "✅ Checkpoint certificate submitted for block #{}",
+                            block_num
+                        );
+                    }
                     Err(e) => {
-                        error!("❌ Failed to submit checkpoint certificate for block #{}: {}", block_num, e);
+                        error!(
+                            "❌ Failed to submit checkpoint certificate for block #{}: {}",
+                            block_num, e
+                        );
                     }
                 }
             }
         } else {
-            debug!(
-                "No supermajority found for any block in votes map after 10 attempts"
-            );
+            debug!("No supermajority found for any block in votes map after 10 attempts");
         }
 
         // PQ-MonadBFT Phase 3: Process deferred executions
@@ -1429,7 +1677,6 @@ where
         Ok(())
     }
 
-
     /// Generate a mock quantum entropy proof for testing
     ///
     /// This creates a proof with empty STARK bytes for fast testing.
@@ -1441,7 +1688,10 @@ where
     }
 
     /// Generate a mock proof with specific QBER value
-    fn generate_mock_proof_with_qber(&self, qber: u32) -> Result<QuantumEntropyProof<sp_core::sr25519::Public>, String> {
+    fn generate_mock_proof_with_qber(
+        &self,
+        qber: u32,
+    ) -> Result<QuantumEntropyProof<sp_core::sr25519::Public>, String> {
         use sp_core::sr25519::Public;
         use sp_core::H256;
 
@@ -1529,12 +1779,16 @@ where
         if proof.stark_proof.len() < 100 {
             // Mock proof detected (too small to be real STARK proof)
             debug!("✅ Mock STARK proof accepted (verification skipped for performance)");
-            debug!("   QBER: {}%, Samples: {}", proof.public_inputs.qber as f64 / 100.0, proof.public_inputs.sample_count);
+            debug!(
+                "   QBER: {}%, Samples: {}",
+                proof.public_inputs.qber as f64 / 100.0,
+                proof.public_inputs.sample_count
+            );
             return ProofVerificationResult::Valid;
         }
 
         // Real STARK proof verification (for production use)
-        use pallet_quantum_crypto::qber_stark::{QberStark, QberProof, QberPublicInputs};
+        use pallet_quantum_crypto::qber_stark::{QberProof, QberPublicInputs, QberStark};
 
         // Convert proof types
         let qber_pub_inputs = QberPublicInputs {
@@ -1622,7 +1876,7 @@ where
             rejected_proofs: 0, // We already filtered invalid ones
             average_qber,
             entropy_pool_hash: Default::default(), // NOTE: Entropy pool hash aggregation deferred to Phase 2 on-chain verification
-            reporter_count: proofs.len() as u32,  // NOTE: Unique reporter counting requires validator identity deduplication
+            reporter_count: proofs.len() as u32, // NOTE: Unique reporter counting requires validator identity deduplication
             min_qber,
             max_qber,
         };
@@ -1638,16 +1892,15 @@ where
         coherence_score: u64,
         quantum_state: QuantumState,
         vote_type: VoteType,
-    ) -> Result<CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>, String> {
+    ) -> Result<CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>, String>
+    {
         // Get our validator ID (or use default if not a validator)
         // Use same key format as get_current_validators: bytes[0] = validator_index, rest = 0
-        let validator = self.our_validator_id
-            .clone()
-            .unwrap_or_else(|| {
-                let mut bytes = [0u8; 64];
-                bytes[0] = 1; // First validator index
-                sp_core::sr25519::Public::from_raw(bytes)
-            });
+        let validator = self.our_validator_id.clone().unwrap_or_else(|| {
+            let mut bytes = [0u8; 64];
+            bytes[0] = 1; // First validator index
+            sp_core::sr25519::Public::from_raw(bytes)
+        });
 
         // Encode the vote data for signing
         let message = crate::falcon_crypto::encode_vote_for_signing(
@@ -1688,7 +1941,10 @@ where
         block_hash: Block::Hash,
         vote: CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
     ) -> Result<(), String> {
-        let mut votes = self.votes.lock().map_err(|e| format!("Failed to lock votes: {}", e))?;
+        let mut votes = self
+            .votes
+            .lock()
+            .map_err(|e| format!("Failed to lock votes: {}", e))?;
         votes.entry(block_hash).or_insert_with(Vec::new).push(vote);
         Ok(())
     }
@@ -1731,7 +1987,8 @@ where
 
         // Get current leader
         let leader_opt = {
-            self.current_leader.lock()
+            self.current_leader
+                .lock()
                 .map_err(|e| format!("Failed to lock current leader: {}", e))?
                 .clone()
         };
@@ -1763,7 +2020,9 @@ where
             );
 
             let block_hash = vote.block_hash;
-            let mut aggregation = self.leader_vote_aggregation.lock()
+            let mut aggregation = self
+                .leader_vote_aggregation
+                .lock()
                 .map_err(|e| format!("Failed to lock leader vote aggregation: {}", e))?;
 
             aggregation
@@ -1799,9 +2058,8 @@ where
         // For now, broadcast to all peers but the message is marked for leader
         // In production, we'd maintain a validator_id -> peer_id mapping
         let peers: Vec<_> = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self.connected_peers.lock().await.iter().cloned().collect()
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self.connected_peers.lock().await.iter().cloned().collect() })
         });
 
         if peers.is_empty() {
@@ -1812,9 +2070,8 @@ where
         // Lock notification service and send to peers
         // Note: In production, send only to the leader's peer ID
         let mut service = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self._notification_service.lock().await
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self._notification_service.lock().await })
         });
 
         // Send to all peers - they will forward to leader if not leader themselves
@@ -1854,9 +2111,8 @@ where
         let peers: Vec<_> = {
             // Use tokio's block_in_place to call async from sync context
             tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(async {
-                    self.connected_peers.lock().await.iter().cloned().collect()
-                })
+                tokio::runtime::Handle::current()
+                    .block_on(async { self.connected_peers.lock().await.iter().cloned().collect() })
             })
         };
 
@@ -1869,9 +2125,8 @@ where
 
         // Lock notification service and broadcast to all peers
         let mut service = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self._notification_service.lock().await
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self._notification_service.lock().await })
         });
 
         // Broadcast to all connected peers
@@ -1888,7 +2143,10 @@ where
             vote.quantum_state.average_qber as f64 / 100.0
         );
 
-        debug!("broadcast_vote_gossip returning Ok(()) for block #{}", vote.block_number);
+        debug!(
+            "broadcast_vote_gossip returning Ok(()) for block #{}",
+            vote.block_number
+        );
         Ok(())
     }
 
@@ -1901,36 +2159,41 @@ where
         &self,
         block_hash: Block::Hash,
         block_number: NumberFor<Block>,
-        certificate: &FinalityCertificate<
-            sp_core::sphincs::Public,
-            NumberFor<Block>,
-            Block::Hash,
-        >,
+        certificate: &FinalityCertificate<sp_core::sphincs::Public, NumberFor<Block>, Block::Hash>,
     ) -> Result<(), String> {
         use crate::coherence_gossip::GossipMessage;
 
         // Calculate aggregated QBER from leader's vote collection
         let (aggregated_qber, healthy_channels, validator_count) = {
-            let aggregation = self.leader_vote_aggregation.lock()
+            let aggregation = self
+                .leader_vote_aggregation
+                .lock()
                 .map_err(|e| format!("Failed to lock leader vote aggregation: {}", e))?;
 
             match aggregation.get(&block_hash) {
                 Some(votes) => {
                     let count = votes.len() as u32;
                     if count == 0 {
-                        (certificate.consensus_quantum_state.average_qber as u16, 0u32, certificate.validator_count)
+                        (
+                            certificate.consensus_quantum_state.average_qber as u16,
+                            0u32,
+                            certificate.validator_count,
+                        )
                     } else {
                         let total_qber: u32 = votes.iter().map(|(_, qber, _)| *qber as u32).sum();
                         let avg = (total_qber / count) as u16;
-                        let healthy = votes.iter().filter(|(_, qber, _)| *qber < 1100).count() as u32;
+                        let healthy =
+                            votes.iter().filter(|(_, qber, _)| *qber < 1100).count() as u32;
                         (avg, healthy, count)
                     }
                 }
                 None => {
                     // Fallback to certificate values
-                    (certificate.consensus_quantum_state.average_qber as u16,
-                     certificate.validator_count,
-                     certificate.validator_count)
+                    (
+                        certificate.consensus_quantum_state.average_qber as u16,
+                        certificate.validator_count,
+                        certificate.validator_count,
+                    )
                 }
             }
         };
@@ -1960,9 +2223,8 @@ where
 
         // Get connected peers
         let peers: Vec<_> = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self.connected_peers.lock().await.iter().cloned().collect()
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self.connected_peers.lock().await.iter().cloned().collect() })
         });
 
         if peers.is_empty() {
@@ -1972,9 +2234,8 @@ where
 
         // Broadcast to all peers
         let mut service = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self._notification_service.lock().await
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self._notification_service.lock().await })
         });
 
         for peer in &peers {
@@ -1989,7 +2250,9 @@ where
 
         // Clear the leader's vote aggregation for this block
         {
-            let mut aggregation = self.leader_vote_aggregation.lock()
+            let mut aggregation = self
+                .leader_vote_aggregation
+                .lock()
                 .map_err(|e| format!("Failed to lock leader vote aggregation: {}", e))?;
             aggregation.remove(&block_hash);
         }
@@ -2009,7 +2272,8 @@ where
     ) -> Result<(), String> {
         // Verify we are the current leader
         let leader_opt = {
-            self.current_leader.lock()
+            self.current_leader
+                .lock()
                 .map_err(|e| format!("Failed to lock current leader: {}", e))?
                 .clone()
         };
@@ -2024,7 +2288,10 @@ where
 
         // Validate the vote signature
         if !self.verify_vote_signature(&vote)? {
-            warn!("❌ Invalid vote signature from validator {:?}", &vote.validator.0[..8]);
+            warn!(
+                "❌ Invalid vote signature from validator {:?}",
+                &vote.validator.0[..8]
+            );
             return Err("Invalid vote signature".to_string());
         }
 
@@ -2034,14 +2301,19 @@ where
         let validator = vote.validator.clone();
 
         let vote_count = {
-            let mut aggregation = self.leader_vote_aggregation.lock()
+            let mut aggregation = self
+                .leader_vote_aggregation
+                .lock()
                 .map_err(|e| format!("Failed to lock leader vote aggregation: {}", e))?;
 
             let votes = aggregation.entry(block_hash).or_insert_with(Vec::new);
 
             // Check for duplicate votes from same validator
             if votes.iter().any(|(v, _, _)| v.validator == validator) {
-                debug!("Duplicate vote from validator {:?}, ignoring", &validator.0[..8]);
+                debug!(
+                    "Duplicate vote from validator {:?}, ignoring",
+                    &validator.0[..8]
+                );
                 return Ok(());
             }
 
@@ -2073,7 +2345,9 @@ where
         };
         let threshold = ((total_validators * 2) + 2) / 3;
 
-        let aggregation = self.leader_vote_aggregation.lock()
+        let aggregation = self
+            .leader_vote_aggregation
+            .lock()
             .map_err(|e| format!("Failed to lock leader vote aggregation: {}", e))?;
 
         let votes = match aggregation.get(&block_hash) {
@@ -2092,15 +2366,15 @@ where
         let avg_qber = (total_qber / vote_count) as u16;
 
         // Count healthy channels (QBER < 11% = 1100 basis points)
-        let healthy_channels = votes.iter()
-            .filter(|(_, qber, _)| *qber < 1100)
-            .count() as u32;
+        let healthy_channels = votes.iter().filter(|(_, qber, _)| *qber < 1100).count() as u32;
 
         info!(
             "✅ Leader has supermajority for block: {}/{} votes, avg QBER: {:.2}%, healthy: {}/{}",
-            vote_count, total_validators,
+            vote_count,
+            total_validators,
             avg_qber as f64 / 100.0,
-            healthy_channels, vote_count
+            healthy_channels,
+            vote_count
         );
 
         Ok(Some((avg_qber, healthy_channels, vote_count)))
@@ -2112,14 +2386,19 @@ where
         vote: &CoherenceVote<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>,
     ) -> Result<bool, String> {
         // Get validator's Falcon public key
-        let validator_keys = self.validator_keys.lock()
+        let validator_keys = self
+            .validator_keys
+            .lock()
             .map_err(|e| format!("Failed to lock validator keys: {}", e))?;
 
         let public_key = match validator_keys.get(&vote.validator) {
             Some(pk) => pk.clone(),
             None => {
                 // Unknown validator - in production, would fetch from runtime
-                warn!("Unknown validator {:?}, accepting vote for now", &vote.validator.0[..8]);
+                warn!(
+                    "Unknown validator {:?}, accepting vote for now",
+                    &vote.validator.0[..8]
+                );
                 return Ok(true);
             }
         };
@@ -2164,7 +2443,9 @@ where
         block_hash: Block::Hash,
         phase: PipelinePhase,
     ) -> Result<(), String> {
-        let mut pipeline = self.pipeline_state.lock()
+        let mut pipeline = self
+            .pipeline_state
+            .lock()
             .map_err(|e| format!("Failed to lock pipeline state: {}", e))?;
 
         let old_phase = pipeline.get(&block_hash).copied();
@@ -2173,12 +2454,15 @@ where
         if let Some(old) = old_phase {
             debug!(
                 "📊 Pipeline: Block {:?} phase {:?} → {:?}",
-                &block_hash.as_ref()[0..4], old, phase
+                &block_hash.as_ref()[0..4],
+                old,
+                phase
             );
         } else {
             debug!(
                 "📊 Pipeline: Block {:?} entering phase {:?}",
-                &block_hash.as_ref()[0..4], phase
+                &block_hash.as_ref()[0..4],
+                phase
             );
         }
 
@@ -2187,7 +2471,9 @@ where
 
     /// Get the current pipeline phase for a block
     fn get_pipeline_phase(&self, block_hash: &Block::Hash) -> Option<PipelinePhase> {
-        self.pipeline_state.lock().ok()
+        self.pipeline_state
+            .lock()
+            .ok()
             .and_then(|p| p.get(block_hash).copied())
     }
 
@@ -2201,13 +2487,17 @@ where
         block_number: NumberFor<Block>,
         encoded_certificate: Vec<u8>,
     ) -> Result<(), String> {
-        let mut cache = self.certificate_cache.lock()
+        let mut cache = self
+            .certificate_cache
+            .lock()
             .map_err(|e| format!("Failed to lock certificate cache: {}", e))?;
 
         cache.insert(block_hash, encoded_certificate);
 
         // Update last certified block
-        let mut last_certified = self.last_certified_block.lock()
+        let mut last_certified = self
+            .last_certified_block
+            .lock()
             .map_err(|e| format!("Failed to lock last certified block: {}", e))?;
         *last_certified = Some((block_hash, block_number));
 
@@ -2231,7 +2521,9 @@ where
 
     /// Get cached certificate for a block (for tail-fork protection)
     fn get_cached_certificate(&self, block_hash: &Block::Hash) -> Option<Vec<u8>> {
-        self.certificate_cache.lock().ok()
+        self.certificate_cache
+            .lock()
+            .ok()
             .and_then(|c| c.get(block_hash).cloned())
     }
 
@@ -2245,7 +2537,9 @@ where
         parent_certificate: Option<&[u8]>,
     ) -> Result<bool, String> {
         // Get the last certified block
-        let last_certified = self.last_certified_block.lock()
+        let last_certified = self
+            .last_certified_block
+            .lock()
             .map_err(|e| format!("Failed to lock last certified block: {}", e))?
             .clone();
 
@@ -2314,7 +2608,9 @@ where
             aggregated_qber,
         };
 
-        let mut queue = self.deferred_execution_queue.lock()
+        let mut queue = self
+            .deferred_execution_queue
+            .lock()
             .map_err(|e| format!("Failed to lock deferred execution queue: {}", e))?;
 
         queue.push(deferred);
@@ -2338,7 +2634,9 @@ where
     /// State root is committed in the NEXT block (deferred commitment).
     async fn process_deferred_executions(&self) -> Result<usize, String> {
         let blocks_to_execute: Vec<DeferredBlock<Block>> = {
-            let mut queue = self.deferred_execution_queue.lock()
+            let mut queue = self
+                .deferred_execution_queue
+                .lock()
                 .map_err(|e| format!("Failed to lock deferred execution queue: {}", e))?;
 
             // Take all blocks from queue
@@ -2386,7 +2684,9 @@ where
 
     /// Get current pipeline status (for debugging/monitoring)
     fn get_pipeline_status(&self) -> Result<Vec<(Block::Hash, PipelinePhase)>, String> {
-        let pipeline = self.pipeline_state.lock()
+        let pipeline = self
+            .pipeline_state
+            .lock()
             .map_err(|e| format!("Failed to lock pipeline state: {}", e))?;
 
         Ok(pipeline.iter().map(|(h, p)| (*h, *p)).collect())
@@ -2394,7 +2694,9 @@ where
 
     /// Clean up old pipeline entries (keep last 50 blocks)
     fn cleanup_pipeline(&self) -> Result<usize, String> {
-        let mut pipeline = self.pipeline_state.lock()
+        let mut pipeline = self
+            .pipeline_state
+            .lock()
             .map_err(|e| format!("Failed to lock pipeline state: {}", e))?;
 
         let before = pipeline.len();
@@ -2448,9 +2750,8 @@ where
         // Get connected peers from our tracking set
         let peers: Vec<_> = {
             tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(async {
-                    self.connected_peers.lock().await.iter().cloned().collect()
-                })
+                tokio::runtime::Handle::current()
+                    .block_on(async { self.connected_peers.lock().await.iter().cloned().collect() })
             })
         };
 
@@ -2459,13 +2760,15 @@ where
             return Ok(());
         }
 
-        info!("📡 Broadcasting justification to {} connected peers", peers.len());
+        info!(
+            "📡 Broadcasting justification to {} connected peers",
+            peers.len()
+        );
 
         // Lock notification service and broadcast to all peers
         let mut service = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                self._notification_service.lock().await
-            })
+            tokio::runtime::Handle::current()
+                .block_on(async { self._notification_service.lock().await })
         });
 
         // Broadcast to all connected peers
@@ -2507,7 +2810,10 @@ where
             };
             self.store_vote(block_hash, vote)?;
         }
-        debug!("Simulated 2 additional validator votes for block #{}", block_number);
+        debug!(
+            "Simulated 2 additional validator votes for block #{}",
+            block_number
+        );
         Ok(())
     }
 
@@ -2515,10 +2821,7 @@ where
     ///
     /// Checks if a public key belongs to the active validator set.
     /// Phase 7: Queries runtime Session pallet for current validators
-    fn is_valid_validator(
-        &self,
-        validator: &sp_core::sr25519::Public,
-    ) -> bool {
+    fn is_valid_validator(&self, validator: &sp_core::sr25519::Public) -> bool {
         // Query validators from runtime
         match self.get_current_validators() {
             Ok(validators) => {
@@ -2578,7 +2881,10 @@ where
             .authorities(best_hash)
             .map_err(|e| format!("Failed to query Aura authorities: {:?}", e))?;
 
-        info!("📋 Queried {} validators (Aura authorities) from runtime", authorities.len());
+        info!(
+            "📋 Queried {} validators (Aura authorities) from runtime",
+            authorities.len()
+        );
 
         // Convert AuraId (SPHINCS+ 128 bytes) to sr25519::Public (64 bytes)
         // Use the actual authority public key bytes, not synthetic keys
@@ -2597,7 +2903,10 @@ where
             })
             .collect();
 
-        debug!("✅ Converted {} authorities to sr25519 public keys", validators.len());
+        debug!(
+            "✅ Converted {} authorities to sr25519 public keys",
+            validators.len()
+        );
         Ok(validators)
     }
 
@@ -2608,15 +2917,20 @@ where
     /// - Supermajority = ceil(n * 2/3) votes required
     ///
     /// Returns (has_supermajority, vote_count, total_validators)
-    fn check_supermajority(
-        &self,
-        block_hash: Block::Hash,
-    ) -> Result<(bool, u32, u32), String> {
-        let votes = self.votes.lock().map_err(|e| format!("Failed to lock votes: {}", e))?;
+    fn check_supermajority(&self, block_hash: Block::Hash) -> Result<(bool, u32, u32), String> {
+        let votes = self
+            .votes
+            .lock()
+            .map_err(|e| format!("Failed to lock votes: {}", e))?;
 
         // Filter votes to only count those from valid validators
-        let valid_votes: Vec<_> = votes.get(&block_hash)
-            .map(|v| v.iter().filter(|vote| self.is_valid_validator(&vote.validator)).collect())
+        let valid_votes: Vec<_> = votes
+            .get(&block_hash)
+            .map(|v| {
+                v.iter()
+                    .filter(|vote| self.is_valid_validator(&vote.validator))
+                    .collect()
+            })
             .unwrap_or_else(Vec::new);
 
         let vote_count = valid_votes.len() as u32;
@@ -2625,7 +2939,10 @@ where
         let total_validators = match self.get_current_validators() {
             Ok(validators) => validators.len() as u32,
             Err(e) => {
-                warn!("Failed to query validator count: {}, using fallback value of 3", e);
+                warn!(
+                    "Failed to query validator count: {}, using fallback value of 3",
+                    e
+                );
                 3u32 // Fallback to test validator count
             }
         };
@@ -2640,7 +2957,10 @@ where
         // allow finality with just the leader's vote. This enables testing the
         // finalization flow while P2P gossip is being fixed.
         let threshold = if total_validators <= 2 {
-            info!("⚠️  TEST MODE: Using reduced threshold (1) for {} validators", total_validators);
+            info!(
+                "⚠️  TEST MODE: Using reduced threshold (1) for {} validators",
+                total_validators
+            );
             1u32 // Allow finality with just leader's vote for testing
         } else {
             ((total_validators * 2) + 2) / 3 // Normal ceiling division
@@ -2662,8 +2982,12 @@ where
         &self,
         block_hash: Block::Hash,
         block_number: NumberFor<Block>,
-    ) -> Result<FinalityCertificate<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>, String> {
-        let votes = self.votes.lock().map_err(|e| format!("Failed to lock votes: {}", e))?;
+    ) -> Result<FinalityCertificate<sp_core::sr25519::Public, NumberFor<Block>, Block::Hash>, String>
+    {
+        let votes = self
+            .votes
+            .lock()
+            .map_err(|e| format!("Failed to lock votes: {}", e))?;
 
         let block_votes = votes
             .get(&block_hash)
@@ -2696,8 +3020,15 @@ where
         };
 
         // Convert Vec to BoundedVec for Phase 4 on-chain submission
-        let precommit_votes = BoundedVec::<_, ConstU32<MAX_VOTES_PER_CERTIFICATE>>::try_from(block_votes.clone())
-            .map_err(|_| format!("Too many votes ({}) for certificate (max: {})", block_votes.len(), MAX_VOTES_PER_CERTIFICATE))?;
+        let precommit_votes =
+            BoundedVec::<_, ConstU32<MAX_VOTES_PER_CERTIFICATE>>::try_from(block_votes.clone())
+                .map_err(|_| {
+                    format!(
+                        "Too many votes ({}) for certificate (max: {})",
+                        block_votes.len(),
+                        MAX_VOTES_PER_CERTIFICATE
+                    )
+                })?;
 
         Ok(FinalityCertificate {
             block_hash,
@@ -2719,10 +3050,14 @@ where
         // Get our actual validator ID from keystore
         let validator_id = self.get_our_validator_id()?;
 
-        info!("📝 Validator 0x{}... submitting proofs to queue", hex::encode(&validator_id.0[..4]));
+        info!(
+            "📝 Validator 0x{}... submitting proofs to queue",
+            hex::encode(&validator_id.0[..4])
+        );
 
         // Generate and queue mock proofs with varying QBER
-        for qber_value in [450, 500, 550] {  // 4.5%, 5%, 5.5% QBER
+        for qber_value in [450, 500, 550] {
+            // 4.5%, 5%, 5.5% QBER
             let mock_proof = self.generate_mock_proof_with_qber(qber_value)?;
             self.queue_validator_proof(validator_id, mock_proof)?;
         }
@@ -2734,44 +3069,64 @@ where
     fn queue_validator_proof(
         &self,
         validator_id: sp_core::sr25519::Public,
-        proof: QuantumEntropyProof<sp_core::sr25519::Public>
+        proof: QuantumEntropyProof<sp_core::sr25519::Public>,
     ) -> Result<(), String> {
         let qber = proof.public_inputs.qber;
 
         // Get/create next proof ID for this validator
-        let mut next_ids = self.next_proof_id.lock()
+        let mut next_ids = self
+            .next_proof_id
+            .lock()
             .map_err(|e| format!("Failed to lock proof ID: {}", e))?;
         let proof_id = *next_ids.entry(validator_id).or_insert(1);
         next_ids.insert(validator_id, proof_id + 1);
         drop(next_ids);
 
         // Store proof globally
-        let mut storage = self.stark_proof_storage.lock()
+        let mut storage = self
+            .stark_proof_storage
+            .lock()
             .map_err(|e| format!("Failed to lock proof storage: {}", e))?;
         storage.insert(proof_id, proof);
         drop(storage);
 
         // Add to validator's priority queue
-        let mut queues = self.validator_proof_queues.lock()
+        let mut queues = self
+            .validator_proof_queues
+            .lock()
             .map_err(|e| format!("Failed to lock validator queues: {}", e))?;
-        let queue = queues.entry(validator_id).or_insert_with(PriorityQueue::new);
+        let queue = queues
+            .entry(validator_id)
+            .or_insert_with(PriorityQueue::new);
         queue.push(proof_id, Reverse(qber));
 
-        debug!("📦 Validator {:?} queued proof ID {} with QBER {}% (queue size: {})",
-            &validator_id.0[0..4], proof_id, qber as f64 / 100.0, queue.len());
+        debug!(
+            "📦 Validator {:?} queued proof ID {} with QBER {}% (queue size: {})",
+            &validator_id.0[0..4],
+            proof_id,
+            qber as f64 / 100.0,
+            queue.len()
+        );
         Ok(())
     }
 
     /// Leader collects best proofs from all validators' queues
-    async fn collect_proofs_as_leader(&self, _block_hash: &Block::Hash) -> Result<Vec<QuantumEntropyProof<sp_core::sr25519::Public>>, String> {
+    async fn collect_proofs_as_leader(
+        &self,
+        _block_hash: &Block::Hash,
+    ) -> Result<Vec<QuantumEntropyProof<sp_core::sr25519::Public>>, String> {
         info!("👑 Leader collecting proofs from all validator queues");
 
         // First, ensure our own proofs are submitted
         self.submit_validator_proofs(_block_hash).await?;
 
-        let mut queues = self.validator_proof_queues.lock()
+        let mut queues = self
+            .validator_proof_queues
+            .lock()
             .map_err(|e| format!("Failed to lock validator queues: {}", e))?;
-        let mut storage = self.stark_proof_storage.lock()
+        let mut storage = self
+            .stark_proof_storage
+            .lock()
             .map_err(|e| format!("Failed to lock proof storage: {}", e))?;
 
         let mut all_proofs = Vec::new();
@@ -2782,25 +3137,38 @@ where
             for _ in 0..2 {
                 if let Some((proof_id, _priority)) = queue.pop() {
                     if let Some(proof) = storage.remove(&proof_id) {
-                        debug!("📤 Collected proof from validator {:?} with QBER {}%",
-                            &validator_id.0[0..4], proof.public_inputs.qber as f64 / 100.0);
+                        debug!(
+                            "📤 Collected proof from validator {:?} with QBER {}%",
+                            &validator_id.0[0..4],
+                            proof.public_inputs.qber as f64 / 100.0
+                        );
                         all_proofs.push(proof);
                         validator_proofs += 1;
                     }
                 }
             }
             if validator_proofs > 0 {
-                info!("✅ Collected {} proofs from validator {:?}", validator_proofs, &validator_id.0[0..4]);
+                info!(
+                    "✅ Collected {} proofs from validator {:?}",
+                    validator_proofs,
+                    &validator_id.0[0..4]
+                );
             }
         }
 
-        info!("📊 Total proofs collected from {} validators: {}", queues.len(), all_proofs.len());
+        info!(
+            "📊 Total proofs collected from {} validators: {}",
+            queues.len(),
+            all_proofs.len()
+        );
         Ok(all_proofs)
     }
 
     /// Check if it's time for block producer election (every 5 blocks)
     fn should_elect_producer(&self, current_block: u64) -> Result<bool, String> {
-        let last_election = self.last_election_block.lock()
+        let last_election = self
+            .last_election_block
+            .lock()
             .map_err(|e| format!("Failed to lock election block: {}", e))?;
 
         Ok(current_block % 5 == 0 && current_block != *last_election)
@@ -2822,7 +3190,9 @@ where
         }
 
         // Update last election block
-        let mut last_election = self.last_election_block.lock()
+        let mut last_election = self
+            .last_election_block
+            .lock()
             .map_err(|e| format!("Failed to lock election block: {}", e))?;
         *last_election = block_number;
         drop(last_election);
@@ -2845,9 +3215,14 @@ where
         let mut election_results = Vec::new();
         for (idx, validator_pub) in validator_set.iter().enumerate() {
             // Compute election output: Hash(validator_id || block_number || quantum_seed)
-            let election_output = self.compute_vrf_output(validator_pub, block_number, &quantum_seed)?;
+            let election_output =
+                self.compute_vrf_output(validator_pub, block_number, &quantum_seed)?;
 
-            debug!("Election result for validator {}: {:?}", idx, &election_output[0..8]);
+            debug!(
+                "Election result for validator {}: {:?}",
+                idx,
+                &election_output[0..8]
+            );
             election_results.push((validator_pub.clone(), election_output));
         }
 
@@ -2857,7 +3232,9 @@ where
         // Winner is the validator with lowest output
         let (leader_id, winning_output) = &election_results[0];
 
-        let mut current_leader = self.current_leader.lock()
+        let mut current_leader = self
+            .current_leader
+            .lock()
             .map_err(|e| format!("Failed to lock current leader: {}", e))?;
         *current_leader = Some(leader_id.clone());
 
@@ -2884,7 +3261,10 @@ where
     /// Get entropy for leader election - tries QRNG first, falls back to VRF
     ///
     /// Returns (entropy_bytes, source_description)
-    fn get_qrng_entropy_for_election(&self, block_number: u64) -> Result<([u8; 32], &'static str), String> {
+    fn get_qrng_entropy_for_election(
+        &self,
+        block_number: u64,
+    ) -> Result<([u8; 32], &'static str), String> {
         use crate::round_coordinator::{RoundCoordinator, COORDINATOR_SHARE_POOL};
 
         // Calculate round ID for this block
@@ -2892,7 +3272,8 @@ where
 
         // Check if we have collected shares for this round
         let shares_opt = {
-            let pool = COORDINATOR_SHARE_POOL.read()
+            let pool = COORDINATOR_SHARE_POOL
+                .read()
                 .map_err(|e| format!("Failed to read share pool: {}", e))?;
             pool.get(&round_id).cloned()
         };
@@ -2908,7 +3289,8 @@ where
                 // Reconstruct entropy from shares using Shamir
                 match self.reconstruct_qrng_entropy(&shares) {
                     Ok(entropy) => {
-                        let avg_qber: f64 = shares.iter().map(|s| s.qber).sum::<f64>() / shares.len() as f64;
+                        let avg_qber: f64 =
+                            shares.iter().map(|s| s.qber).sum::<f64>() / shares.len() as f64;
                         info!(
                             "🔮 QRNG entropy reconstructed from {} shares (avg QBER: {:.2}%)",
                             shares.len(),
@@ -2923,7 +3305,9 @@ where
             } else {
                 debug!(
                     "Insufficient QRNG shares for round {}: {}/{}, using VRF",
-                    round_id, shares.len(), threshold_k
+                    round_id,
+                    shares.len(),
+                    threshold_k
                 );
             }
         }
@@ -2938,6 +3322,7 @@ where
         &self,
         shares: &[crate::rpc::threshold_qrng_rpc::CollectedShare],
     ) -> Result<[u8; 32], String> {
+        use sharks::{Share, Sharks};
         use sp_core::Blake2Hasher;
         use sp_core::Hasher;
 
@@ -2945,26 +3330,74 @@ where
             return Err("No shares to reconstruct".to_string());
         }
 
-        // Simple XOR-based reconstruction for now
-        // In production, use proper Shamir interpolation
-        let mut combined = [0u8; 32];
+        // Use proper Shamir's Secret Sharing reconstruction via sharks crate
+        // Convert CollectedShare bytes into sharks::Share objects
+        let mut shark_shares = Vec::new();
 
-        for share in shares {
-            // XOR each share's bytes into the combined result
-            let share_bytes = &share.share_bytes;
-            for (i, byte) in share_bytes.iter().enumerate() {
-                if i < 32 {
-                    combined[i] ^= byte;
-                }
+        for collected_share in shares {
+            // Create a sharks::Share from the collected share bytes
+            // sharks::Share is represented as a pair: (x, y)
+            // where x is the share index (1-based) and y is the secret data
+            if collected_share.share_bytes.len() < 33 {
+                warn!(
+                    "Share too small ({} bytes), skipping",
+                    collected_share.share_bytes.len()
+                );
+                continue;
+            }
+
+            // Extract (x, y) from the share bytes using sharks format
+            // First byte is the x coordinate (share index), rest is y (secret data)
+            let x = collected_share.share_bytes[0];
+            let y = collected_share.share_bytes[1..].to_vec();
+
+            // Create sharks::Share from x and y
+            // This requires the Share to be reconstructible
+            if let Ok(share) = Share::try_from((x, y.clone())) {
+                shark_shares.push(share);
+            } else {
+                warn!("Failed to convert share to sharks::Share format");
+                continue;
             }
         }
 
-        // Hash the combined result for uniform distribution
-        let hash = Blake2Hasher::hash(&combined);
-        let mut entropy = [0u8; 32];
-        entropy.copy_from_slice(hash.as_ref());
+        if shark_shares.len() < 2 {
+            return Err(format!(
+                "Need at least 2 shares for reconstruction, got {}",
+                shark_shares.len()
+            ));
+        }
 
-        Ok(entropy)
+        // Use Shamir's Secret Sharing with threshold K=2
+        // This means any 2 shares can reconstruct the secret
+        let sharks = Sharks(2);
+
+        // Reconstruct the secret from the shares
+        match sharks.recover(&shark_shares) {
+            Ok(secret) => {
+                // Secret should be 32 bytes (256 bits)
+                if secret.len() < 32 {
+                    return Err(format!(
+                        "Reconstructed secret too small: {} bytes",
+                        secret.len()
+                    ));
+                }
+
+                let mut entropy = [0u8; 32];
+                entropy.copy_from_slice(&secret[..32]);
+
+                // Hash the reconstructed secret for additional security
+                let hash = Blake2Hasher::hash(&entropy);
+                let mut final_entropy = [0u8; 32];
+                final_entropy.copy_from_slice(hash.as_ref());
+
+                Ok(final_entropy)
+            }
+            Err(e) => {
+                error!("Shamir reconstruction failed: {:?}", e);
+                Err(format!("Shamir reconstruction failed: {:?}", e))
+            }
+        }
     }
 
     /// Get quantum entropy seed from decentralized nRNG
@@ -2974,22 +3407,30 @@ where
         // and combine using XOR or hash-based mixing
 
         // For dev mode: generate deterministic but unpredictable seed
-        // using block number + previous block hash + quantum RNG
+        // using validator ID + block number + previous block hash + quantum RNG
 
         use sp_core::Blake2Hasher;
         use sp_core::Hasher;
 
         // Combine:
-        // 1. Block number (for epoch)
-        // 2. Mock quantum entropy (in production: from Crypto4A HSM or QKD)
-        // 3. Previous block hash (for chain continuity)
+        // 1. Validator ID (for per-validator entropy)
+        // 2. Block number (for per-block entropy)
+        // 3. Mock quantum entropy (in production: from Crypto4A HSM or QKD)
+        // 4. Previous block hash (for chain continuity)
 
         let mut seed_material = Vec::new();
+
+        // Include validator ID if this is a validator node
+        if let Some(validator_id) = &self.our_validator_id {
+            seed_material.extend_from_slice(&validator_id.0);
+        }
+
         seed_material.extend_from_slice(&block_number.to_le_bytes());
 
         // Mock quantum randomness (in production: call QuantumRng::generate_seed())
         // Each validator would contribute their quantum measurements
-        let mock_quantum_bytes = Self::mock_quantum_entropy(block_number);
+        let mock_quantum_bytes =
+            Self::mock_quantum_entropy(block_number, self.our_validator_id.as_ref());
         seed_material.extend_from_slice(&mock_quantum_bytes);
 
         // Hash to produce final seed
@@ -3001,17 +3442,36 @@ where
     }
 
     /// Mock quantum entropy (in production: from Crypto4A HSM or QKD system)
-    fn mock_quantum_entropy(block_number: u64) -> [u8; 32] {
+    ///
+    /// Uses RFC 9381-style domain separator and includes validator_id (if available)
+    /// plus block number as seed material. This makes the fallback entropy per-validator
+    /// and per-block, providing unpredictability without relying on quantum hardware.
+    fn mock_quantum_entropy(
+        block_number: u64,
+        validator_id: Option<&sp_core::sr25519::Public>,
+    ) -> [u8; 32] {
         // In production, this would call:
         // let qrng = QuantumRng::new(QuantumRngSource::Crypto4aHsm);
         // qrng.generate_seed().unwrap()
 
-        // For testing: deterministic but unpredictable
+        // For testing: deterministic but unpredictable per validator and block
+        // Combines domain separator, validator_id, and block number
         use sp_core::Blake2Hasher;
         use sp_core::Hasher;
 
-        let material = format!("quantum_entropy_{}", block_number);
-        let hash = Blake2Hasher::hash(material.as_bytes());
+        const QUANTUM_FALLBACK_DOMAIN: &[u8] = b"QUANTUM_FALLBACK_V1";
+        let mut material = Vec::new();
+        material.extend_from_slice(QUANTUM_FALLBACK_DOMAIN);
+
+        // Include validator_id if available (for per-validator entropy)
+        if let Some(v_id) = validator_id {
+            material.extend_from_slice(&v_id.0);
+        }
+
+        // Include block number (for per-block entropy)
+        material.extend_from_slice(&block_number.to_le_bytes());
+
+        let hash = Blake2Hasher::hash(&material);
         let mut entropy = [0u8; 32];
         entropy.copy_from_slice(hash.as_ref());
         entropy
@@ -3070,10 +3530,13 @@ where
     ///
     /// Shares are ordered by QBER (lower = higher priority)
     async fn queue_device_share(&self, share: DeviceShare) -> Result<(), String> {
-        let mut queues = self.device_share_queues.lock()
+        let mut queues = self
+            .device_share_queues
+            .lock()
             .map_err(|e| format!("Failed to lock device queues: {}", e))?;
 
-        let queue = queues.entry(share.device_id.clone())
+        let queue = queues
+            .entry(share.device_id.clone())
             .or_insert_with(PriorityQueue::new);
 
         // Priority = Reverse(QBER) so lower QBER = higher priority
@@ -3094,14 +3557,15 @@ where
         &self,
         leader_public_key: &[u8],
     ) -> Result<Option<CombinedEntropyTx>, String> {
-        let config = self.threshold_config.lock()
+        let config = self
+            .threshold_config
+            .lock()
             .map_err(|e| format!("Failed to lock threshold config: {}", e))?;
 
         let threshold_k = config.threshold_k;
         let total_devices_m = config.total_devices_m;
-        let device_ids: Vec<DeviceId> = config.devices.iter()
-            .map(|d| d.device_id.clone())
-            .collect();
+        let device_ids: Vec<DeviceId> =
+            config.devices.iter().map(|d| d.device_id.clone()).collect();
 
         drop(config); // Release lock
 
@@ -3109,36 +3573,51 @@ where
 
         // Collect shares from each device queue
         {
-            let mut queues = self.device_share_queues.lock()
+            let mut queues = self
+                .device_share_queues
+                .lock()
                 .map_err(|e| format!("Failed to lock device queues: {}", e))?;
 
             for device_id in &device_ids {
                 if let Some(queue) = queues.get_mut(device_id) {
                     // Pop best share from this device (lowest QBER)
                     if let Some((share, _priority)) = queue.pop() {
-                        info!("👑 Leader collected share from device {:?} with QBER {}",
+                        info!(
+                            "👑 Leader collected share from device {:?} with QBER {}",
                             String::from_utf8_lossy(&share.device_id.0),
-                            share.qber);
+                            share.qber
+                        );
                         all_shares.push(share);
                     } else {
-                        warn!("⚠️  Device {:?} queue is empty",
-                            String::from_utf8_lossy(&device_id.0));
+                        warn!(
+                            "⚠️  Device {:?} queue is empty",
+                            String::from_utf8_lossy(&device_id.0)
+                        );
                     }
                 } else {
-                    warn!("⚠️  No queue found for device {:?}",
-                        String::from_utf8_lossy(&device_id.0));
+                    warn!(
+                        "⚠️  No queue found for device {:?}",
+                        String::from_utf8_lossy(&device_id.0)
+                    );
                 }
             }
         }
 
         // Need at least K shares to reconstruct
         if all_shares.len() < threshold_k as usize {
-            warn!("⚠️  Insufficient shares: {} < K={}", all_shares.len(), threshold_k);
+            warn!(
+                "⚠️  Insufficient shares: {} < K={}",
+                all_shares.len(),
+                threshold_k
+            );
             return Ok(None);
         }
 
-        info!("🔮 Reconstructing entropy from {} device shares (K={})",
-            all_shares.len(), threshold_k);
+        info!(
+            "🔮 Reconstructing entropy from {} device shares (K={})",
+            all_shares.len(),
+            threshold_k
+        );
 
         // Perform Shamir reconstruction
         let combined_entropy = reconstruct_entropy(&all_shares, threshold_k as u8)
@@ -3162,7 +3641,8 @@ where
             leader_public_key,
             leader_privkey.as_bytes(),
             timestamp,
-        ).map_err(|e| format!("Failed to create reconstruction proof: {}", e))?;
+        )
+        .map_err(|e| format!("Failed to create reconstruction proof: {}", e))?;
 
         // Build CombinedEntropyTx
         let entropy_tx = CombinedEntropyTx {
@@ -3185,7 +3665,9 @@ where
     /// - Entropy is split into Shamir shares (K=2, M=3)
     /// - Shares are queued with QBER priority
     async fn collect_device_entropy_via_pqtg(&self) -> Result<(), String> {
-        let pqtg_client = self.pqtg_client.as_ref()
+        let pqtg_client = self
+            .pqtg_client
+            .as_ref()
             .ok_or("PQTG client not initialized")?;
 
         // Collect raw entropy from all devices (via PQTG)
@@ -3258,7 +3740,7 @@ where
             DeviceShare {
                 device_id: DeviceId::from_str("qkd-toshiba"),
                 share: Vec::from(&shares[0]),
-                qber: 80, // 0.8% QBER - QKD device, good quality
+                qber: 80,                    // 0.8% QBER - QKD device, good quality
                 stark_proof: vec![0xAA; 32], // Mock STARK proof
                 timestamp: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -3278,8 +3760,8 @@ where
             DeviceShare {
                 device_id: DeviceId::from_str("idquantique"),
                 share: Vec::from(&shares[2]),
-                qber: 120, // 1.2% QBER - IdQuantique QKD, medium quality
-                stark_proof: vec![0xCC; 32],
+                qber: 120,                   // 1.2% QBER - IdQuantique QKD, medium quality
+                stark_proof: vec![0xCC; 32], // Mock STARK proof
                 timestamp: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
@@ -3290,7 +3772,10 @@ where
         // Queue all shares
         for share in device_shares {
             let device_name = share.device_id.as_str().unwrap_or("unknown");
-            info!("🧪 Queuing mock share from device: {}, QBER: {}", device_name, share.qber);
+            info!(
+                "🧪 Queuing mock share from device: {}, QBER: {}",
+                device_name, share.qber
+            );
             self.queue_device_share(share).await?;
         }
 
@@ -3313,7 +3798,7 @@ where
         entropy_tx: &CombinedEntropyTx,
         block_number: u32,
     ) -> Result<(), String> {
-        use crate::entropy_gossip::{EntropyPackage, nokia_mode};
+        use crate::entropy_gossip::{nokia_mode, EntropyPackage};
 
         // Create entropy package
         let package = EntropyPackage {
@@ -3342,11 +3827,17 @@ where
         // Leader keypair for signing
         match vault.get_falcon_entropy() {
             Ok(entropy) => {
-                debug!("✅ Got {} bytes of Falcon entropy from vault", entropy.len());
+                debug!(
+                    "✅ Got {} bytes of Falcon entropy from vault",
+                    entropy.len()
+                );
             }
             Err(e) => {
                 // Non-fatal: vault may be empty, will use OS RNG instead
-                debug!("ℹ️  Vault entropy not available ({}), using OS RNG for Falcon keypair", e);
+                debug!(
+                    "ℹ️  Vault entropy not available ({}), using OS RNG for Falcon keypair",
+                    e
+                );
             }
         }
         let (leader_falcon_pubkey, leader_falcon_privkey) = {
@@ -3358,15 +3849,20 @@ where
         // Validator keypair for encryption (same fallback logic)
         match vault.get_falcon_entropy() {
             Ok(entropy) => {
-                debug!("✅ Got {} bytes of validator Falcon entropy from vault", entropy.len());
+                debug!(
+                    "✅ Got {} bytes of validator Falcon entropy from vault",
+                    entropy.len()
+                );
             }
             Err(e) => {
-                debug!("ℹ️  Vault entropy not available ({}), using OS RNG for validator keypair", e);
+                debug!(
+                    "ℹ️  Vault entropy not available ({}), using OS RNG for validator keypair",
+                    e
+                );
             }
         }
-        let (validator_falcon_pubkey, validator_falcon_privkey) = {
-            pqcrypto_falcon::falcon1024::keypair()
-        };
+        let (validator_falcon_pubkey, validator_falcon_privkey) =
+            { pqcrypto_falcon::falcon1024::keypair() };
 
         info!("🔐 Generated Falcon1024 keypairs (using OS RNG, vault entropy optional)");
 
@@ -3380,7 +3876,10 @@ where
             leader_falcon_pubkey.as_bytes(),
         )?;
 
-        info!("🔐 Encrypted entropy package ({} bytes)", encrypted_msg.encoded_size());
+        info!(
+            "🔐 Encrypted entropy package ({} bytes)",
+            encrypted_msg.encoded_size()
+        );
 
         // Demonstrate decryption (in multi-node, validator would receive via gossip)
         let decrypted_package = nokia_mode::decrypt_entropy_package(
@@ -3390,13 +3889,16 @@ where
         )?;
 
         // Verify decrypted data matches original
-        if decrypted_package.combined_entropy == package.combined_entropy &&
-           decrypted_package.device_shares.len() == package.device_shares.len() &&
-           decrypted_package.threshold_k == package.threshold_k {
+        if decrypted_package.combined_entropy == package.combined_entropy
+            && decrypted_package.device_shares.len() == package.device_shares.len()
+            && decrypted_package.threshold_k == package.threshold_k
+        {
             info!("✅ Phase 2 Complete: Entropy encryption/decryption verified!");
-            info!("   - Encrypted {} bytes of entropy + {} device shares",
-                  decrypted_package.combined_entropy.len(),
-                  decrypted_package.device_shares.len());
+            info!(
+                "   - Encrypted {} bytes of entropy + {} device shares",
+                decrypted_package.combined_entropy.len(),
+                decrypted_package.device_shares.len()
+            );
             info!("   - Ready for multi-node gossip distribution");
         } else {
             return Err("Decrypted package does not match original!".into());
@@ -3438,9 +3940,12 @@ where
         // If pool exceeds threshold, trigger immediate grooming
         if pool_status.ready > grooming_threshold {
             info!("🧹 URGENT: Mempool grooming triggered ASAP!");
-            info!("   Ready transactions: {}/{} ({}%)",
-                pool_status.ready, ready_limit,
-                (pool_status.ready * 100) / ready_limit);
+            info!(
+                "   Ready transactions: {}/{} ({}%)",
+                pool_status.ready,
+                ready_limit,
+                (pool_status.ready * 100) / ready_limit
+            );
 
             // NOTE: 3-level validation deferred; requires Substrate TransactionPool::ready() iterator API
             //
@@ -3478,9 +3983,12 @@ where
         } else {
             // Optional: debug logging for monitoring
             if pool_status.ready > 0 {
-                debug!("Mempool status: {} ready, {} future ({}% full)",
-                    pool_status.ready, pool_status.future,
-                    (pool_status.ready * 100) / ready_limit);
+                debug!(
+                    "Mempool status: {} ready, {} future ({}% full)",
+                    pool_status.ready,
+                    pool_status.future,
+                    (pool_status.ready * 100) / ready_limit
+                );
             }
         }
 
@@ -3580,7 +4088,11 @@ mod tests {
         for block in 0..20 {
             let should_groom = block % 3 == 0;
             let is_grooming_block = grooming_blocks.contains(&block);
-            assert_eq!(should_groom, is_grooming_block, "Block {} failed: should_groom={}, is_grooming={}", block, should_groom, is_grooming_block);
+            assert_eq!(
+                should_groom, is_grooming_block,
+                "Block {} failed: should_groom={}, is_grooming={}",
+                block, should_groom, is_grooming_block
+            );
         }
     }
 
@@ -3588,14 +4100,14 @@ mod tests {
     fn test_byzantine_supermajority() {
         // Test 2/3 supermajority calculation
         let test_cases = vec![
-            (3, 2),   // 3 validators -> need 2 votes
-            (4, 3),   // 4 validators -> need 3 votes
-            (10, 7),  // 10 validators -> need 7 votes
+            (3, 2),    // 3 validators -> need 2 votes
+            (4, 3),    // 4 validators -> need 3 votes
+            (10, 7),   // 10 validators -> need 7 votes
             (100, 67), // 100 validators -> need 67 votes
         ];
 
         for (total, expected_threshold) in test_cases {
-            let threshold = ((total * 2) + 2) / 3;  // Ceiling division
+            let threshold = ((total * 2) + 2) / 3; // Ceiling division
             assert_eq!(threshold, expected_threshold);
         }
     }
@@ -3727,8 +4239,10 @@ mod tests {
     #[test]
     fn test_per_validator_queue_isolation() {
         // Each validator should have independent priority queue
-        let mut validator_queues: std::collections::HashMap<[u8; 64], PriorityQueue<u64, Reverse<u32>>> =
-            std::collections::HashMap::new();
+        let mut validator_queues: std::collections::HashMap<
+            [u8; 64],
+            PriorityQueue<u64, Reverse<u32>>,
+        > = std::collections::HashMap::new();
 
         let validator1 = [1u8; 64];
         let validator2 = [2u8; 64];
@@ -3738,11 +4252,20 @@ mod tests {
         validator_queues.insert(validator2, PriorityQueue::new());
 
         // Add proofs to validator 1
-        validator_queues.get_mut(&validator1).unwrap().push(1, Reverse(500));
-        validator_queues.get_mut(&validator1).unwrap().push(2, Reverse(600));
+        validator_queues
+            .get_mut(&validator1)
+            .unwrap()
+            .push(1, Reverse(500));
+        validator_queues
+            .get_mut(&validator1)
+            .unwrap()
+            .push(2, Reverse(600));
 
         // Add proofs to validator 2
-        validator_queues.get_mut(&validator2).unwrap().push(3, Reverse(450));
+        validator_queues
+            .get_mut(&validator2)
+            .unwrap()
+            .push(3, Reverse(450));
 
         // Verify isolation
         assert_eq!(validator_queues.get(&validator1).unwrap().len(), 2);
@@ -3752,8 +4275,10 @@ mod tests {
     #[test]
     fn test_leader_collects_from_all_validators() {
         // Leader should collect best proofs from all validator queues
-        let mut validator_queues: std::collections::HashMap<[u8; 64], PriorityQueue<u64, Reverse<u32>>> =
-            std::collections::HashMap::new();
+        let mut validator_queues: std::collections::HashMap<
+            [u8; 64],
+            PriorityQueue<u64, Reverse<u32>>,
+        > = std::collections::HashMap::new();
 
         let validator1 = [1u8; 64];
         let validator2 = [2u8; 64];
@@ -3765,13 +4290,28 @@ mod tests {
         validator_queues.insert(validator3, PriorityQueue::new());
 
         // Add proofs (lower QBER = higher priority)
-        validator_queues.get_mut(&validator1).unwrap().push(1, Reverse(500));  // Best from v1
-        validator_queues.get_mut(&validator1).unwrap().push(2, Reverse(600));
+        validator_queues
+            .get_mut(&validator1)
+            .unwrap()
+            .push(1, Reverse(500)); // Best from v1
+        validator_queues
+            .get_mut(&validator1)
+            .unwrap()
+            .push(2, Reverse(600));
 
-        validator_queues.get_mut(&validator2).unwrap().push(3, Reverse(450));  // Best from v2
-        validator_queues.get_mut(&validator2).unwrap().push(4, Reverse(550));
+        validator_queues
+            .get_mut(&validator2)
+            .unwrap()
+            .push(3, Reverse(450)); // Best from v2
+        validator_queues
+            .get_mut(&validator2)
+            .unwrap()
+            .push(4, Reverse(550));
 
-        validator_queues.get_mut(&validator3).unwrap().push(5, Reverse(400));  // Best from v3
+        validator_queues
+            .get_mut(&validator3)
+            .unwrap()
+            .push(5, Reverse(400)); // Best from v3
 
         // Leader collects top 2 from each validator
         let mut collected_proofs = Vec::new();
@@ -3808,21 +4348,23 @@ mod tests {
     fn test_asap_mempool_grooming() {
         // ASAP grooming should trigger immediately when threshold exceeded
         let ready_limit = 8192u32;
-        let grooming_threshold = (ready_limit * 75) / 100;  // 6144
+        let grooming_threshold = (ready_limit * 75) / 100; // 6144
 
         let test_cases = vec![
-            (6143, false),  // Just below threshold - no grooming
-            (6144, true),   // At threshold - trigger
-            (6200, true),   // Above threshold - trigger
-            (8000, true),   // Well above - trigger
-            (5000, false),  // Well below - no grooming
+            (6143, false), // Just below threshold - no grooming
+            (6144, true),  // At threshold - trigger
+            (6200, true),  // Above threshold - trigger
+            (8000, true),  // Well above - trigger
+            (5000, false), // Well below - no grooming
         ];
 
         for (ready_count, should_groom) in test_cases {
             let triggers = ready_count >= grooming_threshold;
-            assert_eq!(triggers, should_groom,
+            assert_eq!(
+                triggers, should_groom,
                 "Failed for ready_count={}: expected {}, got {}",
-                ready_count, should_groom, triggers);
+                ready_count, should_groom, triggers
+            );
         }
     }
 
@@ -3832,8 +4374,8 @@ mod tests {
         let mut queue: PriorityQueue<u64, Reverse<u32>> = PriorityQueue::new();
 
         queue.push(1, Reverse(500));
-        queue.push(2, Reverse(500));  // Same QBER
-        queue.push(3, Reverse(400));  // Better QBER
+        queue.push(2, Reverse(500)); // Same QBER
+        queue.push(3, Reverse(400)); // Better QBER
 
         // Should pop in order: 400, 500, 500
         let (id1, qber1) = queue.pop().unwrap();
@@ -3872,9 +4414,12 @@ mod tests {
 
         // All outputs should be unique
         for i in 0..vrf_outputs.len() {
-            for j in (i+1)..vrf_outputs.len() {
-                assert_ne!(vrf_outputs[i], vrf_outputs[j],
-                    "VRF outputs for validators {} and {} should be different", i, j);
+            for j in (i + 1)..vrf_outputs.len() {
+                assert_ne!(
+                    vrf_outputs[i], vrf_outputs[j],
+                    "VRF outputs for validators {} and {} should be different",
+                    i, j
+                );
             }
         }
     }
@@ -3960,15 +4505,21 @@ mod tests {
         assert_eq!(config.threshold_k, 2);
         assert_eq!(config.total_devices_m, 3);
         assert_eq!(config.devices.len(), 3);
-        assert_eq!(config.devices[0].device_id.as_str().unwrap(), "toshiba-qrng");
-        assert_eq!(config.devices[1].device_id.as_str().unwrap(), "crypto4a-qrng");
+        assert_eq!(
+            config.devices[0].device_id.as_str().unwrap(),
+            "toshiba-qrng"
+        );
+        assert_eq!(
+            config.devices[1].device_id.as_str().unwrap(),
+            "crypto4a-qrng"
+        );
         assert_eq!(config.devices[2].device_id.as_str().unwrap(), "kirq");
     }
 
     #[tokio::test]
     async fn test_device_share_collection_workflow() {
         // End-to-end test: Create shares, collect as leader, verify reconstruction
-        use sharks::{Sharks, Share};
+        use sharks::{Share, Sharks};
 
         let secret = b"quantum_entropy_from_three_qrng_devices";
         let sharks = Sharks(2);
@@ -3976,7 +4527,8 @@ mod tests {
         let shamir_shares: Vec<Share> = dealer.take(3).collect();
 
         // Create device shares with different QBERs
-        let mut device_queues: HashMap<DeviceId, PriorityQueue<DeviceShare, Reverse<u32>>> = HashMap::new();
+        let mut device_queues: HashMap<DeviceId, PriorityQueue<DeviceShare, Reverse<u32>>> =
+            HashMap::new();
 
         let toshiba_id = DeviceId::from_str("toshiba-qrng");
         let crypto4a_id = DeviceId::from_str("crypto4a-qrng");
@@ -4048,7 +4600,8 @@ mod tests {
             leader_pubkey.as_bytes(),
             leader_privkey.as_bytes(),
             timestamp,
-        ).unwrap();
+        )
+        .unwrap();
 
         let entropy_tx = CombinedEntropyTx {
             combined_entropy: reconstructed,
@@ -4097,7 +4650,7 @@ mod tests {
     #[test]
     fn test_k_of_m_threshold_flexibility() {
         // Test that K=2, M=3 means any 2 of 3 devices can reconstruct
-        use sharks::{Sharks, Share};
+        use sharks::{Share, Sharks};
 
         let secret = b"flexible_threshold_quantum_entropy";
         let sharks = Sharks(2);
@@ -4136,7 +4689,8 @@ mod tests {
     #[test]
     fn test_device_queue_empty_handling() {
         // Test graceful handling when device queue is empty
-        let mut device_queues: HashMap<DeviceId, PriorityQueue<DeviceShare, Reverse<u32>>> = HashMap::new();
+        let mut device_queues: HashMap<DeviceId, PriorityQueue<DeviceShare, Reverse<u32>>> =
+            HashMap::new();
 
         let toshiba_id = DeviceId::from_str("toshiba-qrng");
         let crypto4a_id = DeviceId::from_str("crypto4a-qrng");
@@ -4186,29 +4740,41 @@ mod tests {
         // N=100: ceil(6.64) = 7, so 100*7 = 700
         // N=1000: ceil(9.97) = 10, so 1000*10 = 10000
         let test_cases = vec![
-            (10, 30, 40),      // 10 validators: 30 vs 40 (1.3x improvement)
-            (50, 150, 300),    // 50 validators: 150 vs 300 (2.0x improvement)
-            (100, 300, 700),   // 100 validators: 300 vs 700 (2.3x improvement)
+            (10, 30, 40),        // 10 validators: 30 vs 40 (1.3x improvement)
+            (50, 150, 300),      // 50 validators: 150 vs 300 (2.0x improvement)
+            (100, 300, 700),     // 100 validators: 300 vs 700 (2.3x improvement)
             (1000, 3000, 10000), // 1000 validators: 3000 vs 10000 (3.3x improvement)
         ];
 
         for (n, expected_linear, expected_gossip) in test_cases {
-            let linear_messages = 3 * n;  // O(n)
-            let gossip_messages = n * (n as f64).log2().ceil() as u32;  // O(N log N)
+            let linear_messages = 3 * n; // O(n)
+            let gossip_messages = n * (n as f64).log2().ceil() as u32; // O(N log N)
 
-            assert_eq!(linear_messages, expected_linear,
-                "Linear messages for {} validators", n);
-            assert_eq!(gossip_messages, expected_gossip,
-                "Gossip messages for {} validators", n);
+            assert_eq!(
+                linear_messages, expected_linear,
+                "Linear messages for {} validators",
+                n
+            );
+            assert_eq!(
+                gossip_messages, expected_gossip,
+                "Gossip messages for {} validators",
+                n
+            );
 
             // Linear should always be better
-            assert!(linear_messages < gossip_messages,
+            assert!(
+                linear_messages < gossip_messages,
                 "Linear ({}) should be less than gossip ({}) for {} validators",
-                linear_messages, gossip_messages, n);
+                linear_messages,
+                gossip_messages,
+                n
+            );
 
             let improvement = gossip_messages as f64 / linear_messages as f64;
-            println!("N={}: Linear={}, Gossip={}, Improvement={:.1}x",
-                n, linear_messages, gossip_messages, improvement);
+            println!(
+                "N={}: Linear={}, Gossip={}, Improvement={:.1}x",
+                n, linear_messages, gossip_messages, improvement
+            );
         }
     }
 
@@ -4217,11 +4783,11 @@ mod tests {
     fn test_qber_aggregation_accuracy() {
         // Simulate votes with different QBER values (basis points)
         let qber_values = vec![
-            500,   // 5.00% - excellent
-            750,   // 7.50% - good
-            850,   // 8.50% - acceptable
-            950,   // 9.50% - marginal
-            1050,  // 10.50% - at limit
+            500,  // 5.00% - excellent
+            750,  // 7.50% - good
+            850,  // 8.50% - acceptable
+            950,  // 9.50% - marginal
+            1050, // 10.50% - at limit
         ];
 
         // Calculate aggregated QBER (weighted average)
@@ -4231,14 +4797,15 @@ mod tests {
         assert_eq!(avg_qber, 820, "Average QBER should be 8.20%");
 
         // Count healthy channels (QBER < 11%)
-        let healthy_count = qber_values.iter()
-            .filter(|&&q| q < 1100)
-            .count();
+        let healthy_count = qber_values.iter().filter(|&&q| q < 1100).count();
         assert_eq!(healthy_count, 5, "All 5 channels should be healthy");
 
         // Test rejection criteria
         let should_reject = avg_qber > 1100 || healthy_count < qber_values.len() / 2;
-        assert!(!should_reject, "Block should NOT be rejected with avg QBER 8.20%");
+        assert!(
+            !should_reject,
+            "Block should NOT be rejected with avg QBER 8.20%"
+        );
     }
 
     /// Test QBER rejection when threshold exceeded
@@ -4255,7 +4822,8 @@ mod tests {
 
         // Scenario 2: Average QBER is 11.01% (exceeds threshold)
         let exceeding_qber_values = vec![1201, 1150, 1100, 1050, 1000];
-        let avg_qber: u32 = exceeding_qber_values.iter().sum::<u32>() / exceeding_qber_values.len() as u32;
+        let avg_qber: u32 =
+            exceeding_qber_values.iter().sum::<u32>() / exceeding_qber_values.len() as u32;
         assert_eq!(avg_qber, 1100, "Average rounds to 11%"); // Integer division
 
         // Scenario 3: Too few healthy channels
@@ -4263,7 +4831,10 @@ mod tests {
         let healthy_count = mixed_qber_values.iter().filter(|&&q| q < 1100).count();
         let total = mixed_qber_values.len();
         let should_reject_channels = healthy_count < total / 2;
-        assert!(should_reject_channels, "Should reject when only 1/5 channels healthy");
+        assert!(
+            should_reject_channels,
+            "Should reject when only 1/5 channels healthy"
+        );
     }
 
     /// Test linear voting scalability
@@ -4284,14 +4855,23 @@ mod tests {
 
             // Total = 3n (linear)
             let total_messages = propose_messages + vote_messages + certify_messages;
-            assert_eq!(total_messages, 3 * n, "Total should be 3n for {} validators", n);
+            assert_eq!(
+                total_messages,
+                3 * n,
+                "Total should be 3n for {} validators",
+                n
+            );
 
             // Verify scaling factor
             if n > 10 {
                 let ratio = total_messages as f64 / (3 * 10) as f64;
                 let expected_ratio = n as f64 / 10.0;
-                assert!((ratio - expected_ratio).abs() < 0.01,
-                    "Scaling should be linear: {} vs {}", ratio, expected_ratio);
+                assert!(
+                    (ratio - expected_ratio).abs() < 0.01,
+                    "Scaling should be linear: {} vs {}",
+                    ratio,
+                    expected_ratio
+                );
             }
         }
 
@@ -4393,7 +4973,10 @@ mod tests {
             _ => false,
         };
 
-        assert!(is_valid, "Tail-fork protection should pass with matching certificate");
+        assert!(
+            is_valid,
+            "Tail-fork protection should pass with matching certificate"
+        );
 
         // Invalid case: wrong certificate
         let wrong_cert = Some(vec![5, 6, 7, 8]);
@@ -4402,7 +4985,10 @@ mod tests {
             _ => false,
         };
 
-        assert!(!is_invalid, "Tail-fork protection should fail with wrong certificate");
+        assert!(
+            !is_invalid,
+            "Tail-fork protection should fail with wrong certificate"
+        );
 
         // Invalid case: missing certificate when required
         let missing_cert: Option<Vec<u8>> = None;
@@ -4411,7 +4997,10 @@ mod tests {
             _ => true,
         };
 
-        assert!(!is_missing_invalid, "Tail-fork protection should fail when cert missing");
+        assert!(
+            !is_missing_invalid,
+            "Tail-fork protection should fail when cert missing"
+        );
     }
 
     /// Test QRNG leader election fairness
@@ -4452,15 +5041,25 @@ mod tests {
             let deviation = (actual_wins - expected_wins).abs() / expected_wins;
 
             // Allow 30% deviation for statistical variance
-            assert!(deviation < 0.30,
+            assert!(
+                deviation < 0.30,
                 "Validator {} won {} times (expected ~{}), deviation {:.1}%",
-                v, actual_wins, expected_wins, deviation * 100.0);
+                v,
+                actual_wins,
+                expected_wins,
+                deviation * 100.0
+            );
         }
 
         println!("QRNG election wins distribution:");
         for v in 0..num_validators {
             let w = wins.get(&v).unwrap_or(&0);
-            println!("  Validator {}: {} wins ({:.1}%)", v, w, *w as f64 / num_rounds as f64 * 100.0);
+            println!(
+                "  Validator {}: {} wins ({:.1}%)",
+                v,
+                w,
+                *w as f64 / num_rounds as f64 * 100.0
+            );
         }
     }
 
@@ -4475,7 +5074,10 @@ mod tests {
 
         // Size reduction factor
         let reduction = sphincs_sig_size as f64 / falcon_sig_size as f64;
-        assert!((reduction - 38.95).abs() < 0.1, "Falcon should be ~39x smaller");
+        assert!(
+            (reduction - 38.95).abs() < 0.1,
+            "Falcon should be ~39x smaller"
+        );
 
         // Bandwidth savings for 100 validators voting
         let num_validators = 100;
@@ -4489,10 +5091,16 @@ mod tests {
         assert_eq!(bandwidth_savings, 4857600, "Savings: ~4.86MB per round");
 
         println!("Signature comparison for consensus votes:");
-        println!("  Falcon-1024: {} bytes/sig, {}KB for 100 validators",
-            falcon_sig_size, falcon_bandwidth / 1024);
-        println!("  SPHINCS+: {} bytes/sig, {}KB for 100 validators",
-            sphincs_sig_size, sphincs_bandwidth / 1024);
+        println!(
+            "  Falcon-1024: {} bytes/sig, {}KB for 100 validators",
+            falcon_sig_size,
+            falcon_bandwidth / 1024
+        );
+        println!(
+            "  SPHINCS+: {} bytes/sig, {}KB for 100 validators",
+            sphincs_sig_size,
+            sphincs_bandwidth / 1024
+        );
         println!("  Bandwidth savings: {}KB/round", bandwidth_savings / 1024);
     }
 
@@ -4511,7 +5119,10 @@ mod tests {
         assert_eq!(pipelined_throughput, 2000, "Pipelined: 2 seconds/block");
 
         let improvement = sequential_latency as f64 / pipelined_throughput as f64;
-        assert!((improvement - 3.0).abs() < 0.01, "Pipelining should give 3x throughput");
+        assert!(
+            (improvement - 3.0).abs() < 0.01,
+            "Pipelining should give 3x throughput"
+        );
 
         // Blocks per minute comparison
         let sequential_blocks_per_min = 60000 / sequential_latency;
@@ -4533,7 +5144,8 @@ mod tests {
 
         // 8x8x8 = 512 segments
         let segments_per_dimension = 8;
-        let total_segments = segments_per_dimension * segments_per_dimension * segments_per_dimension;
+        let total_segments =
+            segments_per_dimension * segments_per_dimension * segments_per_dimension;
         assert_eq!(total_segments, 512);
 
         // Test transaction distribution across segments
@@ -4551,7 +5163,9 @@ mod tests {
             let y = (hash_bytes[1] as usize) % segments_per_dimension;
             let z = (hash_bytes[2] as usize) % segments_per_dimension;
 
-            let segment_id = x + y * segments_per_dimension + z * segments_per_dimension * segments_per_dimension;
+            let segment_id = x
+                + y * segments_per_dimension
+                + z * segments_per_dimension * segments_per_dimension;
             *segment_counts.entry(segment_id).or_insert(0) += 1;
         }
 
@@ -4569,10 +5183,16 @@ mod tests {
 
         // Allow 30% deviation for statistical variance with 512 segments and 100k txs
         // (each segment gets ~195 txs on average)
-        assert!(max_deviation < 0.30,
-            "Max segment deviation {:.1}% should be < 30%", max_deviation * 100.0);
+        assert!(
+            max_deviation < 0.30,
+            "Max segment deviation {:.1}% should be < 30%",
+            max_deviation * 100.0
+        );
 
-        println!("Toroidal distribution (512 segments, {} txs):", num_transactions);
+        println!(
+            "Toroidal distribution (512 segments, {} txs):",
+            num_transactions
+        );
         println!("  Expected per segment: {:.1}", expected_per_segment);
         println!("  Max deviation: {:.1}%", max_deviation * 100.0);
     }
