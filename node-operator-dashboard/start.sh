@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")"
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 TIMESTAMP=$(date +%s)
 
 echo ""
@@ -29,7 +29,7 @@ show_help() {
     echo "Usage: ./start.sh [command]"
     echo ""
     echo "Commands:"
-    echo "  start       Start all services (node + messaging + dashboard) [default]"
+    echo "  start       Start all services (node + messaging + dashboard + updater) [default]"
     echo "  ui          Dashboard only - no Docker needed (port 8081)"
     echo "  stop        Stop all services"
     echo "  restart     Restart all services"
@@ -72,10 +72,14 @@ case "${1:-start}" in
         check_docker
         echo "Starting QuantumHarmony Node Operator..."
         echo ""
+        echo "Building updater..."
+        docker-compose build updater 2>/dev/null || echo "  Updater build skipped (no updater/ dir)"
+        echo ""
         echo "Services:"
         echo "  Dashboard:    http://localhost:8080"
         echo "  RPC:          http://localhost:9944"
         echo "  VOTE SYNC:    http://localhost:9955"
+        echo "  Updater:      auto-update daily + uptime monitor every 60s"
         echo "  P2P:          port 30333"
         echo ""
         echo "Node Name: ${NODE_NAME:-Operator}"
@@ -134,8 +138,8 @@ case "${1:-start}" in
         echo ""
         echo "Stopping containers..."
         docker-compose down 2>/dev/null || true
-        docker stop quantumharmony-node quantumharmony-dashboard quantumharmony-operator quantumharmony-proxy 2>/dev/null || true
-        docker rm quantumharmony-node quantumharmony-dashboard quantumharmony-operator quantumharmony-proxy 2>/dev/null || true
+        docker stop quantumharmony-node quantumharmony-dashboard quantumharmony-operator quantumharmony-proxy quantumharmony-updater 2>/dev/null || true
+        docker rm quantumharmony-node quantumharmony-dashboard quantumharmony-operator quantumharmony-proxy quantumharmony-updater 2>/dev/null || true
         echo ""
         echo "Removing old images (forcing fresh pull)..."
         docker rmi sylvaincormier/quantumharmony-node:latest 2>/dev/null || true
@@ -147,6 +151,9 @@ case "${1:-start}" in
         echo ""
         echo "Pulling latest code..."
         git pull origin main 2>/dev/null || echo "Git pull skipped (not a git repo or no remote)"
+        echo ""
+        echo "Rebuilding updater..."
+        docker-compose build updater 2>/dev/null || true
         echo ""
         echo "Pulling fresh images (no cache)..."
         docker-compose pull --ignore-pull-failures

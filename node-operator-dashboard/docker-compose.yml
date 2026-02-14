@@ -91,6 +91,31 @@ services:
       - node
       - operator
 
+  # =====================================================
+  # AUTO-UPDATER: Sidecar that polls Docker Hub for
+  # new image digests and performs rolling updates
+  # =====================================================
+  updater:
+    build: ./updater
+    container_name: quantumharmony-updater
+    restart: unless-stopped
+    environment:
+      - IMAGE=sylvaincormier/quantumharmony-node
+      - IMAGE_TAG=arm64
+      - UPDATE_INTERVAL=86400
+      - MONITOR_INTERVAL=60
+      - HEALTH_TIMEOUT=180
+      - HEALTH_URL=http://node:9944/health
+      - COMPOSE_PROJECT=node-operator-dashboard
+      - NODE_CONTAINER=quantumharmony-node
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker-compose.yml:/compose/docker-compose.yml:ro
+    networks:
+      - quantum-net
+    depends_on:
+      - node
+
 networks:
   quantum-net:
     driver: bridge
