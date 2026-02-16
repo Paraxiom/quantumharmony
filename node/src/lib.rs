@@ -42,3 +42,5 @@ pub mod optimistic_executor;
 // New modules for threshold QRNG network integration
 pub mod round_coordinator;
 pub mod test_account_setup;
+#[cfg(test)]
+mod pqc_transport_tests;

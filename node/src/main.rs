@@ -50,3 +50,5 @@ mod test_accounts;
 mod threshold_qrng;
 mod round_coordinator;
 mod test_account_setup;
+#[cfg(test)]
+mod pqc_transport_tests;
