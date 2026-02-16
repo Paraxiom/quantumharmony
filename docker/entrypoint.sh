@@ -24,10 +24,12 @@
 # Key Injection (for validators):
 #   SPHINCS_SECRET_KEY - 128-byte hex SPHINCS+ secret key
 #   AURA_PUBLIC_KEY    - 64-byte hex SPHINCS+ public key for Aura
+#   PQC_IDENTITY_KEY   - PQC transport identity JSON (Falcon-1024 keypair)
 #
 # Docker Secrets (alternative to env vars):
 #   /run/secrets/sphincs_secret_key
 #   /run/secrets/node_key
+#   /run/secrets/pqc_identity_key
 
 set -e
 
@@ -190,6 +192,45 @@ if [ "$VALIDATOR" = "true" ] && [ -n "$SPHINCS_SECRET" ]; then
     INJECT_KEY=true
 else
     INJECT_KEY=false
+fi
+
+# =============================================================================
+# PQC Transport Identity Setup
+# =============================================================================
+#
+# The PQC transport identity (Falcon-1024 keypair) is loaded by the node at startup
+# from <base-path>/<chain-id>/network/pqc_transport_identity.json. If the file doesn't
+# exist, the node will auto-generate a new identity.
+#
+# To use a pre-generated identity (for stable PeerIds across container recreations),
+# inject it via PQC_IDENTITY_KEY env var or Docker secret.
+
+PQC_IDENTITY_VALUE=$(get_secret "pqc_identity_key" "PQC_IDENTITY_KEY")
+if [ -n "$PQC_IDENTITY_VALUE" ]; then
+    # Determine chain ID for the correct path
+    CHAIN_ID="quantumharmony"
+    if [ -f "$CHAIN_SPEC" ]; then
+        SPEC_ID=$(python3 -c "import json; print(json.load(open('$CHAIN_SPEC'))['id'])" 2>/dev/null || echo "")
+        [ -n "$SPEC_ID" ] && CHAIN_ID="$SPEC_ID"
+    fi
+
+    PQC_KEY_DIR="${BASE_PATH}/chains/${CHAIN_ID}/network"
+    PQC_KEY_FILE="${PQC_KEY_DIR}/pqc_transport_identity.json"
+
+    mkdir -p "$PQC_KEY_DIR"
+
+    if [ -f "$PQC_IDENTITY_VALUE" ]; then
+        # Value is a file path
+        cp "$PQC_IDENTITY_VALUE" "$PQC_KEY_FILE"
+    else
+        # Value is the JSON content itself
+        echo "$PQC_IDENTITY_VALUE" > "$PQC_KEY_FILE"
+    fi
+
+    chmod 600 "$PQC_KEY_FILE"
+    log "PQC transport identity injected to $PQC_KEY_FILE"
+    unset PQC_IDENTITY_VALUE
+    unset PQC_IDENTITY_KEY
 fi
 
 # =============================================================================

@@ -141,6 +141,97 @@ where
     })
 }
 
+/// Load or generate a PQC (Falcon-1024) identity for transport-layer authentication.
+///
+/// The identity is persisted to `<base-path>/<chain-id>/network/pqc_transport_identity.json`
+/// as a JSON file with hex-encoded Falcon-1024 keypair bytes. On first run, a new keypair
+/// is generated and saved. On subsequent runs, the existing keypair is loaded.
+///
+/// This identity is used by `TransportConfig::PostQuantum` to replace Noise (Ed25519)
+/// with Kyber-1024 key encapsulation + Falcon-1024 authentication.
+#[cfg(feature = "pqc-transport")]
+fn load_or_generate_pqc_identity(
+    config: &Configuration,
+) -> Result<sc_network::pqc_authenticator::PqcIdentity, ServiceError> {
+    use pqcrypto_falcon::falcon1024;
+    use pqcrypto_traits::sign::{PublicKey as SignPublicKey, SecretKey as SignSecretKey};
+
+    let key_path = config.base_path.config_dir(config.chain_spec.id())
+        .join("network")
+        .join("pqc_transport_identity.json");
+
+    if key_path.exists() {
+        // Load existing Falcon-1024 keypair
+        let contents = std::fs::read_to_string(&key_path)
+            .map_err(|e| ServiceError::Other(format!(
+                "Failed to read PQC transport identity from {}: {}", key_path.display(), e
+            )))?;
+
+        let json: serde_json::Value = serde_json::from_str(&contents)
+            .map_err(|e| ServiceError::Other(format!(
+                "Failed to parse PQC transport identity: {}", e
+            )))?;
+
+        let pk_hex = json["falcon_public_key"].as_str()
+            .ok_or_else(|| ServiceError::Other(
+                "Missing falcon_public_key in PQC transport identity file".into()
+            ))?;
+        let sk_hex = json["falcon_secret_key"].as_str()
+            .ok_or_else(|| ServiceError::Other(
+                "Missing falcon_secret_key in PQC transport identity file".into()
+            ))?;
+
+        let pk_bytes = hex::decode(pk_hex.trim_start_matches("0x"))
+            .map_err(|e| ServiceError::Other(format!("Invalid PQC public key hex: {}", e)))?;
+        let sk_bytes = hex::decode(sk_hex.trim_start_matches("0x"))
+            .map_err(|e| ServiceError::Other(format!("Invalid PQC secret key hex: {}", e)))?;
+
+        let pk = falcon1024::PublicKey::from_bytes(&pk_bytes)
+            .map_err(|_| ServiceError::Other("Invalid Falcon-1024 public key bytes".into()))?;
+        let sk = falcon1024::SecretKey::from_bytes(&sk_bytes)
+            .map_err(|_| ServiceError::Other("Invalid Falcon-1024 secret key bytes".into()))?;
+
+        let identity = sc_network::pqc_authenticator::PqcIdentity::from_keypair(pk, sk);
+        eprintln!("🔐 [PQC-TRANSPORT] Loaded existing identity from {}", key_path.display());
+        eprintln!("🔑 [PQC-TRANSPORT] PeerId: {}", identity.peer_id());
+        Ok(identity)
+    } else {
+        // Generate new Falcon-1024 keypair
+        let (pk, sk) = falcon1024::keypair();
+
+        // Save to disk before wrapping in PqcIdentity (secret_key field is private)
+        if let Some(parent) = key_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| ServiceError::Other(format!(
+                    "Failed to create PQC key directory {}: {}", parent.display(), e
+                )))?;
+        }
+
+        let key_json = serde_json::json!({
+            "falcon_public_key": format!("0x{}", hex::encode(pk.as_bytes())),
+            "falcon_secret_key": format!("0x{}", hex::encode(sk.as_bytes())),
+        });
+
+        std::fs::write(&key_path, serde_json::to_string_pretty(&key_json).unwrap())
+            .map_err(|e| ServiceError::Other(format!(
+                "Failed to save PQC transport identity to {}: {}", key_path.display(), e
+            )))?;
+
+        // Set restrictive permissions on the key file (owner read/write only)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&key_path, std::fs::Permissions::from_mode(0o600));
+        }
+
+        let identity = sc_network::pqc_authenticator::PqcIdentity::from_keypair(pk, sk);
+        eprintln!("🔐 [PQC-TRANSPORT] Generated new Falcon-1024 identity");
+        eprintln!("🔑 [PQC-TRANSPORT] PeerId: {}", identity.peer_id());
+        eprintln!("💾 [PQC-TRANSPORT] Saved to {}", key_path.display());
+        Ok(identity)
+    }
+}
+
 /// Builds a new service for a full node with Aura consensus (no GRANDPA, no Frontier)
 async fn new_full(
     config: Configuration,
@@ -385,12 +476,27 @@ async fn new_full(
     net_config.network_config.allow_non_globals_in_dht = true;
     eprintln!("✅ [NETWORK] Enabled non-global IPs in DHT");
 
-    // Enable private IP addresses and mDNS for peer discovery
-    net_config.network_config.transport = sc_network::config::TransportConfig::Normal {
-        enable_mdns: true,
-        allow_private_ip: true,
-    };
-    eprintln!("✅ [NETWORK] Enabled mDNS and private IP addresses");
+    // Configure transport layer — PQC (Kyber-1024 + Falcon-1024) when feature is enabled,
+    // otherwise fall back to classical Noise (Ed25519).
+    #[cfg(feature = "pqc-transport")]
+    {
+        let pqc_identity = load_or_generate_pqc_identity(&config)?;
+        net_config.network_config.pqc_identity = Some(pqc_identity);
+        net_config.network_config.transport = sc_network::config::TransportConfig::PostQuantum {
+            enable_mdns: true,
+            allow_private_ip: true,
+        };
+        eprintln!("🔐 [NETWORK] PQC transport enabled (Kyber-1024 + Falcon-1024)");
+        eprintln!("✅ [NETWORK] Enabled mDNS and private IP addresses (post-quantum mode)");
+    }
+    #[cfg(not(feature = "pqc-transport"))]
+    {
+        net_config.network_config.transport = sc_network::config::TransportConfig::Normal {
+            enable_mdns: true,
+            allow_private_ip: true,
+        };
+        eprintln!("✅ [NETWORK] Enabled mDNS and private IP addresses (classical mode)");
+    }
 
     // Handle public address configuration
     if let Some(listen_addr) = config.network.listen_addresses.first() {

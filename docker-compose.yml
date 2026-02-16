@@ -1,5 +1,19 @@
 version: '3.8'
 
+# QuantumHarmony Local 3-Validator Testnet
+#
+# PQC Transport (Kyber-1024 + Falcon-1024):
+#   All P2P connections use post-quantum cryptographic transport by default
+#   (pqc-transport feature is enabled in the build). PQC identities are
+#   auto-generated on first run and persisted in each node's data volume.
+#
+#   NOTE: The bootnodes below use classical Ed25519-derived PeerIds (from --node-key).
+#   With PQC transport, authenticated PeerIds differ (Falcon-1024 derived), but mDNS
+#   peer discovery on the docker network handles connections regardless.
+#
+#   To inject pre-generated PQC identities for stable PQC PeerIds:
+#     PQC_IDENTITY_KEY: '{"falcon_public_key":"0x...","falcon_secret_key":"0x..."}'
+
 services:
   alice:
     image: quantumharmony:latest
