@@ -150,8 +150,10 @@ Lean 4 mathematical proofs for consensus, cryptography, and toroidal execution â
 | `QBER.lean` | 11% threshold < 14.6% BB84 max, average bounds, acceptance criteria | 8 |
 
 ```bash
-cd lean && lake build  # 0 errors, 0 sorries, 32 theorems
+cd lean && lake build  # 0 errors, 0 sorries, 33 theorems
 ```
+
+**Paper**: [162 Lean 4 Theorems for Post-Quantum Infrastructure](https://doi.org/10.5281/zenodo.18663125) (Zenodo, Feb 2026)
 
 ---
 
@@ -159,6 +161,7 @@ cd lean && lake build  # 0 errors, 0 sorries, 32 theorems
 
 | Paper | Topic | DOI |
 |-------|-------|-----|
+| 162 Lean 4 Theorems | Formal verification across QTS, QSSH, QH | [10.5281/zenodo.18663125](https://doi.org/10.5281/zenodo.18663125) |
 | Proof of Coherence | QKD-based distributed consensus | [10.5281/zenodo.17929054](https://doi.org/10.5281/zenodo.17929054) |
 | Toroidal Mesh | 10K TPS with SPHINCS+ | [10.5281/zenodo.17931222](https://doi.org/10.5281/zenodo.17931222) |
 | ERLHS | Hamiltonian coherence framework | [10.5281/zenodo.17928909](https://doi.org/10.5281/zenodo.17928909) |
