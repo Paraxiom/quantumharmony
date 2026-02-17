@@ -482,45 +482,78 @@ where
         // Calculate how many blocks need to be finalized
         let blocks_behind: u64 = (target_number - last_finalized_number).saturated_into();
 
-        // OPTIMIZATION: If too far behind (>100 blocks), skip sequential finalization
-        // This prevents the O(n²) complexity from the backward chain walk
-        // Future election cycles will catch up gradually
-        const MAX_CATCHUP_BLOCKS: u64 = 100;
+        // BATCH CATCH-UP: If far behind, finalize up to BATCH_SIZE blocks per election cycle
+        // instead of skipping entirely. This ensures finality always makes progress.
+        // At 5000 blocks/cycle and ~30s/cycle, catches up ~10,000 blocks/min.
+        // 73,600 blocks behind = ~15 cycles = ~7.5 minutes to full catch-up.
+        const MAX_CATCHUP_BLOCKS: u64 = 5000;
         if blocks_behind > MAX_CATCHUP_BLOCKS {
+            let cycles_needed = blocks_behind / MAX_CATCHUP_BLOCKS + 1;
             warn!(
-                "⚠️  Finality is {} blocks behind (max catchup: {}). Skipping to avoid timeout.",
-                blocks_behind, MAX_CATCHUP_BLOCKS
+                "⚠️  Finality is {} blocks behind. Batch catching up {} blocks this cycle ({} cycles remaining).",
+                blocks_behind, MAX_CATCHUP_BLOCKS, cycles_needed
             );
-            warn!("   Finality will catch up gradually over next {} election cycles.", blocks_behind / 5 + 1);
 
-            // Encode justification for direct finalization too
-            let direct_justification = {
-                let justification = CoherenceJustification::new(certificate.clone());
-                let encoded = justification.encode();
-                info!("📝 Encoded coherence justification for direct finalization: {} bytes", encoded.len());
-                Some((COHERENCE_ENGINE_ID, encoded))
-            };
+            // Instead of skipping, finalize a batch of MAX_CATCHUP_BLOCKS from
+            // last_finalized+1 forward. We DON'T jump to target — we walk forward
+            // sequentially from the last finalized block, which Substrate requires.
+            let batch_target_number = last_finalized_number + MAX_CATCHUP_BLOCKS.into();
 
-            // Just finalize the target block directly - Substrate will handle it
-            // Some clients support this, others require sequential finalization
-            match self.client.finalize_block(block_hash, direct_justification.clone(), true) {
-                Ok(()) => {
-                    info!("✅ Direct finalization of block #{} succeeded!", target_number);
-                    // Broadcast justification to peers via gossip protocol
-                    if let Some((_, encoded)) = direct_justification {
-                        info!("📡 Broadcasting justification for block #{} to peers via gossip", target_number);
-                        if let Err(e) = self.broadcast_justification(block_hash, target_number, encoded) {
-                            warn!("⚠️  Failed to broadcast justification: {}", e);
-                        }
-                    }
-                    return Ok(());
-                },
-                Err(e) => {
-                    // Direct finalization failed, this is expected for some backends
-                    info!("ℹ️  Direct finalization failed ({}), will retry on next election", e);
-                    return Ok(()); // Don't error out, just skip this round
-                }
+            // Get the block hash for our batch target by walking backwards from target
+            let mut walk_hash = block_hash;
+            let mut walk_number = target_number;
+            while walk_number > batch_target_number {
+                let header = self.client.header(walk_hash)
+                    .map_err(|e| format!("Failed to get header during batch walk: {:?}", e))?
+                    .ok_or_else(|| format!("Header not found during batch walk at #{}", walk_number))?;
+                walk_hash = *header.parent_hash();
+                walk_number = walk_number - 1u32.into();
             }
+            let batch_target_hash = walk_hash;
+
+            // Now walk backwards from batch_target to build the hash map for this batch
+            let mut batch_hashes: std::collections::HashMap<NumberFor<Block>, Block::Hash> = std::collections::HashMap::new();
+            batch_hashes.insert(batch_target_number, batch_target_hash);
+            let mut bw_hash = batch_target_hash;
+            let mut bw_number = batch_target_number;
+            while bw_number > last_finalized_number + 1u32.into() {
+                let header = self.client.header(bw_hash)
+                    .map_err(|e| format!("Failed to get header for batch #{}: {:?}", bw_number, e))?
+                    .ok_or_else(|| format!("Header not found for batch #{}", bw_number))?;
+                bw_hash = *header.parent_hash();
+                bw_number = bw_number - 1u32.into();
+                batch_hashes.insert(bw_number, bw_hash);
+            }
+
+            info!("🔗 Batch finalizing {} blocks (#{} to #{})", batch_hashes.len(), last_finalized_number + 1u32.into(), batch_target_number);
+
+            let mut current = last_finalized_number + 1u32.into();
+            let mut batch_count = 0u32;
+            while current <= batch_target_number {
+                let current_hash = *batch_hashes.get(&current)
+                    .ok_or_else(|| format!("Batch hash not found for #{}", current))?;
+                match self.client.finalize_block(current_hash, None, true) {
+                    Ok(()) => {
+                        batch_count += 1;
+                        if batch_count % 500 == 0 {
+                            info!("🔒 Batch finalized up to #{} ({}/{})", current, batch_count, MAX_CATCHUP_BLOCKS);
+                        }
+                    },
+                    Err(e) => {
+                        error!("❌ Batch finalization failed at block #{}: {:?}", current, e);
+                        if batch_count > 0 {
+                            info!("✅ Batch finalized {} blocks before failure", batch_count);
+                        }
+                        return Err(format!("Batch finalization failed at #{}: {:?}", current, e));
+                    }
+                }
+                current = current + 1u32.into();
+            }
+
+            info!("✅ Batch finalized {} blocks (#{} to #{}). {} blocks remaining to catch up.",
+                batch_count, last_finalized_number + 1u32.into(), batch_target_number,
+                blocks_behind - (batch_count as u64));
+            return Ok(());
         }
 
         // Finalize all blocks sequentially from last_finalized+1 to target
@@ -2267,12 +2300,25 @@ where
                                 return Ok(true);
                             }
                         }
-                        // NOTE: Certificate signature verification requires Falcon1024 verifier; accepting uncached certificates for testnet
-                        warn!(
-                            "⚠️  Parent certificate not in cache for {:?}, accepting for now",
-                            &parent_hash.as_ref()[0..4]
-                        );
-                        Ok(true)
+                        // Check if finality is far behind — if so, accept uncached certs
+                        // (we're in catch-up mode and can't enforce yet).
+                        // Once finality is within 200 blocks, enforce cache-based validation.
+                        let finalized = self.client.info().finalized_number;
+                        let best = self.client.info().best_number;
+                        let finality_gap: u64 = (best - finalized).saturated_into();
+                        if finality_gap > 200 {
+                            debug!(
+                                "Finality {} blocks behind, accepting uncached cert for {:?} during catch-up",
+                                finality_gap, &parent_hash.as_ref()[0..4]
+                            );
+                            Ok(true)
+                        } else {
+                            error!(
+                                "❌ Tail-fork violation: Parent certificate for {:?} not in cache (finality gap: {})",
+                                &parent_hash.as_ref()[0..4], finality_gap
+                            );
+                            Ok(false)
+                        }
                     }
                     None => {
                         warn!(
