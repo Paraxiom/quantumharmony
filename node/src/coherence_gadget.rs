@@ -497,7 +497,8 @@ where
             // Instead of skipping, finalize a batch of MAX_CATCHUP_BLOCKS from
             // last_finalized+1 forward. We DON'T jump to target — we walk forward
             // sequentially from the last finalized block, which Substrate requires.
-            let batch_target_number = last_finalized_number + MAX_CATCHUP_BLOCKS.into();
+            let batch_target_num: NumberFor<Block> = MAX_CATCHUP_BLOCKS.saturated_into();
+            let batch_target_number = last_finalized_number + batch_target_num;
 
             // Get the block hash for our batch target by walking backwards from target
             let mut walk_hash = block_hash;
