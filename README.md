@@ -2,7 +2,7 @@
 
 **The first post-quantum Layer 1 blockchain built from genesis.**
 
-[![Tests](https://img.shields.io/badge/tests-808%20passing-brightgreen)](https://github.com/Paraxiom/quantumharmony)
+[![Tests](https://img.shields.io/badge/tests-950%20passing-brightgreen)](https://github.com/Paraxiom/quantumharmony)
 [![Validators](https://img.shields.io/badge/validators-3%20live-blue)](https://github.com/Paraxiom/quantumharmony)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
@@ -14,7 +14,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Test Coverage | 808 unit & integration tests |
+| Test Coverage | 950 unit & integration tests |
 | Pallets | 15+ custom runtime modules |
 | Block Time | 6 seconds |
 | Consensus | Proof of Coherence (PQ-BFT) |
@@ -113,7 +113,7 @@ cargo build --release
 ### Run Tests
 ```bash
 cargo test --workspace
-# 808 tests across all pallets and node components
+# 950 tests across all pallets and node components
 ```
 
 ---
@@ -150,10 +150,10 @@ Lean 4 mathematical proofs for consensus, cryptography, and toroidal execution â
 | `QBER.lean` | 11% threshold < 14.6% BB84 max, average bounds, acceptance criteria | 8 |
 
 ```bash
-cd lean && lake build  # 0 errors, 0 sorries, 33 theorems
+cd lean && lake build  # 0 errors, 0 sorries, 32 theorems
 ```
 
-**Paper**: [162 Lean 4 Theorems for Post-Quantum Infrastructure](https://doi.org/10.5281/zenodo.18663125) (Zenodo, Feb 2026)
+**Paper**: [562 Lean 4 Theorems for Post-Quantum Infrastructure](https://doi.org/10.5281/zenodo.18663125) (Zenodo, Feb 2026)
 
 ---
 
@@ -161,7 +161,7 @@ cd lean && lake build  # 0 errors, 0 sorries, 33 theorems
 
 | Paper | Topic | DOI |
 |-------|-------|-----|
-| 162 Lean 4 Theorems | Formal verification across QTS, QSSH, QH | [10.5281/zenodo.18663125](https://doi.org/10.5281/zenodo.18663125) |
+| 562 Lean 4 Theorems | Formal verification across QTS, QSSH, QH | [10.5281/zenodo.18663125](https://doi.org/10.5281/zenodo.18663125) |
 | Proof of Coherence | QKD-based distributed consensus | [10.5281/zenodo.17929054](https://doi.org/10.5281/zenodo.17929054) |
 | Toroidal Mesh | 10K TPS with SPHINCS+ | [10.5281/zenodo.17931222](https://doi.org/10.5281/zenodo.17931222) |
 | ERLHS | Hamiltonian coherence framework | [10.5281/zenodo.17928909](https://doi.org/10.5281/zenodo.17928909) |
@@ -175,7 +175,7 @@ cd lean && lake build  # 0 errors, 0 sorries, 33 theorems
 
 - [x] Core runtime with SPHINCS+ signatures
 - [x] 3 production validators (geographically distributed)
-- [x] 808 passing tests
+- [x] 950 passing tests
 - [x] 3-tier formal verification (Kani + Verus + Lean 4)
 - [x] Docker deployment for node operators
 - [x] Quantum P2P with Falcon-1024/ML-KEM-1024
