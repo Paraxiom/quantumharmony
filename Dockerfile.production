@@ -40,7 +40,7 @@ COPY . .
 # SKIP_WASM_BUILD=0 ensures WASM runtime is compiled
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/target \
-    SKIP_WASM_BUILD=0 cargo build --profile $PROFILE -p quantumharmony-node --no-default-features --features rocksdb,std \
+    SKIP_WASM_BUILD=0 cargo build --profile $PROFILE -p quantumharmony-node \
     && cp /build/target/$PROFILE/quantumharmony-node /quantumharmony-node
 
 # =============================================================================
