@@ -53,7 +53,7 @@ pub use frame_support::{
     },
     weights::{
         constants::{
-            BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
+            BlockExecutionWeight, ExtrinsicBaseWeight, ParityDbWeight, WEIGHT_REF_TIME_PER_SECOND,
         },
         IdentityFee, Weight,
     },
@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 27,  // v27: Fix WASM DummyHasher divergence (use Hash256StdHasher unconditionally)
+    spec_version: 28,  // v28: Fresh genesis with ParityDB, remove AcademicVouch
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -187,7 +187,7 @@ impl frame_system::Config for Runtime {
     /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
     type BlockHashCount = BlockHashCount;
     /// The weight of database operations that the runtime can invoke.
-    type DbWeight = RocksDbWeight;
+    type DbWeight = ParityDbWeight;
     /// Version of the runtime.
     type Version = Version;
     /// Converts a module to the index of the module in `construct_runtime!`.
@@ -427,20 +427,6 @@ impl pallet_validator_governance::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type VotingPeriod = ValidatorVotingPeriod;
     type MinimumVotes = MinimumVotes;
-}
-
-// Academic Vouching pallet configuration
-parameter_types! {
-    pub const RequiredVouches: u32 = 2; // Vouches needed for program acceptance
-    pub const AcademicVotingPeriod: BlockNumber = 100; // ~10 minutes for academic registration voting
-    pub const MinimumAcademicApprovals: u32 = 1; // Low for testing
-}
-
-impl pallet_academic_vouch::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type RequiredVouches = RequiredVouches;
-    type AcademicVotingPeriod = AcademicVotingPeriod;
-    type MinimumAcademicApprovals = MinimumAcademicApprovals;
 }
 
 // Ricardian Contracts pallet configuration
@@ -757,8 +743,7 @@ construct_runtime!(
         // Validator governance - voting on new validator additions
         ValidatorGovernance: pallet_validator_governance,
 
-        // Academic/Legal Governance pallets
-        AcademicVouch: pallet_academic_vouch,
+        // Legal Governance pallets
         RicardianContracts: pallet_ricardian_contracts,
         Notarial: pallet_notarial,
 		MeshForum: pallet_mesh_forum,

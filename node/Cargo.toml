@@ -180,7 +180,6 @@ harness = false
 
 [features]
 default = [
-	"rocksdb",
 	"std",
 	"pqc-transport",
 ]

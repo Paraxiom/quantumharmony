@@ -15,7 +15,6 @@ members = [
 	"pallets/relay-coordination",
 	"pallets/pedersen-commitment",
 	"pallets/dev-governance",
-	"pallets/academic-vouch",
 	"pallets/ricardian-contracts",
 	"pallets/notarial",
 	"pallets/mesh-forum",
@@ -181,7 +180,6 @@ substrate-validator-set = { path = "pallets/substrate-validator-set", default-fe
 pallet-validator-governance = { path = "pallets/validator-governance", default-features = false }
 pallet-registration = { path = "pallets/pallet-registration", default-features = false }
 pallet-dev-governance = { path = "pallets/dev-governance", default-features = false }
-pallet-academic-vouch = { path = "pallets/academic-vouch", default-features = false }
 pallet-ricardian-contracts = { path = "pallets/ricardian-contracts", default-features = false }
 pallet-notarial = { path = "pallets/notarial", default-features = false }
 pallet-devonomics = { path = "pallets/devonomics", default-features = false }

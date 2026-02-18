@@ -131,6 +131,10 @@ fi
 ARGS+=("--base-path" "$BASE_PATH")
 log "Data directory: $BASE_PATH"
 
+# Database backend (ParityDB — eliminates RocksDB column family issues)
+ARGS+=("--database" "paritydb")
+log "Database: ParityDB"
+
 # Node name
 if [ -n "$NODE_NAME" ]; then
     ARGS+=("--name" "$NODE_NAME")

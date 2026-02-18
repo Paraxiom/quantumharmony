@@ -7461,20 +7461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-academic-vouch"
-version = "1.0.0"
-dependencies = [
- "frame-support 28.0.0",
- "frame-system 28.0.0",
- "parity-scale-codec",
- "scale-info",
- "sp-core 28.0.0",
- "sp-io 30.0.0",
- "sp-runtime 31.0.1",
- "sp-std 14.0.0 (git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys)",
-]
-
-[[package]]
 name = "pallet-asset-conversion"
 version = "10.0.0"
 source = "git+https://github.com/Paraxiom/polkadot-sdk?branch=daily%2F2025-10-16-sphincs-deterministic-keys#2d0b403e1426982e9844c9dbd1cc451233f22570"
@@ -9503,7 +9489,6 @@ dependencies = [
  "hash256-std-hasher",
  "hex-literal",
  "log",
- "pallet-academic-vouch",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
