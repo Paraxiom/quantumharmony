@@ -28,10 +28,14 @@ use crate::error::{Error, Result};
 pub const X25519_PUBLIC_KEY_SIZE: usize = 32;
 /// Size of X25519 secret key in bytes
 pub const X25519_SECRET_KEY_SIZE: usize = 32;
-/// Size of ML-KEM-768 public key in bytes
+/// Size of ML-KEM-768 public key in bytes (NIST Level 3)
 pub const MLKEM_PUBLIC_KEY_SIZE: usize = 1184;
 /// Size of ML-KEM-768 secret key in bytes
 pub const MLKEM_SECRET_KEY_SIZE: usize = 2400;
+/// Size of ML-KEM-1024 public key in bytes (NIST Level 5, issue #5)
+pub const MLKEM_1024_PUBLIC_KEY_SIZE: usize = 1568;
+/// Size of ML-KEM-1024 secret key in bytes
+pub const MLKEM_1024_SECRET_KEY_SIZE: usize = 3168;
 /// Size of SPHINCS+ public key in bytes
 pub const SPHINCS_PUBLIC_KEY_SIZE: usize = 64;
 /// Size of SPHINCS+ signature in bytes
@@ -127,6 +131,22 @@ impl IdentityKeyPair {
         let (dk, ek): (DecapsulationKey<MlKem768Params>, EncapsulationKey<MlKem768Params>) = MlKem768::generate(rng);
 
         // Serialize keys - EncodedSizeUser provides as_bytes()
+        let ek_bytes = EncodedSizeUser::as_bytes(&ek).to_vec();
+        let dk_bytes = EncodedSizeUser::as_bytes(&dk).to_vec();
+
+        Ok((ek_bytes, dk_bytes))
+    }
+
+    /// Generate ML-KEM-1024 keypair (NIST Level 5, ~192-bit PQ security).
+    ///
+    /// Use this instead of `generate_mlkem_keypair` for high-security channels
+    /// (issue #5). The returned keys are larger but provide stronger PQ guarantees.
+    pub(crate) fn generate_mlkem_1024_keypair(rng: &mut (impl RngCore + rand::CryptoRng)) -> Result<(Vec<u8>, Vec<u8>)> {
+        use ml_kem::kem::{DecapsulationKey, EncapsulationKey};
+        use ml_kem::{EncodedSizeUser, KemCore, MlKem1024, MlKem1024Params};
+
+        let (dk, ek): (DecapsulationKey<MlKem1024Params>, EncapsulationKey<MlKem1024Params>) = MlKem1024::generate(rng);
+
         let ek_bytes = EncodedSizeUser::as_bytes(&ek).to_vec();
         let dk_bytes = EncodedSizeUser::as_bytes(&dk).to_vec();
 

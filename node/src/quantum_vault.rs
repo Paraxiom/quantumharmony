@@ -96,6 +96,9 @@ impl QuantumVault {
         if quality < 80 {
             return Err("Entropy quality too low for vault storage".into());
         }
+
+        // NIST SP 800-90B health tests (issue #3)
+        validate_entropy_health(&entropy)?;
         
         // Encrypt the entropy
         let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&*self.master_key));
@@ -287,6 +290,109 @@ pub struct VaultStats {
     pub average_quality: f32,
 }
 
+// =============================================================================
+// NIST SP 800-90B Health Tests (Issue #3)
+// =============================================================================
+
+/// NIST SP 800-90B Repetition Count Test (RCT).
+///
+/// Detects a noise source failure where the source produces the same value
+/// repeatedly. If any byte value appears `cutoff` or more times consecutively,
+/// the entropy source is considered unhealthy.
+///
+/// # Arguments
+/// * `data` - Raw entropy bytes to test
+/// * `cutoff` - Maximum allowed consecutive repetitions (NIST recommends
+///   `1 + ceil(-log2(alpha) / H)` where alpha=2^-20 and H is min-entropy estimate).
+///   For a conservative 4 bits/byte min-entropy estimate: cutoff = 6.
+///
+/// # Returns
+/// `true` if the data passes (no excessive repetitions), `false` if it fails.
+pub fn repetition_count_test(data: &[u8], cutoff: usize) -> bool {
+    if data.len() < 2 {
+        return true;
+    }
+
+    let mut count = 1usize;
+    for i in 1..data.len() {
+        if data[i] == data[i - 1] {
+            count += 1;
+            if count >= cutoff {
+                log::warn!(
+                    "RCT FAILED: byte 0x{:02x} repeated {} times at offset {}",
+                    data[i], count, i
+                );
+                return false;
+            }
+        } else {
+            count = 1;
+        }
+    }
+    true
+}
+
+/// NIST SP 800-90B Adaptive Proportion Test (APT).
+///
+/// Detects a noise source that produces one symbol value with too-high
+/// probability within a window of samples. If the most frequent byte
+/// in a sliding window exceeds the cutoff, the source is unhealthy.
+///
+/// # Arguments
+/// * `data` - Raw entropy bytes to test
+/// * `window_size` - Size of the sliding window (NIST recommends 512 for binary,
+///   64 for non-binary sources; 64 is appropriate for byte-level testing)
+/// * `cutoff` - Maximum allowed count of any single byte value within a window.
+///   For 8-bit output with H=4 and alpha=2^-20: cutoff ≈ 9 per 64-sample window.
+///
+/// # Returns
+/// `true` if the data passes (no over-represented symbols), `false` if it fails.
+pub fn adaptive_proportion_test(data: &[u8], window_size: usize, cutoff: usize) -> bool {
+    if data.len() < window_size {
+        return true;
+    }
+
+    for window_start in 0..=(data.len() - window_size) {
+        let window = &data[window_start..window_start + window_size];
+        let first_byte = window[0];
+
+        // Count occurrences of the first byte in this window
+        let count = window.iter().filter(|&&b| b == first_byte).count();
+
+        if count >= cutoff {
+            log::warn!(
+                "APT FAILED: byte 0x{:02x} appeared {} times in {}-byte window at offset {}",
+                first_byte, count, window_size, window_start
+            );
+            return false;
+        }
+    }
+    true
+}
+
+/// Validate entropy using both NIST SP 800-90B health tests.
+///
+/// Runs the Repetition Count Test (RCT) and Adaptive Proportion Test (APT)
+/// on the raw entropy data before it enters the vault.
+///
+/// # Arguments
+/// * `data` - Raw entropy bytes from QRNG device
+///
+/// # Returns
+/// `Ok(())` if both tests pass, `Err` with the failing test name.
+pub fn validate_entropy_health(data: &[u8]) -> Result<(), String> {
+    // RCT: cutoff=6 (conservative for 4 bits/byte min-entropy)
+    if !repetition_count_test(data, 6) {
+        return Err("NIST SP 800-90B Repetition Count Test (RCT) failed".into());
+    }
+
+    // APT: window=64, cutoff=9 (8-bit output, H=4, alpha=2^-20)
+    if !adaptive_proportion_test(data, 64, 9) {
+        return Err("NIST SP 800-90B Adaptive Proportion Test (APT) failed".into());
+    }
+
+    Ok(())
+}
+
 /// Global vault instance
 lazy_static::lazy_static! {
     static ref QUANTUM_VAULT: Arc<QuantumVault> = {
@@ -327,22 +433,25 @@ impl SecureEntropyChannel {
 mod tests {
     use super::*;
 
+    /// Generate varied test entropy that passes NIST SP 800-90B health tests.
+    /// Uses a simple LCG-like pattern: byte[i] = (i * 0x37 + seed) mod 256.
+    fn test_entropy(len: usize, seed: u8) -> Vec<u8> {
+        (0..len).map(|i| (i as u8).wrapping_mul(0x37).wrapping_add(seed)).collect()
+    }
+
     #[test]
     fn test_vault_operations() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add some test entropy
-        let entropy = vec![0x42; 128];
+        let entropy = test_entropy(128, 0x42);
         vault.add_entropy(entropy, QuantumEntropySource::KIRQ, 90).unwrap();
 
-        // Get entropy for different purposes
         let sphincs_entropy = vault.get_sphincs_entropy().unwrap();
         assert_eq!(sphincs_entropy.len(), 32);
 
         let falcon_entropy = vault.get_falcon_entropy().unwrap();
         assert_eq!(falcon_entropy.len(), 40);
 
-        // Check stats
         let stats = vault.get_stats();
         assert_eq!(stats.segment_count, 1);
         assert_eq!(stats.total_consumed, 72); // 32 + 40
@@ -352,14 +461,14 @@ mod tests {
     fn test_vault_quality_threshold() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Try to add low quality entropy - should fail
-        let bad_entropy = vec![0x00; 64];
+        // Low quality entropy - rejected before health test
+        let bad_entropy = test_entropy(64, 0x00);
         let result = vault.add_entropy(bad_entropy, QuantumEntropySource::KIRQ, 50);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Entropy quality too low for vault storage");
 
-        // Add high quality entropy - should succeed
-        let good_entropy = vec![0xFF; 64];
+        // High quality varied entropy - should succeed
+        let good_entropy = test_entropy(64, 0xFF);
         let result = vault.add_entropy(good_entropy, QuantumEntropySource::QKD, 95);
         assert!(result.is_ok());
 
@@ -372,13 +481,11 @@ mod tests {
     fn test_vault_max_segments() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add MAX_SEGMENTS + 1 entropy segments
         for i in 0..MAX_SEGMENTS + 1 {
-            let entropy = vec![(i as u8) ^ 0xAA; 64];
+            let entropy = test_entropy(64, i as u8);
             vault.add_entropy(entropy, QuantumEntropySource::KIRQ, 90).unwrap();
         }
 
-        // Should never exceed MAX_SEGMENTS
         let stats = vault.get_stats();
         assert_eq!(stats.segment_count, MAX_SEGMENTS);
     }
@@ -387,11 +494,9 @@ mod tests {
     fn test_vault_entropy_consumption() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add entropy
-        let entropy = vec![0x55; 256];
+        let entropy = test_entropy(256, 0x55);
         vault.add_entropy(entropy, QuantumEntropySource::Crypto4aHSM, 98).unwrap();
 
-        // Consume entropy multiple times
         let _e1 = vault.get_sphincs_entropy().unwrap();
         let _e2 = vault.get_falcon_entropy().unwrap();
         let _e3 = vault.get_consensus_entropy().unwrap();
@@ -399,7 +504,6 @@ mod tests {
         let stats = vault.get_stats();
         assert_eq!(stats.total_consumed, 32 + 40 + 32); // 104 bytes
 
-        // Remaining entropy should be 256 - 104 = 152 bytes
         assert!(stats.total_entropy_bytes > 0);
         assert!(stats.total_entropy_bytes < 256);
     }
@@ -408,14 +512,11 @@ mod tests {
     fn test_vault_segment_removal() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add small entropy segment (just barely enough for one operation)
-        let small_entropy = vec![0x77; 50]; // Only 50 bytes
+        let small_entropy = test_entropy(50, 0x77);
         vault.add_entropy(small_entropy, QuantumEntropySource::DirectMeasurement, 85).unwrap();
 
-        // Consume falcon entropy (40 bytes) - should leave 10 bytes
         let _falcon = vault.get_falcon_entropy().unwrap();
 
-        // Segment should be removed (< 32 bytes remaining)
         let stats = vault.get_stats();
         assert_eq!(stats.segment_count, 0);
     }
@@ -424,7 +525,6 @@ mod tests {
     fn test_vault_insufficient_entropy() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Try to get entropy from empty vault
         let result = vault.get_sphincs_entropy();
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Insufficient entropy in vault");
@@ -434,25 +534,20 @@ mod tests {
     fn test_vault_sealing() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add entropy
-        let entropy = vec![0x99; 128];
+        let entropy = test_entropy(128, 0x99);
         vault.add_entropy(entropy, QuantumEntropySource::QKD, 99).unwrap();
 
-        // Seal the vault
         vault.seal();
 
-        // Check sealed status
         let stats = vault.get_stats();
         assert!(stats.sealed);
-        assert_eq!(stats.segment_count, 0); // All segments cleared
+        assert_eq!(stats.segment_count, 0);
 
-        // Try to add entropy - should fail
-        let new_entropy = vec![0xAA; 64];
+        let new_entropy = test_entropy(64, 0xAA);
         let result = vault.add_entropy(new_entropy, QuantumEntropySource::KIRQ, 90);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Vault is sealed");
 
-        // Try to get entropy - should fail
         let result = vault.get_sphincs_entropy();
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Vault is sealed");
@@ -462,14 +557,10 @@ mod tests {
     fn test_vault_encryption_decryption() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add entropy with known pattern
         let original_entropy = (0..128).map(|i| i as u8).collect::<Vec<_>>();
         vault.add_entropy(original_entropy.clone(), QuantumEntropySource::Crypto4aHSM, 92).unwrap();
 
-        // Get entropy back
         let retrieved = vault.get_sphincs_entropy().unwrap();
-
-        // Should match first 32 bytes of original
         assert_eq!(&*retrieved, &original_entropy[..32]);
     }
 
@@ -477,30 +568,27 @@ mod tests {
     fn test_vault_multiple_sources() {
         let vault = QuantumVault::new(None).unwrap();
 
-        // Add entropy from different sources
-        vault.add_entropy(vec![0x11; 64], QuantumEntropySource::QKD, 98).unwrap();
-        vault.add_entropy(vec![0x22; 64], QuantumEntropySource::Crypto4aHSM, 95).unwrap();
-        vault.add_entropy(vec![0x33; 64], QuantumEntropySource::KIRQ, 88).unwrap();
-        vault.add_entropy(vec![0x44; 64], QuantumEntropySource::DirectMeasurement, 82).unwrap();
+        vault.add_entropy(test_entropy(64, 0x11), QuantumEntropySource::QKD, 98).unwrap();
+        vault.add_entropy(test_entropy(64, 0x22), QuantumEntropySource::Crypto4aHSM, 95).unwrap();
+        vault.add_entropy(test_entropy(64, 0x33), QuantumEntropySource::KIRQ, 88).unwrap();
+        vault.add_entropy(test_entropy(64, 0x44), QuantumEntropySource::DirectMeasurement, 82).unwrap();
 
         let stats = vault.get_stats();
         assert_eq!(stats.segment_count, 4);
 
         // Should select highest quality segment (QKD with 98)
         let entropy = vault.get_sphincs_entropy().unwrap();
-        assert_eq!(entropy[0], 0x11); // Should come from QKD source
+        // First byte of test_entropy(64, 0x11) = 0x00 * 0x37 + 0x11 = 0x11
+        assert_eq!(entropy[0], 0x11);
     }
 
     #[test]
     fn test_vault_hsm_endpoint() {
-        // Test with HSM endpoint
         let vault = QuantumVault::new(Some("http://192.168.0.41:8132".to_string())).unwrap();
 
-        // Add entropy
-        let entropy = vec![0xBB; 96];
+        let entropy = test_entropy(96, 0xBB);
         vault.add_entropy(entropy, QuantumEntropySource::Crypto4aHSM, 97).unwrap();
 
-        // Should work normally
         let _falcon = vault.get_falcon_entropy().unwrap();
 
         let stats = vault.get_stats();
@@ -511,16 +599,77 @@ mod tests {
     fn test_secure_entropy_channel() {
         let channel = SecureEntropyChannel::new("TestPurpose".to_string());
 
-        // Add entropy to the global vault first
         let vault = quantum_vault();
-        let entropy = vec![0xCC; 128];
+        let entropy = test_entropy(128, 0xCC);
         vault.add_entropy(entropy, QuantumEntropySource::KIRQ, 91).unwrap();
 
-        // Get entropy through channel
         let result = channel.get_entropy(32);
         assert!(result.is_ok());
 
         let entropy = result.unwrap();
         assert_eq!(entropy.len(), 32);
+    }
+
+    // ── NIST SP 800-90B Health Tests (Issue #3) ────────────────────
+
+    #[test]
+    fn test_rct_passes_varied_data() {
+        let data: Vec<u8> = (0..256).map(|i| i as u8).collect();
+        assert!(repetition_count_test(&data, 6));
+    }
+
+    #[test]
+    fn test_rct_fails_constant_data() {
+        // 6 consecutive identical bytes should trigger cutoff=6
+        let data = vec![0xAA; 10];
+        assert!(!repetition_count_test(&data, 6));
+    }
+
+    #[test]
+    fn test_rct_passes_short_repeat() {
+        // 5 consecutive identical bytes is OK with cutoff=6
+        let mut data = vec![0xBB; 5];
+        data.push(0xCC);
+        assert!(repetition_count_test(&data, 6));
+    }
+
+    #[test]
+    fn test_apt_passes_varied_data() {
+        let data: Vec<u8> = (0..128).map(|i| i as u8).collect();
+        assert!(adaptive_proportion_test(&data, 64, 9));
+    }
+
+    #[test]
+    fn test_apt_fails_biased_data() {
+        // Window of 64 bytes where one value appears 10 times (exceeds cutoff=9)
+        let mut data = vec![0x00; 10];
+        data.extend((1..55).map(|i| i as u8));
+        assert_eq!(data.len(), 64);
+        assert!(!adaptive_proportion_test(&data, 64, 9));
+    }
+
+    #[test]
+    fn test_validate_entropy_health_passes() {
+        let good_data: Vec<u8> = (0..256).map(|i| i as u8).collect();
+        assert!(validate_entropy_health(&good_data).is_ok());
+    }
+
+    #[test]
+    fn test_validate_entropy_health_rejects_constant() {
+        let bad_data = vec![0xFF; 128];
+        let result = validate_entropy_health(&bad_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Repetition Count Test"));
+    }
+
+    #[test]
+    fn test_vault_rejects_unhealthy_entropy() {
+        let vault = QuantumVault::new(None).unwrap();
+
+        // Constant bytes fail RCT even with high quality score
+        let constant_entropy = vec![0x42; 128];
+        let result = vault.add_entropy(constant_entropy, QuantumEntropySource::QKD, 99);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Repetition Count Test"));
     }
 }

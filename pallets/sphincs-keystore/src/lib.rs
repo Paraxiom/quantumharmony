@@ -27,6 +27,9 @@
 
 pub use pallet::*;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::pallet_prelude::*;
@@ -136,7 +139,7 @@ pub mod pallet {
         /// - The account_id MUST equal Keccak-256(public_key)
         /// - Keys are immutable once registered (prevents key replacement attacks)
         #[pallet::call_index(0)]
-        #[pallet::weight(Weight::from_parts(10_000, 0))]
+        #[pallet::weight(Weight::from_parts(10_000, 0))] // TODO: replace with benchmarked weight from benchmarking.rs (#4)
         pub fn register_key(
             origin: OriginFor<T>,
             public_key: SphincsPublic,
@@ -178,7 +181,7 @@ pub mod pallet {
         /// * `account` - The account whose key was anchored
         /// * `hsm_key_id` - The HSM's identifier for the stored key
         #[pallet::call_index(1)]
-        #[pallet::weight(Weight::from_parts(10_000, 0))]
+        #[pallet::weight(Weight::from_parts(10_000, 0))] // TODO: replace with benchmarked weight from benchmarking.rs (#4)
         pub fn mark_hsm_anchored(
             origin: OriginFor<T>,
             account: AccountId32,

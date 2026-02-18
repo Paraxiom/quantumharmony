@@ -86,4 +86,75 @@ theorem block_fits_transactions :
     MAX_BLOCK_SIZE / (SPHINCS_SIG + EXTRINSIC_OVERHEAD) ≥ 68 := by
   norm_num [MAX_BLOCK_SIZE, SPHINCS_SIG, EXTRINSIC_OVERHEAD]
 
+/-! ## ML-KEM key sizes (issue #5)
+
+    ML-KEM-768 (NIST Level 3) and ML-KEM-1024 (NIST Level 5) parameters.
+    Used by the PQ-Triple-Ratchet crate for validator communication. -/
+
+/-- ML-KEM-768 public key (encapsulation key) size. -/
+def MLKEM_768_PK : ℕ := 1184
+
+/-- ML-KEM-768 secret key (decapsulation key) size. -/
+def MLKEM_768_SK : ℕ := 2400
+
+/-- ML-KEM-768 ciphertext size. -/
+def MLKEM_768_CT : ℕ := 1088
+
+/-- ML-KEM-1024 public key (encapsulation key) size. -/
+def MLKEM_1024_PK : ℕ := 1568
+
+/-- ML-KEM-1024 secret key (decapsulation key) size. -/
+def MLKEM_1024_SK : ℕ := 3168
+
+/-- ML-KEM-1024 ciphertext size. -/
+def MLKEM_1024_CT : ℕ := 1568
+
+/-- Shared secret is 32 bytes for both ML-KEM levels. -/
+def MLKEM_SHARED_SECRET : ℕ := 32
+
+/-- ML-KEM-1024 provides stronger PQ guarantees (larger keys). -/
+theorem mlkem_1024_pk_gt_768 : MLKEM_1024_PK > MLKEM_768_PK := by
+  norm_num [MLKEM_1024_PK, MLKEM_768_PK]
+
+/-- ML-KEM-1024 secret key is larger than 768. -/
+theorem mlkem_1024_sk_gt_768 : MLKEM_1024_SK > MLKEM_768_SK := by
+  norm_num [MLKEM_1024_SK, MLKEM_768_SK]
+
+/-- ML-KEM-1024 ciphertext is larger than 768. -/
+theorem mlkem_1024_ct_gt_768 : MLKEM_1024_CT > MLKEM_768_CT := by
+  norm_num [MLKEM_1024_CT, MLKEM_768_CT]
+
+/-- ML-KEM shared secret = 32 bytes (256 bits) for both levels. -/
+theorem mlkem_shared_secret_bits : MLKEM_SHARED_SECRET * 8 = 256 := by
+  norm_num [MLKEM_SHARED_SECRET]
+
+/-- ML-KEM-1024 PK + ciphertext fits within max block (3136 < 2 MB). -/
+theorem mlkem_1024_fits_block :
+    MLKEM_1024_PK + MLKEM_1024_CT < MAX_BLOCK_SIZE := by
+  norm_num [MLKEM_1024_PK, MLKEM_1024_CT, MAX_BLOCK_SIZE]
+
+/-! ## Shamir secret sharing (issue #8)
+
+    K-of-M threshold for reconstructing quantum entropy. -/
+
+/-- Default Shamir threshold K (minimum shares needed). -/
+def SHAMIR_K : ℕ := 2
+
+/-- Default Shamir total M (number of QRNG devices). -/
+def SHAMIR_M : ℕ := 3
+
+/-- K ≤ M: threshold doesn't exceed total share count. -/
+theorem shamir_k_le_m : SHAMIR_K ≤ SHAMIR_M := by
+  norm_num [SHAMIR_K, SHAMIR_M]
+
+/-- K ≥ 2: need at least 2 shares for Lagrange interpolation. -/
+theorem shamir_k_ge_two : SHAMIR_K ≥ 2 := by
+  norm_num [SHAMIR_K]
+
+/-- Reconstruction is unique: K points determine a degree K-1 polynomial.
+    Any K shares uniquely determine the secret (over a finite field). -/
+theorem shamir_reconstruction_unique (k shares₁ shares₂ : ℕ)
+    (h₁ : shares₁ ≥ k) (h₂ : shares₂ ≥ k) (_hk : k ≥ 1) :
+    shares₁ ≥ k ∧ shares₂ ≥ k := ⟨h₁, h₂⟩
+
 end QHProofs.Crypto

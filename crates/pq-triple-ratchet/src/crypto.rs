@@ -184,6 +184,87 @@ pub fn mlkem_decapsulate(secret_key: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>
     Ok(ss.as_slice().to_vec())
 }
 
+/// Encapsulate using ML-KEM-1024 (NIST Level 5).
+///
+/// Returns (shared_secret, ciphertext).
+///
+/// ML-KEM-1024 provides ~192-bit post-quantum security compared to
+/// ~128-bit for ML-KEM-768. Use for high-value validator channels (issue #5).
+pub fn mlkem_1024_encapsulate(public_key: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+    use kem::Encapsulate;
+    use ml_kem::kem::EncapsulationKey as EK;
+    use ml_kem::{EncodedSizeUser, MlKem1024, MlKem1024Params};
+
+    let mut rng = rand::thread_rng();
+
+    let ek_array: ml_kem::Encoded<EK<MlKem1024Params>> = public_key
+        .try_into()
+        .map_err(|_| Error::KeyExchange("invalid ML-KEM-1024 public key size".into()))?;
+    let ek = EK::<MlKem1024Params>::from_bytes(&ek_array);
+
+    let (ct, ss) = ek.encapsulate(&mut rng)
+        .map_err(|_| Error::KeyExchange("ML-KEM-1024 encapsulation failed".into()))?;
+
+    Ok((ss.as_slice().to_vec(), ct.as_slice().to_vec()))
+}
+
+/// Decapsulate using ML-KEM-1024 (NIST Level 5).
+///
+/// Returns shared_secret.
+pub fn mlkem_1024_decapsulate(secret_key: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>> {
+    use kem::Decapsulate;
+    use ml_kem::kem::DecapsulationKey as DK;
+    use ml_kem::{EncodedSizeUser, MlKem1024Params};
+
+    const CIPHERTEXT_SIZE: usize = 1568;
+
+    let dk_array: ml_kem::Encoded<DK<MlKem1024Params>> = secret_key
+        .try_into()
+        .map_err(|_| Error::KeyExchange("invalid ML-KEM-1024 secret key size".into()))?;
+    let dk = DK::<MlKem1024Params>::from_bytes(&dk_array);
+
+    if ciphertext.len() != CIPHERTEXT_SIZE {
+        return Err(Error::KeyExchange(format!(
+            "invalid ML-KEM-1024 ciphertext size: expected {}, got {}",
+            CIPHERTEXT_SIZE, ciphertext.len()
+        )));
+    }
+    let ct_array: [u8; CIPHERTEXT_SIZE] = ciphertext.try_into().unwrap();
+    let ct = ml_kem::array::Array::from(ct_array);
+
+    let ss = dk.decapsulate(&ct)
+        .map_err(|_| Error::KeyExchange("ML-KEM-1024 decapsulation failed".into()))?;
+
+    Ok(ss.as_slice().to_vec())
+}
+
+/// Encapsulate using the specified ML-KEM security level.
+///
+/// Dispatches to ML-KEM-768 or ML-KEM-1024 based on the level (issue #5).
+pub fn mlkem_encapsulate_at_level(
+    public_key: &[u8],
+    level: crate::MlKemSecurityLevel,
+) -> Result<(Vec<u8>, Vec<u8>)> {
+    match level {
+        crate::MlKemSecurityLevel::Level3 => mlkem_encapsulate(public_key),
+        crate::MlKemSecurityLevel::Level5 => mlkem_1024_encapsulate(public_key),
+    }
+}
+
+/// Decapsulate using the specified ML-KEM security level.
+///
+/// Dispatches to ML-KEM-768 or ML-KEM-1024 based on the level (issue #5).
+pub fn mlkem_decapsulate_at_level(
+    secret_key: &[u8],
+    ciphertext: &[u8],
+    level: crate::MlKemSecurityLevel,
+) -> Result<Vec<u8>> {
+    match level {
+        crate::MlKemSecurityLevel::Level3 => mlkem_decapsulate(secret_key, ciphertext),
+        crate::MlKemSecurityLevel::Level5 => mlkem_1024_decapsulate(secret_key, ciphertext),
+    }
+}
+
 /// Generate nonce from message counter and direction.
 ///
 /// This ensures unique nonces without coordination:
@@ -286,5 +367,47 @@ mod tests {
         let ss2 = mlkem_decapsulate(&dk_bytes, &ct).unwrap();
 
         assert_eq!(ss1, ss2);
+    }
+
+    #[test]
+    fn test_mlkem_1024_roundtrip() {
+        use ml_kem::{EncodedSizeUser, KemCore, MlKem1024};
+
+        let mut rng = rand::thread_rng();
+        let (dk, ek) = MlKem1024::generate(&mut rng);
+
+        let ek_bytes = EncodedSizeUser::as_bytes(&ek).to_vec();
+        let dk_bytes = EncodedSizeUser::as_bytes(&dk).to_vec();
+
+        let (ss1, ct) = mlkem_1024_encapsulate(&ek_bytes).unwrap();
+        let ss2 = mlkem_1024_decapsulate(&dk_bytes, &ct).unwrap();
+
+        assert_eq!(ss1, ss2);
+        assert_eq!(ss1.len(), 32); // Shared secret is always 32 bytes
+    }
+
+    #[test]
+    fn test_mlkem_level_dispatch() {
+        use ml_kem::{EncodedSizeUser, KemCore, MlKem768, MlKem1024};
+
+        let mut rng = rand::thread_rng();
+
+        // Test Level3 dispatch
+        let (dk768, ek768) = MlKem768::generate(&mut rng);
+        let ek768_bytes = EncodedSizeUser::as_bytes(&ek768).to_vec();
+        let dk768_bytes = EncodedSizeUser::as_bytes(&dk768).to_vec();
+
+        let (ss1, ct) = mlkem_encapsulate_at_level(&ek768_bytes, crate::MlKemSecurityLevel::Level3).unwrap();
+        let ss2 = mlkem_decapsulate_at_level(&dk768_bytes, &ct, crate::MlKemSecurityLevel::Level3).unwrap();
+        assert_eq!(ss1, ss2);
+
+        // Test Level5 dispatch
+        let (dk1024, ek1024) = MlKem1024::generate(&mut rng);
+        let ek1024_bytes = EncodedSizeUser::as_bytes(&ek1024).to_vec();
+        let dk1024_bytes = EncodedSizeUser::as_bytes(&dk1024).to_vec();
+
+        let (ss3, ct2) = mlkem_encapsulate_at_level(&ek1024_bytes, crate::MlKemSecurityLevel::Level5).unwrap();
+        let ss4 = mlkem_decapsulate_at_level(&dk1024_bytes, &ct2, crate::MlKemSecurityLevel::Level5).unwrap();
+        assert_eq!(ss3, ss4);
     }
 }

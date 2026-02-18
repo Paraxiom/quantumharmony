@@ -263,8 +263,8 @@ mod tests {
         // HSM vault initializes successfully even with test endpoint
         assert_eq!(vault.backend(), VaultBackend::HSM);
 
-        // Add entropy to HSM vault before using it
-        let test_entropy = vec![0x42; 128];
+        // Add varied entropy to HSM vault (constant bytes fail NIST 800-90B RCT)
+        let test_entropy: Vec<u8> = (0u8..128).collect();
         vault.add_entropy(test_entropy, QuantumEntropySource::QKD, 95).unwrap();
 
         // Should work after entropy added

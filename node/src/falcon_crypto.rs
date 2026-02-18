@@ -72,22 +72,21 @@ impl std::fmt::Debug for SecretKey {
     }
 }
 
-/// Generate Falcon1024 keypair from seed (LEGACY - Use generate_keypair_sha3 for quantum-resistant KDF)
+/// Generate Falcon1024 keypair from seed (LEGACY — uses BLAKE2b KDF).
 ///
-/// **Security Note:** This uses a deterministic derivation from the seed.
-/// The seed must be cryptographically random and kept secret.
+/// # Deprecation
+///
+/// **This function uses BLAKE2b-512 for key derivation, which provides only
+/// 128-bit quantum security (Grover's algorithm halves the hash output).**
+/// Use [`generate_keypair_sha3`] for SHA-3-based KDF, or [`generate_keypair_qpp`]
+/// for full QPP-enforced multi-source entropy with no-cloning guarantees.
 ///
 /// # Arguments
 /// * `seed` - 32-byte seed for deterministic key generation
 ///
 /// # Returns
 /// * `(PublicKey, SecretKey)` - Falcon1024 keypair
-///
-/// # Implementation
-/// Uses BLAKE2b-512 to expand the 32-byte seed to the required entropy for
-/// Falcon1024 key generation. This ensures deterministic key derivation.
-///
-/// **DEPRECATED**: Use `generate_keypair_sha3` for quantum-resistant KDF.
+#[deprecated(since = "0.28.0", note = "Uses BLAKE2b KDF (issue #6). Use generate_keypair_sha3 or generate_keypair_qpp instead.")]
 #[cfg(feature = "std")]
 pub fn generate_keypair(seed: &[u8; 32]) -> (PublicKey, SecretKey) {
     use sp_core::hashing::blake2_512;

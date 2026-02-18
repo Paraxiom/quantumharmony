@@ -1474,7 +1474,9 @@ where
         self.generate_mock_proof_with_qber(500) // Default 5% QBER
     }
 
-    /// Generate a mock proof with specific QBER value
+    /// Generate a mock proof with specific QBER value.
+    ///
+    /// Uses current timestamp so the proof passes freshness checks in `verify_single_proof`.
     fn generate_mock_proof_with_qber(&self, qber: u32) -> Result<QuantumEntropyProof<sp_core::sr25519::Public>, String> {
         use sp_core::sr25519::Public;
         use sp_core::H256;
@@ -1484,20 +1486,26 @@ where
 
         let sample_count = 1024u32;
 
+        // Current timestamp for freshness check compliance
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+
         // Skip STARK proof generation for mock - too slow for real-time block production
         // In production, reporters would submit pre-computed proofs
         let proof = QuantumEntropyProof {
-            stark_proof: vec![1u8; 32], // Dummy proof - will skip verification in mock mode
+            stark_proof: vec![1u8; 32], // Dummy proof (<100 bytes triggers mock mode)
             public_inputs: PublicInputs {
-                entropy_commitment: H256::from([2u8; 32]),
+                entropy_commitment: H256::from([2u8; 32]), // Non-zero (passes structural check)
                 qber,
-                qkd_key_id: vec![3u8; 32],
+                qkd_key_id: vec![3u8; 32], // Non-empty (passes structural check)
                 reporter: mock_reporter,
                 sample_count,
-                hardware_attestation: H256::from([4u8; 32]),
+                hardware_attestation: H256::from([4u8; 32]), // Non-zero (passes structural check)
             },
-            signature: Vec::new(), // Empty - will skip Falcon1024 verification for now
-            timestamp: 1234567890000, // Mock timestamp
+            signature: Vec::new(), // Empty — Falcon1024 verification only runs in production mode
+            timestamp: now_ms,
         };
 
         debug!("Generated mock proof: QBER={}%, samples={} (STARK verification skipped for performance)",
@@ -1535,39 +1543,77 @@ where
         Ok(valid_proofs)
     }
 
-    /// Verify a single STARK proof
+    /// Verify a single STARK proof.
     ///
-    /// Checks:
-    /// 1. STARK proof cryptographic validity (Winterfell) - SKIPPED IN MOCK MODE
-    /// 2. QBER < 11% (1100/10000)
-    /// 3. QKD key ID exists and is valid
-    /// 4. Falcon1024 signature is correct
-    /// 5. Hardware attestation is valid
+    /// Checks (applied in both mock and production modes):
+    /// 1. QBER < 11% (1100/10000)
+    /// 2. Minimum 256 samples
+    /// 3. Timestamp freshness (within 60 seconds)
+    /// 4. QKD key ID is non-empty
+    /// 5. Entropy commitment is non-zero
+    /// 6. Hardware attestation is non-zero
+    ///
+    /// Additional checks in production mode (proof ≥ 100 bytes):
+    /// 7. STARK proof cryptographic validity (Winterfell)
+    /// 8. Falcon-1024 reporter signature (when validator keystore available)
     fn verify_single_proof(
         &self,
         proof: &QuantumEntropyProof<sp_core::sr25519::Public>,
     ) -> ProofVerificationResult {
-        // Check QBER threshold
+        // Check QBER threshold (BB84 security bound: 11%)
         if proof.public_inputs.qber >= 1100 {
             return ProofVerificationResult::QberTooHigh;
         }
 
-        // Check minimum sample count
+        // Check minimum sample count (256 = statistical significance floor)
         if proof.public_inputs.sample_count < 256 {
             return ProofVerificationResult::InsufficientSamples;
         }
 
+        // Timestamp freshness: reject proofs older than 60 seconds
+        // Prevents replay of stale entropy measurements
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        let max_age_ms = 60_000; // 60 seconds
+        if proof.timestamp > 0 && now_ms.saturating_sub(proof.timestamp) > max_age_ms {
+            warn!("Proof timestamp too old: {}ms (max {}ms)", now_ms.saturating_sub(proof.timestamp), max_age_ms);
+            return ProofVerificationResult::InvalidStarkProof;
+        }
+
+        // QKD key ID must be non-empty (identifies which QKD session generated the entropy)
+        if proof.public_inputs.qkd_key_id.is_empty() {
+            warn!("Proof rejected: empty QKD key ID");
+            return ProofVerificationResult::InvalidStarkProof;
+        }
+
+        // Entropy commitment must not be zero (all-zero = no real entropy was committed)
+        if proof.public_inputs.entropy_commitment == sp_core::H256::zero() {
+            warn!("Proof rejected: zero entropy commitment");
+            return ProofVerificationResult::InvalidStarkProof;
+        }
+
+        // Hardware attestation must not be zero (proves measurement came from real QRNG)
+        if proof.public_inputs.hardware_attestation == sp_core::H256::zero() {
+            warn!("Proof rejected: zero hardware attestation");
+            return ProofVerificationResult::InvalidStarkProof;
+        }
+
         // MOCK MODE: Skip STARK verification for performance
         // Winterfell proof generation/verification is too slow (~10+ seconds) for 6-second blocks
-        // In production, this would verify pre-computed proofs from reporters
+        // In production, reporters pre-compute proofs and submit them to the chain
         if proof.stark_proof.len() < 100 {
-            // Mock proof detected (too small to be real STARK proof)
-            debug!("✅ Mock STARK proof accepted (verification skipped for performance)");
-            debug!("   QBER: {}%, Samples: {}", proof.public_inputs.qber as f64 / 100.0, proof.public_inputs.sample_count);
+            debug!("✅ Mock STARK proof accepted (STARK verification skipped, structural checks passed)");
+            debug!("   QBER: {}%, Samples: {}, QKD Key: {} bytes",
+                proof.public_inputs.qber as f64 / 100.0,
+                proof.public_inputs.sample_count,
+                proof.public_inputs.qkd_key_id.len()
+            );
             return ProofVerificationResult::Valid;
         }
 
-        // Real STARK proof verification (for production use)
+        // === Production STARK verification path ===
         use pallet_quantum_crypto::qber_stark::{QberStark, QberProof, QberPublicInputs};
 
         // Convert proof types
@@ -1599,9 +1645,30 @@ where
             }
         }
 
-        // NOTE: Falcon1024 signature verification deferred until keystore integration complete
-        // NOTE: QKD key ID storage verification requires on-chain QKD registry pallet
-        // NOTE: Hardware attestation certificate verification requires HSM integration
+        // Falcon-1024 reporter signature verification
+        // Proves the STARK proof was generated by the claimed reporter
+        if !proof.signature.is_empty() {
+            let reporter = &proof.public_inputs.reporter;
+            let keys = self.validator_keys.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(falcon_pk) = keys.get(reporter) {
+                // Verify signature over Keccak-256(stark_proof || qber || sample_count || entropy_commitment)
+                use sp_crypto_hashing::keccak_256;
+                let mut signed_data = Vec::with_capacity(proof.stark_proof.len() + 64);
+                signed_data.extend_from_slice(&proof.stark_proof);
+                signed_data.extend_from_slice(&proof.public_inputs.qber.to_le_bytes());
+                signed_data.extend_from_slice(&proof.public_inputs.sample_count.to_le_bytes());
+                signed_data.extend_from_slice(&proof.public_inputs.entropy_commitment.0);
+                let digest = keccak_256(&signed_data);
+
+                if let Err(e) = crate::falcon_crypto::verify_signature(&digest, &proof.signature, falcon_pk) {
+                    warn!("❌ Falcon-1024 signature verification failed for reporter {:?}: {}", reporter, e);
+                    return ProofVerificationResult::InvalidStarkProof;
+                }
+                debug!("✅ Falcon-1024 reporter signature verified for {:?}", reporter);
+            } else {
+                debug!("⚠️  Reporter {:?} not in validator keystore — skipping signature check", reporter);
+            }
+        }
 
         ProofVerificationResult::Valid
     }
@@ -2980,88 +3047,102 @@ where
         Ok((vrf_seed, "VRF"))
     }
 
-    /// Reconstruct entropy from collected QRNG shares using Shamir secret sharing
+    /// Reconstruct entropy from collected QRNG shares using Shamir secret sharing.
+    ///
+    /// Uses the `sharks` crate for proper Lagrange interpolation over GF(256).
+    /// Previous implementation used simple XOR which is NOT threshold-secure:
+    /// any single share leaks information about the secret (issue #8).
     fn reconstruct_qrng_entropy(
         &self,
         shares: &[crate::rpc::threshold_qrng_rpc::CollectedShare],
     ) -> Result<[u8; 32], String> {
-        use sp_core::Blake2Hasher;
-        use sp_core::Hasher;
+        use sharks::{Share, Sharks};
+        use sp_crypto_hashing::keccak_256;
 
         if shares.is_empty() {
             return Err("No shares to reconstruct".to_string());
         }
 
-        // Simple XOR-based reconstruction for now
-        // In production, use proper Shamir interpolation
-        let mut combined = [0u8; 32];
+        // Convert CollectedShares to Sharks shares
+        let sharks_shares: Vec<Share> = shares
+            .iter()
+            .filter_map(|s| Share::try_from(s.share_bytes.as_slice()).ok())
+            .collect();
 
-        for share in shares {
-            // XOR each share's bytes into the combined result
-            let share_bytes = &share.share_bytes;
-            for (i, byte) in share_bytes.iter().enumerate() {
-                if i < 32 {
-                    combined[i] ^= byte;
-                }
-            }
+        if sharks_shares.len() < 2 {
+            return Err(format!(
+                "Insufficient valid Shamir shares: {} (need at least 2)",
+                sharks_shares.len()
+            ));
         }
 
-        // Hash the combined result for uniform distribution
-        let hash = Blake2Hasher::hash(&combined);
-        let mut entropy = [0u8; 32];
-        entropy.copy_from_slice(hash.as_ref());
+        // Use threshold from config
+        let threshold_k = {
+            let config = self.threshold_config.lock()
+                .map_err(|e| format!("Failed to lock threshold config: {}", e))?;
+            config.threshold_k as u8
+        };
 
-        Ok(entropy)
+        let sharks = Sharks(threshold_k);
+        let secret = sharks.recover(&sharks_shares)
+            .map_err(|_| "Shamir reconstruction failed — shares may be from different secrets or corrupted".to_string())?;
+
+        // Hash reconstructed secret to exactly 32 bytes using Keccak-256
+        Ok(keccak_256(&secret))
     }
 
-    /// Get quantum entropy seed from decentralized nRNG
-    /// Combines quantum measurements from multiple validators
+    /// Get quantum entropy seed for VRF computation.
+    ///
+    /// Combines HWRNG-based fallback entropy with the block number through
+    /// Keccak-256 (128-bit PQC security). In production with PQTG hardware,
+    /// this is superseded by the threshold QRNG path in `get_entropy_for_round()`.
     fn get_quantum_entropy_seed(&self, block_number: u64) -> Result<[u8; 32], String> {
-        // In production: collect quantum entropy from all validators
-        // and combine using XOR or hash-based mixing
-
-        // For dev mode: generate deterministic but unpredictable seed
-        // using block number + previous block hash + quantum RNG
-
-        use sp_core::Blake2Hasher;
-        use sp_core::Hasher;
+        use sp_crypto_hashing::keccak_256;
 
         // Combine:
-        // 1. Block number (for epoch)
-        // 2. Mock quantum entropy (in production: from Crypto4A HSM or QKD)
-        // 3. Previous block hash (for chain continuity)
-
-        let mut seed_material = Vec::new();
-        seed_material.extend_from_slice(&block_number.to_le_bytes());
-
-        // Mock quantum randomness (in production: call QuantumRng::generate_seed())
-        // Each validator would contribute their quantum measurements
+        // 1. Block number (binds to chain state)
+        // 2. HWRNG-based entropy (unpredictable to external observers)
         let mock_quantum_bytes = Self::mock_quantum_entropy(block_number);
+
+        let mut seed_material = Vec::with_capacity(40);
+        seed_material.extend_from_slice(&block_number.to_le_bytes());
         seed_material.extend_from_slice(&mock_quantum_bytes);
 
-        // Hash to produce final seed
-        let seed_hash = Blake2Hasher::hash(&seed_material);
-        let mut seed = [0u8; 32];
-        seed.copy_from_slice(seed_hash.as_ref());
-
-        Ok(seed)
+        // Keccak-256 for PQC-safe mixing (replaces Blake2 per issue #7)
+        Ok(keccak_256(&seed_material))
     }
 
-    /// Mock quantum entropy (in production: from Crypto4A HSM or QKD system)
+    /// Generate fallback entropy when quantum devices are unavailable.
+    ///
+    /// Combines OS HWRNG (OsRng), block number, and nanosecond timestamp
+    /// through Keccak-256 for 128-bit post-quantum security (Grover bound).
+    ///
+    /// **Security**: This is NOT true quantum entropy but is unpredictable
+    /// to any adversary without access to the validator's OS RNG state.
+    /// Previous implementation used `Blake2("quantum_entropy_" + block_number)`
+    /// which was fully predictable (issue #7).
     fn mock_quantum_entropy(block_number: u64) -> [u8; 32] {
-        // In production, this would call:
-        // let qrng = QuantumRng::new(QuantumRngSource::Crypto4aHsm);
-        // qrng.generate_seed().unwrap()
+        use rand::RngCore;
+        use sp_crypto_hashing::keccak_256;
 
-        // For testing: deterministic but unpredictable
-        use sp_core::Blake2Hasher;
-        use sp_core::Hasher;
+        // Mix three independent entropy sources:
+        // 1. OS hardware RNG (32 bytes) — unpredictable
+        let mut hwrng_bytes = [0u8; 32];
+        rand::rngs::OsRng.fill_bytes(&mut hwrng_bytes);
 
-        let material = format!("quantum_entropy_{}", block_number);
-        let hash = Blake2Hasher::hash(material.as_bytes());
-        let mut entropy = [0u8; 32];
-        entropy.copy_from_slice(hash.as_ref());
-        entropy
+        // 2. Block number — binds entropy to chain state
+        // 3. Nanosecond timestamp — prevents replay across restarts
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
+
+        let mut material = Vec::with_capacity(48);
+        material.extend_from_slice(&hwrng_bytes);
+        material.extend_from_slice(&block_number.to_le_bytes());
+        material.extend_from_slice(&timestamp.to_le_bytes());
+
+        keccak_256(&material)
     }
 
     /// Compute VRF output for a validator
@@ -3541,8 +3622,14 @@ mod tests {
     use sp_core::sr25519::Public;
     use sp_core::H256;
 
-    /// Helper to create a mock proof with specific QBER
+    /// Helper to create a mock proof with specific QBER.
+    ///
+    /// Uses current timestamp to pass freshness checks in `verify_single_proof`.
     fn create_test_proof(qber: u32) -> QuantumEntropyProof<Public> {
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
         QuantumEntropyProof {
             stark_proof: vec![1u8; 32],
             public_inputs: PublicInputs {
@@ -3554,7 +3641,7 @@ mod tests {
                 hardware_attestation: H256::from([4u8; 32]),
             },
             signature: Vec::new(),
-            timestamp: 1234567890000,
+            timestamp: now_ms,
         }
     }
 

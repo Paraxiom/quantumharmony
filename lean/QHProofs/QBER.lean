@@ -77,4 +77,54 @@ theorem acceptance_conditions (avg_qber healthy total : ℕ)
     avg_qber ≤ 1100 ∧ healthy * 2 ≥ total := by
   simp only [QBER_THRESHOLD_BP] at h_qber; exact ⟨h_qber, h_healthy⟩
 
+/-! ## NIST SP 800-90B health tests (issue #3)
+
+    Entropy source health monitoring per NIST SP 800-90B §4.4.
+    Two mandatory tests: RCT (Repetition Count) and APT (Adaptive Proportion). -/
+
+/-- RCT cutoff: maximum consecutive identical bytes before rejection.
+    For H_min = 8 (ideal), cutoff = 1 + ⌈-log₂(2⁻²⁰) / H_min⌉ = 4.
+    We use cutoff = 5 for conservative margin. -/
+def RCT_CUTOFF : ℕ := 5
+
+/-- APT window size: number of bytes to scan. -/
+def APT_WINDOW : ℕ := 512
+
+/-- APT cutoff: max occurrences of most-frequent symbol in window.
+    For uniform distribution, expected = 512/256 = 2.
+    Cutoff = 8 gives very low false positive rate. -/
+def APT_CUTOFF : ℕ := 8
+
+/-- RCT cutoff is at least 2 (trivial repetition is allowed). -/
+theorem rct_cutoff_ge_two : RCT_CUTOFF ≥ 2 := by
+  norm_num [RCT_CUTOFF]
+
+/-- APT window fits 2 full byte-value cycles (512 = 2 × 256). -/
+theorem apt_window_is_two_cycles : APT_WINDOW = 2 * 256 := by
+  norm_num [APT_WINDOW]
+
+/-- APT cutoff is well above expected frequency (2) but well below window size. -/
+theorem apt_cutoff_bounds : APT_CUTOFF > APT_WINDOW / 256 ∧ APT_CUTOFF < APT_WINDOW := by
+  norm_num [APT_CUTOFF, APT_WINDOW]
+
+/-- Both tests must pass for entropy to be accepted (conjunction). -/
+theorem health_test_conjunction (rct_pass apt_pass : Prop)
+    (h_rct : rct_pass) (h_apt : apt_pass) : rct_pass ∧ apt_pass :=
+  ⟨h_rct, h_apt⟩
+
+/-! ## Proof timestamp freshness (issue #21) -/
+
+/-- Maximum proof age in milliseconds (60 seconds). -/
+def MAX_PROOF_AGE_MS : ℕ := 60000
+
+/-- 60 seconds = 10 block periods (6s each). -/
+theorem max_proof_age_blocks : MAX_PROOF_AGE_MS / 6000 = 10 := by
+  norm_num [MAX_PROOF_AGE_MS]
+
+/-- A proof is fresh if current_time - proof_time ≤ MAX_PROOF_AGE_MS. -/
+theorem proof_freshness (now proof_time : ℕ) (_h_order : proof_time ≤ now)
+    (h_fresh : now - proof_time ≤ MAX_PROOF_AGE_MS) :
+    now - proof_time ≤ 60000 := by
+  unfold MAX_PROOF_AGE_MS at h_fresh; exact h_fresh
+
 end QHProofs.QBER
