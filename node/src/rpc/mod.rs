@@ -31,10 +31,6 @@ use runtime_segmentation_rpc::{RuntimeSegmentationRpc, RuntimeSegmentationApiSer
 // Re-export the segment routing helper for use by transaction_gateway
 pub use runtime_segmentation_rpc::route_and_record_transaction;
 
-// Sudo RPC for quantum-safe runtime upgrades
-pub mod sudo_rpc;
-use sudo_rpc::{SudoRpc, SudoApiServer};
-
 // Runtime Upgrade RPC with SPHINCS+ signing
 pub mod runtime_upgrade_rpc;
 use runtime_upgrade_rpc::{RuntimeUpgradeRpc, RuntimeUpgradeApiServer};
@@ -132,15 +128,6 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ Runtime Segmentation RPC methods registered");
-
-    // Create sudo RPC instance
-    let sudo_rpc = SudoRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
-
-    // Merge sudo RPC into module
-    module.merge(sudo_rpc.into_rpc())
-        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-
-    log::info!("✅ Sudo RPC methods registered (quantum-safe runtime upgrades)");
 
     // Create runtime upgrade RPC instance with SPHINCS+ signing
     let runtime_upgrade_rpc = RuntimeUpgradeRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());

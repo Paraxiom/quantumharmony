@@ -20,6 +20,12 @@ logs/
 .env
 *.local
 
+# Secret keys — NEVER commit
+*.sec
+*.key
+*.secret
+*-sphincs-secret.*
+
 # Node modules (for wallet/browser-extension)
 node_modules/
 
