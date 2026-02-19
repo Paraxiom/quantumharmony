@@ -26,8 +26,19 @@ logs/
 *.secret
 *-sphincs-secret.*
 
-# Private architecture docs
+# Sensitive docs (moved to Paraxiom/docs private repo)
 docs/QBER_ATTESTATION_ARCHITECTURE.md
+docs/SYSTEM_ARCHITECTURE_50K.*
+docs/youtube-demo-script.md
+docs/security/SECURITY_ASSESSMENT_REPORT.md
+docs/security/FORMAL_VERIFICATION.md
+docs/ISO/THREAT_MODEL.md
+docs/ISO/KEY_MANAGEMENT.md
+docs/ISO/KEY_ROTATION_PROCEDURES.md
+docs/ISO/SECURITY_CONTROLS.md
+docs/MD/SECURITY_HARDENING.md
+docs/MD/QUANTUM_HARDWARE_SECURITY.md
+docs/MD/COMPETITIVE_ADVANTAGES.md
 
 # Node modules (for wallet/browser-extension)
 node_modules/
