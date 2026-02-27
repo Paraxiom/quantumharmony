@@ -1,0 +1,49 @@
+# Operator agent configuration
+# Monitors only the services in the operator docker-compose stack
+#
+# Override via environment variables: QH_AGENT_NAME, QH_NETWORK, DOCKER_HOST
+
+[general]
+name = "operator-agent"
+poll_interval_secs = 30
+data_dir = "/data"
+docker_socket = "tcp://docker-socket-proxy:2375"
+docker_network = "quantum-net"
+
+[signing]
+key_path = "/data/agent-key.enc"
+socket_path = "/data/signing.sock"
+rate_limit_per_sec = 10
+
+[rules]
+unhealthy_threshold = 3
+max_restarts_per_hour = 3
+remediation_cooldown_secs = 60
+dependent_grace_period_secs = 300
+
+[playwright]
+enabled = false
+
+# --- Operator stack services ---
+
+[services.node]
+container = "quantumharmony-node"
+critical = true
+network_aliases = ["node"]
+depends_on = []
+
+[services.node.health]
+type = "http"
+url = "http://node:9944/health"
+expected_status = 200
+
+[services.dashboard]
+container = "quantumharmony-dashboard"
+critical = false
+network_aliases = ["dashboard"]
+depends_on = ["node"]
+
+[services.dashboard.health]
+type = "http"
+url = "http://dashboard:80/"
+expected_status = 200

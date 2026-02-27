@@ -116,6 +116,46 @@ services:
     depends_on:
       - node
 
+  # =====================================================
+  # DOCKER SOCKET PROXY: Safe Docker API access for agent
+  # =====================================================
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3
+    container_name: quantumharmony-docker-proxy
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1
+      - IMAGES=0
+      - NETWORKS=0
+      - VOLUMES=0
+      - POST=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - quantum-net
+
+  # =====================================================
+  # AGENT: qh-agent autonomous monitoring & remediation
+  # =====================================================
+  agent:
+    image: sylvaincormier/qh-agent:m2.6
+    container_name: quantumharmony-agent
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - agent-data:/data
+      - ./configs/operator-agent.toml:/config/qh-agent.toml:ro
+    environment:
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+      - QH_AGENT_NAME=${NODE_NAME:-Operator}-agent
+      - QH_NETWORK=quantumharmony
+    networks:
+      - quantum-net
+    depends_on:
+      - node
+      - docker-socket-proxy
+
 networks:
   quantum-net:
     driver: bridge
@@ -123,3 +163,4 @@ networks:
 volumes:
   node-data:
   operator-data:
+  agent-data:
