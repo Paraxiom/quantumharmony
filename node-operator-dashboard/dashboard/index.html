@@ -2370,6 +2370,72 @@
                             The agent will automatically connect via WebSocket and begin streaming health events.
                         </div>
                     </div>
+
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- AXIOM CONSOLE — Task submission + live event stream -->
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <div style="margin-top: 40px; border-top: 1px solid #2a2a3a; padding-top: 32px;">
+
+                        <!-- Header + daemon connection status -->
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <div style="font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: var(--lcars-gold); letter-spacing: 3px;">AXIOM CONSOLE</div>
+                            <div id="axiomConnPill" style="display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 100px; background: rgba(239,83,80,0.12); border: 1px solid var(--accent-danger);">
+                                <span id="axiomConnDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-danger);"></span>
+                                <span id="axiomConnText" style="font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 600; color: var(--accent-danger);">Disconnected</span>
+                            </div>
+                            <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                                <input id="axiomDaemonUrl" type="text"
+                                    value="ws://localhost:8070/ws"
+                                    placeholder="ws://host:8070/ws"
+                                    style="padding: 6px 12px; background: var(--bg-surface); border: 1px solid #333; border-radius: 6px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 220px;"
+                                >
+                                <button onclick="axiomConnect()" style="padding: 7px 18px; border: none; border-radius: 6px; background: var(--lcars-gold); color: #000; font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; cursor: pointer; letter-spacing: 1px;">CONNECT</button>
+                            </div>
+                        </div>
+
+                        <!-- Task submission -->
+                        <div class="section-title">Submit Task</div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                            <textarea id="axiomTaskInput"
+                                placeholder="Describe a coding task for Axiom + Claude…"
+                                rows="3"
+                                style="flex: 1; min-width: 260px; padding: 10px 14px; background: var(--bg-surface); border: 1px solid #333; border-radius: 8px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: vertical;"
+                            ></textarea>
+                            <div style="display: flex; flex-direction: column; gap: 8px; justify-content: flex-start;">
+                                <button onclick="axiomSubmitTask()" style="padding: 10px 22px; border: none; border-radius: 8px; background: linear-gradient(135deg, #22c997, #0d7a54); color: #fff; font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px; white-space: nowrap;">RUN TASK</button>
+                                <input id="axiomWorkDir" type="text" placeholder="/path/to/repo (optional)"
+                                    style="padding: 7px 10px; background: var(--bg-surface); border: 1px solid #2a2a3a; border-radius: 6px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                            </div>
+                        </div>
+
+                        <!-- Approval widget (hidden until needed) -->
+                        <div id="axiomApprovalBox" style="display: none; margin-bottom: 16px; padding: 16px 20px; background: rgba(255,183,77,0.08); border: 2px solid var(--accent-warning); border-radius: 10px;">
+                            <div style="font-family: 'Orbitron', monospace; font-size: 12px; color: var(--accent-warning); margin-bottom: 8px; letter-spacing: 2px;">TIER-3 APPROVAL REQUIRED</div>
+                            <div id="axiomApprovalReason" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6;"></div>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="axiomApprove()" style="padding: 9px 24px; border: none; border-radius: 7px; background: linear-gradient(135deg, #22c997, #0d7a54); color: #fff; font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px;">APPROVE</button>
+                                <button onclick="axiomDeny()" style="padding: 9px 24px; border: none; border-radius: 7px; background: linear-gradient(135deg, #ef5350, #b71c1c); color: #fff; font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px;">DENY</button>
+                            </div>
+                        </div>
+
+                        <!-- Live event stream -->
+                        <div class="section-title" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                            Live Events
+                            <span id="axiomActiveTask" style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;"></span>
+                            <button class="btn btn-sm" onclick="axiomClearFeed()" style="margin-left: auto;">CLEAR</button>
+                        </div>
+                        <div id="axiomEventFeed" class="terminal" style="height: 340px; overflow-y: auto; font-size: 12px;">
+                            <div class="terminal-line info">Connect to Axiom daemon to submit tasks…</div>
+                        </div>
+
+                        <!-- Recent task list -->
+                        <div class="section-title" style="margin-top: 20px;">Recent Tasks</div>
+                        <div id="axiomTaskList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+                            <div style="color: var(--text-muted); font-size: 12px; padding: 8px;">No tasks yet.</div>
+                        </div>
+
+                    </div><!-- /AXIOM CONSOLE -->
+
                 </div>
 
             </div>
@@ -8157,6 +8223,208 @@
 
         // Try to initialize chat on page load
         setTimeout(initChatMessaging, 2000);
+
+        // ===========================================
+        // AXIOM CONSOLE
+        // ===========================================
+
+        let axiomWs = null;
+        let axiomReconnectTimer = null;
+        let axiomPendingTaskId = null;   // task waiting on approval
+        let axiomPendingReqId  = null;   // request_id from approval_required event
+
+        // --- connection ---
+
+        function axiomConnect() {
+            if (axiomWs && axiomWs.readyState <= 1) axiomWs.close();
+            const url = document.getElementById('axiomDaemonUrl').value.trim() || 'ws://localhost:8070/ws';
+            try {
+                axiomWs = new WebSocket(url);
+            } catch (e) {
+                axiomSetConn(false);
+                return;
+            }
+            axiomWs.onopen  = () => { axiomSetConn(true);  axiomLog('Connected to Axiom daemon', 'info'); };
+            axiomWs.onclose = () => { axiomSetConn(false); axiomLog('Disconnected', 'warning'); };
+            axiomWs.onerror = () => { axiomSetConn(false); };
+            axiomWs.onmessage = (evt) => {
+                try { axiomHandleEvent(JSON.parse(evt.data)); }
+                catch (e) { axiomLog('Bad JSON: ' + evt.data, 'warning'); }
+            };
+        }
+
+        function axiomSetConn(ok) {
+            const dot  = document.getElementById('axiomConnDot');
+            const text = document.getElementById('axiomConnText');
+            const pill = document.getElementById('axiomConnPill');
+            if (!dot) return;
+            if (ok) {
+                dot.style.background  = 'var(--accent-success)';
+                text.style.color      = 'var(--accent-success)';
+                text.textContent      = 'Connected';
+                pill.style.background = 'rgba(34,201,151,0.12)';
+                pill.style.borderColor= 'var(--accent-success)';
+            } else {
+                dot.style.background  = 'var(--accent-danger)';
+                text.style.color      = 'var(--accent-danger)';
+                text.textContent      = 'Disconnected';
+                pill.style.background = 'rgba(239,83,80,0.12)';
+                pill.style.borderColor= 'var(--accent-danger)';
+            }
+        }
+
+        // --- task submission ---
+
+        async function axiomSubmitTask() {
+            const desc = document.getElementById('axiomTaskInput').value.trim();
+            if (!desc) { axiomLog('Enter a task description first.', 'warning'); return; }
+
+            // Derive HTTP base from WS url
+            const wsUrl  = document.getElementById('axiomDaemonUrl').value.trim() || 'ws://localhost:8070/ws';
+            const httpBase = wsUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://').replace(/\/ws$/, '');
+            const workDir = document.getElementById('axiomWorkDir').value.trim() || undefined;
+
+            axiomLog(`Submitting task: "${desc.slice(0, 80)}${desc.length > 80 ? '…' : ''}"`, 'info');
+
+            const body = { description: desc };
+            if (workDir) body.working_dir = workDir;
+
+            try {
+                const resp = await fetch(httpBase + '/task/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                if (!resp.ok) { const t = await resp.text(); axiomLog('Error: ' + t, 'error'); return; }
+                const data = await resp.json();
+                axiomLog(`Task queued: ${data.task_id}`, 'info');
+                document.getElementById('axiomActiveTask').textContent = '▶ ' + data.task_id.slice(0, 8) + '…';
+                document.getElementById('axiomTaskInput').value = '';
+                axiomAddTaskCard(data.task_id, desc.slice(0, 60), 'queued', httpBase);
+            } catch (e) {
+                axiomLog('Failed to submit: ' + e.message, 'error');
+            }
+        }
+
+        // --- event routing ---
+
+        function axiomHandleEvent(msg) {
+            const type = msg.type || '';
+            switch (type) {
+                case 'task_started':
+                    axiomLog(`▶ Task started [${msg.task_id.slice(0,8)}] — ${msg.description}`, 'info');
+                    break;
+                case 'step_executed':
+                    axiomLog(`  [${msg.trust_tier === 3 ? '⚠ T3' : 'T' + msg.trust_tier}] ${msg.tool_name} — ${(msg.result_preview || '').slice(0, 100)}`, 'info');
+                    break;
+                case 'llm_text':
+                    axiomLog(`  💬 ${msg.text.slice(0, 160)}`, 'info');
+                    break;
+                case 'task_completed':
+                    axiomLog(`✅ Task completed [${msg.task_id.slice(0,8)}] — ${msg.steps} steps, ${(msg.files_changed || []).length} file(s) changed`, 'info');
+                    document.getElementById('axiomActiveTask').textContent = '';
+                    axiomUpdateTaskCard(msg.task_id, 'completed');
+                    break;
+                case 'task_failed':
+                    axiomLog(`❌ Task failed [${msg.task_id.slice(0,8)}]: ${msg.error}`, 'error');
+                    document.getElementById('axiomActiveTask').textContent = '';
+                    axiomUpdateTaskCard(msg.task_id, 'failed');
+                    break;
+                case 'approval_required':
+                    axiomPendingTaskId = msg.task_id;
+                    axiomPendingReqId  = msg.request_id;
+                    axiomLog(`⚠ Approval required [${msg.task_id.slice(0,8)}]: ${msg.reason}`, 'warning');
+                    const box = document.getElementById('axiomApprovalBox');
+                    document.getElementById('axiomApprovalReason').textContent = msg.reason;
+                    box.style.display = 'block';
+                    // Flash the AGENT nav tab
+                    const badge = document.getElementById('agentNavBadge');
+                    if (badge) badge.style.display = 'block';
+                    break;
+                default:
+                    axiomLog(JSON.stringify(msg).slice(0, 160), 'info');
+            }
+        }
+
+        // --- approval ---
+
+        async function axiomApprove() { await axiomSendDecision(true);  }
+        async function axiomDeny()    { await axiomSendDecision(false); }
+
+        async function axiomSendDecision(approved) {
+            if (!axiomPendingTaskId) return;
+            const wsUrl    = document.getElementById('axiomDaemonUrl').value.trim() || 'ws://localhost:8070/ws';
+            const httpBase = wsUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://').replace(/\/ws$/, '');
+            const endpoint = `${httpBase}/task/${axiomPendingTaskId}/${approved ? 'approve' : 'deny'}`;
+            try {
+                await fetch(endpoint, { method: 'POST' });
+                axiomLog(approved ? '✅ Approved.' : '🚫 Denied.', approved ? 'info' : 'warning');
+            } catch (e) {
+                axiomLog('Decision failed: ' + e.message, 'error');
+            }
+            document.getElementById('axiomApprovalBox').style.display = 'none';
+            const badge = document.getElementById('agentNavBadge');
+            if (badge) badge.style.display = 'none';
+            axiomPendingTaskId = null;
+            axiomPendingReqId  = null;
+        }
+
+        // --- task list cards ---
+
+        function axiomAddTaskCard(id, desc, status, httpBase) {
+            const list = document.getElementById('axiomTaskList');
+            // remove empty placeholder
+            list.querySelectorAll('[data-empty]').forEach(el => el.remove());
+            const card = document.createElement('div');
+            card.id = 'axiomCard-' + id;
+            card.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 14px; background:var(--bg-elevated); border-radius:7px; border-left:3px solid var(--lcars-gold);';
+            card.innerHTML = `
+                <span id="axiomCardStatus-${id}" style="font-size:10px; padding:2px 8px; border-radius:10px; background:rgba(248,161,0,0.15); color:var(--lcars-gold); font-family:'Orbitron',monospace; white-space:nowrap;">${status.toUpperCase()}</span>
+                <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-muted); white-space:nowrap;">${id.slice(0,8)}</span>
+                <span style="flex:1; font-size:12px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${desc}</span>
+                <button onclick="axiomPollTask('${id}','${httpBase}')" style="padding:3px 10px; border:1px solid #333; border-radius:4px; background:transparent; color:var(--text-muted); font-size:10px; cursor:pointer;">REFRESH</button>
+            `;
+            list.prepend(card);
+        }
+
+        function axiomUpdateTaskCard(id, status) {
+            const el = document.getElementById('axiomCardStatus-' + id);
+            if (!el) return;
+            const colors = { completed: 'var(--accent-success)', failed: 'var(--accent-danger)', running: 'var(--lcars-blue-light)', queued: 'var(--lcars-gold)' };
+            el.textContent = status.toUpperCase();
+            el.style.color = colors[status] || 'var(--text-muted)';
+            el.style.background = 'transparent';
+        }
+
+        async function axiomPollTask(id, httpBase) {
+            try {
+                const resp = await fetch(httpBase + '/task/' + id);
+                const data = await resp.json();
+                axiomUpdateTaskCard(id, data.status);
+                axiomLog(`Task ${id.slice(0,8)}: ${data.status}${data.error ? ' — ' + data.error : ''}${data.steps ? ' (' + data.steps + ' steps)' : ''}`, 'info');
+            } catch (e) {
+                axiomLog('Poll failed: ' + e.message, 'error');
+            }
+        }
+
+        // --- feed helpers ---
+
+        function axiomLog(msg, level) {
+            const feed = document.getElementById('axiomEventFeed');
+            if (!feed) return;
+            const line = document.createElement('div');
+            line.className = 'terminal-line ' + (level || 'info');
+            const ts = new Date().toLocaleTimeString('en-CA', { hour12: false });
+            line.textContent = `[${ts}] ${msg}`;
+            feed.appendChild(line);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        function axiomClearFeed() {
+            const feed = document.getElementById('axiomEventFeed');
+            if (feed) feed.innerHTML = '';
+        }
+
     </script>
 </body>
 </html>
