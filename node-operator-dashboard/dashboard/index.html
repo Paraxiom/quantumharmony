@@ -2436,6 +2436,44 @@
 
                     </div><!-- /AXIOM CONSOLE -->
 
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- AXIOM AUDIT LOG — Hash-chain proof of AI behavior   -->
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <div style="margin-top: 40px; border-top: 1px solid #2a2a3a; padding-top: 32px;">
+
+                        <!-- Header -->
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <div style="font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: var(--lcars-blue); letter-spacing: 3px;">AUDIT LOG</div>
+                            <div id="auditChainBadge" style="display: none; padding: 4px 14px; border-radius: 100px; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px;"></div>
+                            <div style="margin-left: auto; display: flex; gap: 10px;">
+                                <button onclick="auditLoad()" style="background: rgba(100,149,237,0.15); border: 1px solid var(--lcars-blue); color: var(--lcars-blue); border-radius: 6px; padding: 7px 18px; font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 600; letter-spacing: 1px; cursor: pointer;">LOAD</button>
+                                <button onclick="auditVerify()" style="background: rgba(100,181,120,0.15); border: 1px solid var(--accent-success); color: var(--accent-success); border-radius: 6px; padding: 7px 18px; font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 600; letter-spacing: 1px; cursor: pointer;">VERIFY CHAIN</button>
+                            </div>
+                        </div>
+
+                        <!-- Audit table -->
+                        <div style="overflow-x: auto; border: 1px solid #2a2a3a; border-radius: 8px;">
+                            <table id="auditTable" style="width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: rgba(100,149,237,0.08); color: var(--text-muted);">
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a; white-space: nowrap;">#</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a; white-space: nowrap;">TIME</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a; white-space: nowrap;">TASK</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a; white-space: nowrap;">TOOL</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a; white-space: nowrap;">TIER</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a; white-space: nowrap;">SIG</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2a3a;">RESULT</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTbody">
+                                    <tr><td colspan="7" style="padding: 20px; text-align: center; color: var(--text-muted);">Press LOAD to fetch audit entries.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="auditSummary" style="margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted);"></div>
+
+                    </div><!-- /AXIOM AUDIT LOG -->
+
                 </div>
 
             </div>
@@ -8232,6 +8270,7 @@
         let axiomReconnectTimer = null;
         let axiomPendingTaskId = null;   // task waiting on approval
         let axiomPendingReqId  = null;   // request_id from approval_required event
+        const axiomSeenLlmText = new Set(); // task IDs that received llm_text over WS
 
         // --- connection ---
 
@@ -8279,6 +8318,14 @@
             const desc = document.getElementById('axiomTaskInput').value.trim();
             if (!desc) { axiomLog('Enter a task description first.', 'warning'); return; }
 
+            // Ensure WS is connected so we don't miss streamed events
+            if (!axiomWs || axiomWs.readyState > 1) {
+                axiomLog('Auto-connecting to daemon…', 'info');
+                axiomConnect();
+                // Give the connection a moment to open before submitting
+                await new Promise(r => setTimeout(r, 400));
+            }
+
             // Derive HTTP base from WS url
             const wsUrl  = document.getElementById('axiomDaemonUrl').value.trim() || 'ws://localhost:8070/ws';
             const httpBase = wsUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://').replace(/\/ws$/, '');
@@ -8318,12 +8365,18 @@
                     axiomLog(`  [${msg.trust_tier === 3 ? '⚠ T3' : 'T' + msg.trust_tier}] ${msg.tool_name} — ${(msg.result_preview || '').slice(0, 100)}`, 'info');
                     break;
                 case 'llm_text':
-                    axiomLog(`  💬 ${msg.text.slice(0, 160)}`, 'info');
+                    axiomLog(`  💬 ${msg.text.slice(0, 300)}`, 'info');
+                    axiomSeenLlmText.add(msg.task_id);
                     break;
                 case 'task_completed':
                     axiomLog(`✅ Task completed [${msg.task_id.slice(0,8)}] — ${msg.steps} steps, ${(msg.files_changed || []).length} file(s) changed`, 'info');
                     document.getElementById('axiomActiveTask').textContent = '';
                     axiomUpdateTaskCard(msg.task_id, 'completed');
+                    // If no llm_text was streamed live, fetch the result from REST
+                    if (!axiomSeenLlmText.has(msg.task_id)) {
+                        axiomFetchAndShowResult(msg.task_id);
+                    }
+                    axiomSeenLlmText.delete(msg.task_id);
                     break;
                 case 'task_failed':
                     axiomLog(`❌ Task failed [${msg.task_id.slice(0,8)}]: ${msg.error}`, 'error');
@@ -8344,6 +8397,21 @@
                 default:
                     axiomLog(JSON.stringify(msg).slice(0, 160), 'info');
             }
+        }
+
+        // --- result fetch (fallback when WS was not connected during task) ---
+
+        async function axiomFetchAndShowResult(taskId) {
+            const wsUrl    = document.getElementById('axiomDaemonUrl').value.trim() || 'ws://localhost:8070/ws';
+            const httpBase = wsUrl.replace(/^ws:\/\//, 'http://').replace(/^wss:\/\//, 'https://').replace(/\/ws$/, '');
+            try {
+                const resp = await fetch(httpBase + '/task/' + taskId);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data.result) {
+                    axiomLog(`  💬 ${data.result.slice(0, 600)}`, 'info');
+                }
+            } catch (_) {}
         }
 
         // --- approval ---
@@ -8423,6 +8491,114 @@
         function axiomClearFeed() {
             const feed = document.getElementById('axiomEventFeed');
             if (feed) feed.innerHTML = '';
+        }
+
+        // ===========================================
+        // AXIOM AUDIT LOG
+        // ===========================================
+
+        function auditDaemonUrl() {
+            const inp = document.getElementById('axiomDaemonUrl');
+            return inp ? inp.value.replace(/^ws/, 'http') : 'http://localhost:8070';
+        }
+
+        async function auditLoad() {
+            const base = auditDaemonUrl();
+            try {
+                const r = await fetch(`${base}/audit`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const entries = await r.json();
+                auditRender(entries);
+            } catch (e) {
+                document.getElementById('auditSummary').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        async function auditVerify() {
+            const base = auditDaemonUrl();
+            const badge = document.getElementById('auditChainBadge');
+            const summary = document.getElementById('auditSummary');
+            badge.style.display = 'none';
+            try {
+                const r = await fetch(`${base}/audit/verify`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const data = await r.json();
+
+                badge.style.display = 'inline-block';
+                if (data.valid) {
+                    badge.textContent = `CHAIN VALID  ✓  ${data.entries} entries`;
+                    badge.style.background = 'rgba(100,181,120,0.15)';
+                    badge.style.border = '1px solid var(--accent-success)';
+                    badge.style.color = 'var(--accent-success)';
+                } else {
+                    badge.textContent = 'CHAIN INTEGRITY FAILURE ✗';
+                    badge.style.background = 'rgba(239,83,80,0.15)';
+                    badge.style.border = '1px solid var(--accent-danger)';
+                    badge.style.color = 'var(--accent-danger)';
+                }
+                summary.textContent = `Verified ${data.entries} entries — chain is ${data.valid ? 'intact' : 'CORRUPTED'}`;
+
+                // Also reload the table
+                await auditLoad();
+            } catch (e) {
+                summary.textContent = 'Verify error: ' + e.message;
+            }
+        }
+
+        const TIER_LABELS = { 0: 'observe', 1: 'low', 2: 'ops', 3: 'gov' };
+        const TIER_COLORS = {
+            0: 'var(--text-muted)',
+            1: 'var(--lcars-blue)',
+            2: 'var(--lcars-gold)',
+            3: 'var(--accent-danger)',
+        };
+
+        function auditRender(entries) {
+            const tbody = document.getElementById('auditTbody');
+            if (!entries || entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: var(--text-muted);">No audit entries yet.</td></tr>';
+                document.getElementById('auditSummary').textContent = '0 entries';
+                return;
+            }
+
+            tbody.innerHTML = entries.map(e => {
+                const tier = e.trust_tier;
+                const tierLabel = TIER_LABELS[tier] || tier;
+                const tierColor = TIER_COLORS[tier] || 'var(--text-secondary)';
+
+                // Signature type — detect Falcon vs plain tier tag
+                let sigLabel = 'none';
+                let sigColor = 'var(--text-muted)';
+                if (e.signature && e.signature.startsWith('falcon512:')) {
+                    sigLabel = 'Falcon-512';
+                    sigColor = 'var(--lcars-blue)';
+                } else if (e.signature && e.signature.startsWith('tier:')) {
+                    sigLabel = e.signature.replace('tier:', '');
+                    sigColor = 'var(--text-muted)';
+                } else if (e.signature && e.signature.length > 0 && e.signature !== 'none') {
+                    sigLabel = e.signature.substring(0, 16) + '…';
+                    sigColor = 'var(--accent-success)';
+                }
+
+                // Shorten task_id
+                const tid = e.task_id.length > 12 ? e.task_id.substring(0, 8) + '…' : e.task_id;
+                // Result preview
+                const res = e.result_summary.length > 48 ? e.result_summary.substring(0, 48) + '…' : e.result_summary;
+                // Time
+                const ts = new Date(e.timestamp).toLocaleTimeString('en-CA', { hour12: false });
+
+                return `<tr style="border-bottom: 1px solid #1e1e2e;">
+                    <td style="padding: 7px 12px; color: var(--text-muted);">${e.seq}</td>
+                    <td style="padding: 7px 12px; color: var(--text-secondary); white-space: nowrap;">${ts}</td>
+                    <td style="padding: 7px 12px; color: var(--text-muted); font-size: 10px; max-width: 80px; overflow: hidden; text-overflow: ellipsis;">${tid}</td>
+                    <td style="padding: 7px 12px; color: var(--lcars-gold);">${e.tool_name}</td>
+                    <td style="padding: 7px 12px; color: ${tierColor}; font-weight: 700;">${tierLabel}</td>
+                    <td style="padding: 7px 12px; color: ${sigColor}; font-size: 10px;">${sigLabel}</td>
+                    <td style="padding: 7px 12px; color: var(--text-secondary); font-size: 11px;">${res}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('auditSummary').textContent = `${entries.length} entries loaded`;
         }
 
     </script>
