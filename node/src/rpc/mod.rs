@@ -68,6 +68,10 @@ use mesh_forum_rpc::{MeshForumRpc, MeshForumApiServer};
 pub mod devonomics_rpc;
 use devonomics_rpc::{DevonomicsRpc, DevonomicsApiServer};
 
+// Axiom Attestation RPC - on-chain task attestations for the Axiom AI agent
+pub mod axiom_attestation_rpc;
+use axiom_attestation_rpc::{AxiomAttestationRpc, AxiomAttestationRpcApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -209,6 +213,15 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ Devonomics RPC registered (devonomics_* - quest & score tracking)");
+
+    // Create Axiom Attestation RPC instance for AI agent task attestations
+    let axiom_attestation_rpc = AxiomAttestationRpc::<_, _, Block>::new(deps.client.clone(), deps.pool.clone());
+
+    // Merge Axiom Attestation RPC into module
+    module.merge(axiom_attestation_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ Axiom Attestation RPC registered (quantumharmony_submitTaskAttestation)");
 
     Ok(module)
 }
