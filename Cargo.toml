@@ -17,6 +17,7 @@ members = [
 	"pallets/dev-governance",
 	"pallets/ricardian-contracts",
 	"pallets/notarial",
+	"pallets/axiom-attestation",
 	"pallets/mesh-forum",
 	"pallets/oracle",
 	"pallets/oracle-feeds",
@@ -182,6 +183,7 @@ pallet-registration = { path = "pallets/pallet-registration", default-features =
 pallet-dev-governance = { path = "pallets/dev-governance", default-features = false }
 pallet-ricardian-contracts = { path = "pallets/ricardian-contracts", default-features = false }
 pallet-notarial = { path = "pallets/notarial", default-features = false }
+pallet-axiom-attestation = { path = "pallets/axiom-attestation", default-features = false }
 pallet-devonomics = { path = "pallets/devonomics", default-features = false }
 pallet-babe = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }
 sp-consensus-babe = { git = "https://github.com/Paraxiom/polkadot-sdk", branch = "daily/2025-10-16-sphincs-deterministic-keys", default-features = false }

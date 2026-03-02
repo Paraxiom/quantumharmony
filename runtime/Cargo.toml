@@ -94,6 +94,7 @@ pallet-dev-governance = { path = "../pallets/dev-governance", default-features =
 # Academic/Legal governance pallets
 pallet-ricardian-contracts = { path = "../pallets/ricardian-contracts", default-features = false }
 pallet-notarial = { path = "../pallets/notarial", default-features = false }
+pallet-axiom-attestation = { path = "../pallets/axiom-attestation", default-features = false }
 pallet-mesh-forum = { path = "../pallets/mesh-forum", default-features = false }
 pallet-fideicommis = { path = "../pallets/fideicommis", default-features = false }
 pallet-stablecoin = { path = "../pallets/stablecoin", default-features = false }
@@ -177,6 +178,7 @@ std = [
 	"pallet-validator-rewards/std",
 	"pallet-ricardian-contracts/std",
 	"pallet-notarial/std",
+	"pallet-axiom-attestation/std",
 	"pallet-mesh-forum/std",
 	"pallet-fideicommis/std",
 	"pallet-stablecoin/std",

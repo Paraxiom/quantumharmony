@@ -439,6 +439,16 @@ impl pallet_ricardian_contracts::Config for Runtime {
     type MinContractDuration = MinContractDuration;
 }
 
+// Axiom Attestation pallet configuration
+parameter_types! {
+    pub const MaxAttestationsPerBlock: u32 = 10;
+}
+
+impl pallet_axiom_attestation::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxAttestationsPerBlock = MaxAttestationsPerBlock;
+}
+
 // Notarial pallet configuration
 parameter_types! {
     pub const MinWitnesses: u32 = 2; // Witnesses needed for certification
@@ -743,6 +753,9 @@ construct_runtime!(
         // Validator governance - voting on new validator additions
         ValidatorGovernance: pallet_validator_governance,
 
+        // Axiom autonomous agent attestations
+        AxiomAttestation: pallet_axiom_attestation,
+
         // Legal Governance pallets
         RicardianContracts: pallet_ricardian_contracts,
         Notarial: pallet_notarial,
@@ -1028,6 +1041,39 @@ impl_runtime_apis! {
 
         fn message_count() -> u32 {
             pallet_mesh_forum::MessageCount::<Runtime>::get()
+        }
+    }
+
+    impl pallet_axiom_attestation::runtime_api::AxiomAttestationApi<Block, AccountId> for Runtime {
+        fn get_attestation(id: u64) -> Option<(u64, [u8; 32], [u8; 32], u32, sp_std::vec::Vec<u8>, sp_std::vec::Vec<u8>, u32, bool)> {
+            pallet_axiom_attestation::TaskAttestations::<Runtime>::get(id).map(|a| (
+                a.id,
+                a.task_hash,
+                a.description_hash,
+                a.step_count,
+                a.signer_fingerprint.into_inner(),
+                a.provider.into_inner(),
+                a.anchored_at.try_into().unwrap_or(0u32),
+                a.revoked,
+            ))
+        }
+
+        fn verify_task(task_hash: [u8; 32]) -> Option<(u64, u32, u32)> {
+            pallet_axiom_attestation::AttestationByTaskHash::<Runtime>::get(&task_hash)
+                .and_then(|id| pallet_axiom_attestation::TaskAttestations::<Runtime>::get(id)
+                    .map(|a| (
+                        id,
+                        a.anchored_at.try_into().unwrap_or(0u32),
+                        a.step_count,
+                    )))
+        }
+
+        fn get_attestations_by_account(account: AccountId) -> sp_std::vec::Vec<u64> {
+            pallet_axiom_attestation::AttestationsByAccount::<Runtime>::get(&account).into_inner()
+        }
+
+        fn total_attestations() -> u64 {
+            pallet_axiom_attestation::TotalAttestations::<Runtime>::get()
         }
     }
 
