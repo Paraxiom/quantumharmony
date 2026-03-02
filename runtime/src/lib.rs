@@ -129,7 +129,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("quantumharmony"),
     impl_name: create_runtime_str!("quantumharmony"),
     authoring_version: 1,
-    spec_version: 28,  // v28: Fresh genesis with ParityDB, remove AcademicVouch
+    spec_version: 29,  // v29: Add pallet-axiom-attestation (on-chain AI task attestations)
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
