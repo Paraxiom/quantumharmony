@@ -72,6 +72,12 @@ use devonomics_rpc::{DevonomicsRpc, DevonomicsApiServer};
 pub mod axiom_attestation_rpc;
 use axiom_attestation_rpc::{AxiomAttestationRpc, AxiomAttestationRpcApiServer};
 
+// BGFL RPC - Blockchain-Governed Federated Learning data plane
+// In-memory message bus for FL round configs, client updates, and aggregate results.
+// All traffic rides QH's PQ P2P transport (Falcon-1024 + ML-KEM-1024).
+pub mod bgfl_rpc;
+use bgfl_rpc::{BgflRpc, BgflApiServer};
+
 /// Full client dependencies (governance-only, no Frontier)
 pub struct FullDeps<C, P> {
     /// The client instance to use.
@@ -222,6 +228,15 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     log::info!("✅ Axiom Attestation RPC registered (quantumharmony_submitTaskAttestation)");
+
+    // Create BGFL RPC instance for Federated Learning data plane
+    let bgfl_rpc = BgflRpc::<Block>::new();
+
+    // Merge BGFL RPC into module
+    module.merge(bgfl_rpc.into_rpc())
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    log::info!("✅ BGFL RPC registered (bgfl_* - Federated Learning data plane)");
 
     Ok(module)
 }
