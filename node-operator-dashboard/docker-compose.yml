@@ -27,14 +27,14 @@ services:
       - "--rpc-external"
       - "--rpc-cors=all"
       - "--rpc-methods=Unsafe"
-      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWLmphH9JtAVntVnZ4fZ5keJSjKEyWFANcKVzWVLnwVe9Z"
-      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWGiDT7jsuqFJhsvoN4KZp8KZ5CjtUnEvRxUNVNvLRwnFA"
-      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWRzTbwny8fUNUZQvS24RJWj44RSivgCQNN6Bb6WwhTQNh"
+      - "--bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWFcndVYEyhSkLWgYagBqyuNfEX1pSKCKGW6snjCgesqKQ"
+      - "--bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWQ7mHfHsViKEJtpoAG8zRrepHPTvMB2TefDxpPw1eUAKs"
+      - "--bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWLuQgPb7Z1vfEDyeFibvcv9x7cdLUHs1HohBLitbQeX7A"
     environment:
       - NODE_NAME=${NODE_NAME:-Operator}
       - VALIDATOR=${VALIDATOR:-true}
       - RPC_METHODS=${RPC_METHODS:-Unsafe}
-      - BOOTNODES=${BOOTNODES:-/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWLmphH9JtAVntVnZ4fZ5keJSjKEyWFANcKVzWVLnwVe9Z,/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWGiDT7jsuqFJhsvoN4KZp8KZ5CjtUnEvRxUNVNvLRwnFA,/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWRzTbwny8fUNUZQvS24RJWj44RSivgCQNN6Bb6WwhTQNh}
+      - BOOTNODES=${BOOTNODES:-/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWFcndVYEyhSkLWgYagBqyuNfEX1pSKCKGW6snjCgesqKQ,/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWQ7mHfHsViKEJtpoAG8zRrepHPTvMB2TefDxpPw1eUAKs,/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWLuQgPb7Z1vfEDyeFibvcv9x7cdLUHs1HohBLitbQeX7A}
     networks:
       - quantum-net
     healthcheck:

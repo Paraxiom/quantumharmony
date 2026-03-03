@@ -17,7 +17,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # Default bootnodes for production testnet
-DEFAULT_BOOTNODES="/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W,/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWDQp7gSEEHgpGpvnui67v8s3PQ6RvYpocu96WvyuYwak1,/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWPA9JZqTaDokCDToirUuA6DcfPuc2QN9DSzaJvMe3Yvcy"
+DEFAULT_BOOTNODES="/ip4/51.79.26.123/tcp/30333/p2p/QmNVxWSGHMvTeLTHxZfd8WcWDSiEnQBVyZboaVqPc4y3ox,/ip4/51.79.26.168/tcp/30333/p2p/QmeZwWcveZ5faSHYpJkiuCwx4wy7ByUUvn3rJhhQETWbYC,/ip4/209.38.225.4/tcp/30333/p2p/QmQMjTeQZ56wV4nYGS2MAF2fM5tECQ2ETjGv6nsn5ESLMa"
 
 # Export environment variables
 export NODE_NAME="${NODE_NAME:-Operator}"

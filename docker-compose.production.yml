@@ -3,23 +3,14 @@ version: '3.8'
 # Production network connection - connects to live QuantumHarmony validators
 # Usage: docker-compose -f docker-compose.production.yml up
 #
-# PQC Transport Migration:
-#   After the PQC transport upgrade, all validators will generate new PeerIds
-#   derived from Falcon-1024 public keys (replacing Ed25519-derived PeerIds).
+# PQC Transport (ACTIVE):
+#   PeerIds are derived from Falcon-1024 public keys (SHA3-256 hash).
+#   These replaced Ed25519-derived PeerIds after PQC transport migration.
 #
-#   Deployment steps:
-#   1. Build updated binary with pqc-transport feature (enabled by default)
-#   2. Stop all validators simultaneously
-#   3. Start each validator — it will generate pqc_transport_identity.json on first run
-#   4. Record new PQC PeerIds from startup logs:
-#        🔑 [PQC-TRANSPORT] PeerId: 12D3KooW...
-#   5. Update bootnodes below with new PeerIds
-#   6. Rebuild chain spec with new PeerIds if needed
-#
-#   Current bootnodes (classical Ed25519 — will change after PQC migration):
-#     Bob:     12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD
-#     Charlie: 12D3KooWSCufgHzV4fCwRijfH2k3abrpAJxTKxEvN1FDuRXA2U9x
-#     Alice:   12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W
+#   Falcon-derived PeerIds (Qm prefix = SHA2-256 multihash encoding):
+#     Alice:   QmNVxWSGHMvTeLTHxZfd8WcWDSiEnQBVyZboaVqPc4y3ox
+#     Bob:     QmeZwWcveZ5faSHYpJkiuCwx4wy7ByUUvn3rJhhQETWbYC
+#     Charlie: QmQMjTeQZ56wV4nYGS2MAF2fM5tECQ2ETjGv6nsn5ESLMa
 
 services:
   quantumharmony:
@@ -44,9 +35,9 @@ services:
       --rpc-methods=safe
       --port=30333
       --rpc-port=9944
-      --bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD
-      --bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWSCufgHzV4fCwRijfH2k3abrpAJxTKxEvN1FDuRXA2U9x
-      --bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWDmLjhsvwEh3Xdat6daVhRm87ed88J9Sx4ti44osaDM8W
+      --bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/QmeZwWcveZ5faSHYpJkiuCwx4wy7ByUUvn3rJhhQETWbYC
+      --bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/QmQMjTeQZ56wV4nYGS2MAF2fM5tECQ2ETjGv6nsn5ESLMa
+      --bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/QmNVxWSGHMvTeLTHxZfd8WcWDSiEnQBVyZboaVqPc4y3ox
     environment:
       - RUST_LOG=info,sync=debug
       # Uncomment to inject a pre-generated PQC identity:

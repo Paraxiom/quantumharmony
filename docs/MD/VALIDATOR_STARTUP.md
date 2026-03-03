@@ -115,12 +115,17 @@ print(json.dumps(spec, indent=2))
 | Bob | `5FxMdDFWWg7n4EFGD3ENNuKhQww1PRRSK9Y2igsdJ9uKTMNc` | Beauharnois (YOUR_NODE_IP) |
 | Charlie | Not currently deployed | Frankfurt (YOUR_NODE_IP) |
 
-### Peer IDs (from fixed node keys)
+### Peer IDs (PQC Falcon-1024 derived)
 
-| Validator | Peer ID |
-|-----------|---------|
-| Alice | `12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp` |
-| Bob | `12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD` |
+With PQC transport active, PeerIds are derived from Falcon-1024 public keys (SHA3-256 hash),
+replacing the Ed25519-derived PeerIds. These are stable as long as `pqc_transport_identity.json`
+is preserved in the node's data directory.
+
+| Validator | PQC PeerId (Falcon-1024) | Ed25519 PeerId (legacy) |
+|-----------|--------------------------|-------------------------|
+| Alice | `QmNVxWSGHMvTeLTHxZfd8WcWDSiEnQBVyZboaVqPc4y3ox` | `12D3KooWFcndVYEyhSkLWgYagBqyuNfEX1pSKCKGW6snjCgesqKQ` |
+| Bob | `QmeZwWcveZ5faSHYpJkiuCwx4wy7ByUUvn3rJhhQETWbYC` | `12D3KooWQ7mHfHsViKEJtpoAG8zRrepHPTvMB2TefDxpPw1eUAKs` |
+| Charlie | `QmQMjTeQZ56wV4nYGS2MAF2fM5tECQ2ETjGv6nsn5ESLMa` | `12D3KooWSCufgHzV4fCwRijfH2k3abrpAJxTKxEvN1FDuRXA2U9x` |
 
 ## Troubleshooting
 

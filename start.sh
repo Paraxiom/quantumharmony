@@ -20,9 +20,9 @@ docker run -d --name local-node \
   --rpc-methods=Unsafe \
   --unsafe-rpc-external \
   --name=LocalNode \
-  --bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/12D3KooWHdiAxVd8uMQR1hGWXccidmfCwLqcMpGwR6QcTP6QRMuD \
-  --bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp \
-  --bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/12D3KooWSCufgHzV4fCwRijfH2k3abrpAJxTKxEvN1FDuRXA2U9x
+  --bootnodes=/ip4/51.79.26.168/tcp/30333/p2p/QmeZwWcveZ5faSHYpJkiuCwx4wy7ByUUvn3rJhhQETWbYC \
+  --bootnodes=/ip4/51.79.26.123/tcp/30333/p2p/QmNVxWSGHMvTeLTHxZfd8WcWDSiEnQBVyZboaVqPc4y3ox \
+  --bootnodes=/ip4/209.38.225.4/tcp/30333/p2p/QmQMjTeQZ56wV4nYGS2MAF2fM5tECQ2ETjGv6nsn5ESLMa
 
 echo "Node starting... View logs with: docker logs -f local-node"
 echo "RPC available at: ws://localhost:9944"
