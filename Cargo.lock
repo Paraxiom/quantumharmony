@@ -9417,6 +9417,7 @@ dependencies = [
  "log",
  "num_cpus",
  "once_cell",
+ "pallet-axiom-attestation",
  "pallet-devonomics",
  "pallet-im-online",
  "pallet-mesh-forum",

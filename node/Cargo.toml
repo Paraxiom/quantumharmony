@@ -120,6 +120,7 @@ pallet-validator-rewards = { path = "../pallets/validator-rewards", default-feat
 pallet-notarial = { path = "../pallets/notarial", default-features = false, features = ["std"] }
 pallet-mesh-forum = { path = "../pallets/mesh-forum", default-features = false, features = ["std"] }
 pallet-devonomics = { path = "../pallets/devonomics", default-features = false, features = ["std"] }
+pallet-axiom-attestation = { path = "../pallets/axiom-attestation", default-features = false, features = ["std"] }
 
 # Frontier dependencies removed for governance-only node
 quantumharmony-runtime = { workspace = true, features = ["std"] }
