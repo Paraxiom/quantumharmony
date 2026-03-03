@@ -271,6 +271,13 @@ where
                 None::<()>
             ))?;
 
+        // Use a small time-based tip so rapid successive submissions don't collide
+        // on priority in the tx pool (avoids "Too low priority" rejection).
+        let tip: u128 = (std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .subsec_nanos() % 1000) as u128;
+
         // Build signed extra
         let extra: quantumharmony_runtime::SignedExtra = (
             frame_system::CheckNonZeroSender::<quantumharmony_runtime::Runtime>::new(),
@@ -280,7 +287,7 @@ where
             frame_system::CheckEra::<quantumharmony_runtime::Runtime>::from(Era::Immortal),
             frame_system::CheckNonce::<quantumharmony_runtime::Runtime>::from(nonce),
             frame_system::CheckWeight::<quantumharmony_runtime::Runtime>::new(),
-            pallet_transaction_payment::ChargeTransactionPayment::<quantumharmony_runtime::Runtime>::from(0),
+            pallet_transaction_payment::ChargeTransactionPayment::<quantumharmony_runtime::Runtime>::from(tip),
         );
 
         // Create signed payload
