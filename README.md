@@ -15,7 +15,7 @@
 | Metric | Value |
 |--------|-------|
 | Test Coverage | 950 unit & integration tests |
-| Pallets | 15+ custom runtime modules |
+| Pallets | 23 custom runtime modules |
 | Block Time | 6 seconds |
 | Consensus | Proof of Coherence (PQ-BFT) |
 | Signatures | SPHINCS+ (NIST PQC Standard) |
@@ -61,28 +61,49 @@ No rational validator coalition will vote for this.
 
 ## Runtime Modules (Pallets)
 
+### Quantum / Consensus
+| Pallet | Description |
+|--------|-------------|
+| `pallet-quantum-crypto` | PQC key management (Falcon-1024, SPHINCS+, ML-KEM-1024) |
+| `pallet-proof-of-coherence` | Proof-of-Coherence consensus mechanism |
+| `pallet-topological-coherence` | Toroidal coherence scoring |
+| `pallet-axiom-attestation` | On-chain AI task attestations with rate limiting |
+| `pallet-sphincs-keystore` | SPHINCS+ key storage for runtime upgrades |
+| `pallet-validator-entropy` | Quantum entropy contribution (QRNG) |
+| `pallet-runtime-segmentation` | 8x8x8 toroidal mesh parallelization |
+
 ### Financial Infrastructure
-| Pallet | Tests | Description |
-|--------|-------|-------------|
-| `pallet-stablecoin` | 16 | QCAD collateralized stablecoin with liquidation |
-| `pallet-fideicommis` | 20 | Quebec-style trusts (constituant/fiduciary/beneficiary) |
-| `pallet-validator-rewards` | 30 | Staking, slashing, reward distribution |
-| `pallet-pedersen-commitment` | 22 | Cryptographic commitments for privacy |
+| Pallet | Description |
+|--------|-------------|
+| `pallet-stablecoin` | QCAD collateralized stablecoin with liquidation |
+| `pallet-fideicommis` | Quebec-style trusts (constituant/fiduciary/beneficiary) |
+| `pallet-validator-rewards` | Staking, slashing, reward distribution |
+| `pallet-pedersen-commitment` | Cryptographic commitments for privacy |
+| `pallet-devonomics` | Developer economics and incentive alignment |
 
-### Legal/Notarial
-| Pallet | Tests | Description |
-|--------|-------|-------------|
-| `pallet-ricardian-contracts` | 34 | Human+machine readable legal contracts |
-| `pallet-notarial` | 31 | Document attestation and certification |
-| `pallet-academic-vouch` | 35 | Academic credential verification |
+### Governance
+| Pallet | Description |
+|--------|-------------|
+| `pallet-mesh-forum` | On-chain governance discussion forum |
+| `pallet-dev-governance` | Developer governance proposals and voting |
+| `pallet-validator-governance` | Validator-level governance |
+| `pallet-substrate-validator-set` | Dynamic validator set management |
+| `pallet-consensus-level` | Consensus level tracking |
 
-### Core Infrastructure
-| Pallet | Tests | Description |
-|--------|-------|-------------|
-| `pallet-sphincs-keystore` | 25 | SPHINCS+ key management |
-| `pallet-runtime-segmentation` | 43 | Toroidal mesh parallelization |
-| `pallet-relay-coordination` | 13 | QKD relay network management |
-| `pallet-validator-entropy` | 9 | Quantum entropy distribution |
+### Legal / Notarial
+| Pallet | Description |
+|--------|-------------|
+| `pallet-ricardian-contracts` | Human+machine readable legal contracts |
+| `pallet-notarial` | Document attestation and certification |
+| `pallet-academic-vouch` | Academic credential verification |
+
+### Network
+| Pallet | Description |
+|--------|-------------|
+| `pallet-relay-coordination` | QKD relay network management |
+| `pallet-oracle` | External data oracle |
+| `pallet-oracle-feeds` | Oracle data feed aggregation |
+| `pallet-qkd-client` | QKD key distribution client |
 
 ### Node Components
 | Component | Tests | Description |
@@ -98,7 +119,7 @@ No rational validator coalition will vote for this.
 
 ### Run a Node (Docker)
 ```bash
-docker pull sylvaincormier/quantumharmony-node:latest
+docker pull sylvaincormier/quantumharmony-node:v28.2-bgfl
 docker-compose up -d
 ```
 
@@ -140,20 +161,22 @@ QuantumHarmony requires forked Substrate dependencies with PQC modifications:
 
 ## Formal Verification
 
-Lean 4 mathematical proofs for consensus, cryptography, and toroidal execution — zero sorries.
+Lean 4 + Mathlib v4.27.0 mathematical proofs — zero sorries.
 
 | File | Scope | Theorems |
 |------|-------|----------|
 | `Consensus.lean` | BFT quorum intersection, finality uniqueness, supermajority implies majority | 8 |
-| `Crypto.lean` | Keccak-256, SPHINCS+, Falcon parameters, block capacity (68+ txns/block) | 8 |
-| `Toroidal.lean` | 8x8x8 torus (512 segments), diameter 12, spectral gap positivity | 8 |
-| `QBER.lean` | 11% threshold < 14.6% BB84 max, average bounds, acceptance criteria | 8 |
+| `Crypto.lean` | Keccak-256, SPHINCS+, Falcon parameters, block capacity (68+ txns/block) | 16 |
+| `Toroidal.lean` | 8x8x8 torus (512 segments), diameter 12, spectral gap positivity | 9 |
+| `QBER.lean` | 11% threshold < 14.6% BB84 max, average bounds, acceptance criteria | 14 |
+| `STARK.lean` | STARK proof system parameters and bounds | 10 |
+| `AxiomAttestation.lean` | BoundedVec bounds, rate limiting, storage footprint | 19 |
 
 ```bash
-cd lean && lake build  # 0 errors, 0 sorries, 32 theorems
+cd lean && lake build  # 0 errors, 0 sorries, 76 theorems
 ```
 
-**Paper**: [562 Lean 4 Theorems for Post-Quantum Infrastructure](https://doi.org/10.5281/zenodo.18663125) (Zenodo, Feb 2026)
+**Paper**: [810 Lean 4 Theorems for Post-Quantum Infrastructure](https://doi.org/10.5281/zenodo.18663125) (Zenodo, Mar 2026) — 76 theorems for QuantumHarmony, 810 total across 10 systems
 
 ---
 
@@ -161,7 +184,10 @@ cd lean && lake build  # 0 errors, 0 sorries, 32 theorems
 
 | Paper | Topic | DOI |
 |-------|-------|-----|
-| 562 Lean 4 Theorems | Formal verification across QTS, QSSH, QH | [10.5281/zenodo.18663125](https://doi.org/10.5281/zenodo.18663125) |
+| 810 Lean 4 Theorems | Formal verification across 10 PQ systems | [10.5281/zenodo.18663125](https://doi.org/10.5281/zenodo.18663125) |
+| Defensive Technical Disclosure | Toroidal coherence methods — 4 embodiments | [10.5281/zenodo.18595753](https://doi.org/10.5281/zenodo.18595753) |
+| Toroidal Logit Bias | Geometric constraints for LLM truthfulness | [10.5281/zenodo.18516477](https://doi.org/10.5281/zenodo.18516477) |
+| PQ Transport Gateway | Replacing classical TLS on QKD control channels | [10.5281/zenodo.18786526](https://doi.org/10.5281/zenodo.18786526) |
 | Proof of Coherence | QKD-based distributed consensus | [10.5281/zenodo.17929054](https://doi.org/10.5281/zenodo.17929054) |
 | Toroidal Mesh | 10K TPS with SPHINCS+ | [10.5281/zenodo.17931222](https://doi.org/10.5281/zenodo.17931222) |
 | ERLHS | Hamiltonian coherence framework | [10.5281/zenodo.17928909](https://doi.org/10.5281/zenodo.17928909) |
